@@ -1,2 +1,2 @@
-Desktop Build -> cargo build
+Desktop Build -> cargo build || 
 Web Build -> wasm-pack build
