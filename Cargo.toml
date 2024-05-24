@@ -10,6 +10,7 @@ log = "0.4"
 wgpu = "0.19.3"
 pollster = "0.3"
 cfg-if = "1"
+bytemuck = { version = "1.12", features = ["derive"] }
 
 [lib]
 crate-type = ["cdylib", "rlib"]
