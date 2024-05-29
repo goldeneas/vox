@@ -1,4 +1,5 @@
 use bytemuck::{Pod, Zeroable};
+use image::GenericImageView;
 use log::{info, warn};
 use wgpu::{util::DeviceExt, RenderPipelineDescriptor};
 use winit::{
@@ -40,12 +41,22 @@ impl Vertex {
 
 // counter-clockwise because we specified the front face to be Ccw in the frontface
 const VERTICES: &[Vertex] = &[
-    Vertex { position: [0.0, 0.5, 0.0], color: [1.0, 0.0, 0.0] },
-    Vertex { position: [-0.5, -0.5, 0.0], color: [0.0, 1.0, 0.0] },
-    Vertex { position: [0.5, -0.5, 0.0], color: [0.0, 0.0, 1.0] },
+    Vertex { position: [-0.0868241, 0.49240386, 0.0], color: [0.5, 0.0, 0.5] }, // A
+    Vertex { position: [-0.49513406, 0.06958647, 0.0], color: [0.5, 0.0, 0.5] }, // B
+    Vertex { position: [-0.21918549, -0.44939706, 0.0], color: [0.5, 0.0, 0.5] }, // C
+    Vertex { position: [0.35966998, -0.3473291, 0.0], color: [0.5, 0.0, 0.5] }, // D
+    Vertex { position: [0.44147372, 0.2347359, 0.0], color: [0.5, 0.0, 0.5] }, // E
+];
+
+const INDICES: &[u16] = &[
+    0, 1, 4,
+    1, 2, 4,
+    2, 3, 4,
 ];
 
 struct State<'a> {
+    num_indices: u32,
+        
     surface: wgpu::Surface<'a>,
     device: wgpu::Device,
     queue: wgpu::Queue,
@@ -53,6 +64,7 @@ struct State<'a> {
     size: winit::dpi::PhysicalSize<u32>,
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
+    index_buffer: wgpu::Buffer,
 
     // unsafe reference to window
     window: &'a Window,
@@ -62,6 +74,8 @@ impl<'a> State<'a> {
     // async needed for some wgpu code
     async fn new(window: &'a Window) -> State<'a> {
         let size = window.inner_size();
+        
+        let num_indices = INDICES.len() as u32;
 
         // wgpu instance used for surfaces and adapters
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -115,7 +129,9 @@ impl<'a> State<'a> {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[]
+                buffers: &[
+                    Vertex::desc(),
+                ],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -150,7 +166,65 @@ impl<'a> State<'a> {
             usage: wgpu::BufferUsages::VERTEX,
         });
 
+        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Index Buffer"),
+            contents: bytemuck::cast_slice(INDICES),
+            usage: wgpu::BufferUsages::INDEX,
+        });
+
+        surface.configure(&device, &config);
+
+        let diffuse_bytes = include_bytes!("happy-tree.png");
+        let diffuse_image = image::load_from_memory(diffuse_bytes).unwrap();
+        let diffuse_rgba = diffuse_image.to_rgba8();
+        let dimensions = diffuse_image.dimensions();
+
+        let texture_size = wgpu::Extent3d {
+            width: dimensions.0,
+            height: dimensions.1,
+            depth_or_array_layers: 1,
+        };
+
+        let diffuse_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("diffuse_texture"),
+            size: texture_size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+
+        queue.write_texture(
+            wgpu::ImageCopyTexture {
+                texture: &diffuse_texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            &diffuse_rgba,
+            wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: Some(4 * dimensions.0),
+                rows_per_image: Some(dimensions.1),
+            },
+            texture_size,
+        );
+
+        let diffuse_texture_view = diffuse_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let diffuse_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
+        });
+
         Self {
+            num_indices,
             window,
             surface,
             device,
@@ -159,6 +233,7 @@ impl<'a> State<'a> {
             size,
             render_pipeline,
             vertex_buffer,
+            index_buffer,
         }
     }
 
@@ -216,7 +291,9 @@ impl<'a> State<'a> {
             });
 
             render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.draw(0..3, 0..1);
+            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));

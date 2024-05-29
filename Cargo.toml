@@ -1,5 +1,5 @@
 [package]
-name = "picxel"
+name = "vox"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,6 +11,11 @@ wgpu = "0.19.3"
 pollster = "0.3"
 cfg-if = "1"
 bytemuck = { version = "1.12", features = ["derive"] }
+
+[dependencies.image]
+version = "0.24"
+default-features = false
+features = ["png", "jpeg"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
