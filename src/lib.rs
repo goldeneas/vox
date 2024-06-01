@@ -1,3 +1,5 @@
+mod texture;
+
 use bytemuck::{Pod, Zeroable};
 use image::GenericImageView;
 use log::{info, warn};
