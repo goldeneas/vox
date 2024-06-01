@@ -1,10 +1,9 @@
 mod texture;
-mod camera_controller;
+mod camera;
 
-use bytemuck::{Pod, Zeroable};
-use cgmath::{SquareMatrix, Transform};
-use image::GenericImageView;
+use camera::{ Camera, CameraController, CameraUniform };
 use log::{info, warn};
+use bytemuck::{Pod, Zeroable};
 use wgpu::{util::DeviceExt, RenderPipelineDescriptor};
 use winit::{
     event::*, event_loop::EventLoop, keyboard::{KeyCode, PhysicalKey}, window::{Window, WindowBuilder}
@@ -59,50 +58,6 @@ const INDICES: &[u16] = &[
     2, 3, 4,
 ];
 
-#[rustfmt::skip]
-pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
-    1.0, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0, 0.0,
-    0.0, 0.0, 0.5, 0.5,
-    0.0, 0.0, 0.0, 1.0,
-);
-
-pub struct Camera {
-    eye: cgmath::Point3<f32>,
-    target: cgmath::Point3<f32>,
-    up: cgmath::Vector3<f32>,
-    aspect: f32,
-    fovy: f32,
-    znear: f32,
-    zfar: f32,
-}
-
-impl Camera {
-    fn build_view_projection_matrix(&self) -> cgmath::Matrix4<f32> {
-        let view = cgmath::Matrix4::look_at_rh(self.eye, self.target, self.up);
-        let proj = cgmath::perspective(cgmath::Deg(self.fovy), self.aspect, self.znear, self.zfar);
-
-        return OPENGL_TO_WGPU_MATRIX * proj * view;
-    }
-}
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, Pod, Zeroable)]
-struct CameraUniform {
-    // 4x4 Matrix
-    view_proj: [[f32; 4]; 4],
-}
-
-impl CameraUniform {
-    fn new() -> Self {
-        Self { view_proj: cgmath::Matrix4::identity().into(), }
-    }
-
-    fn update_view_proj(&mut self, camera: &Camera) {
-        self.view_proj = camera.build_view_projection_matrix().into();
-    }
-}
-
 struct State<'a> {
     num_indices: u32,
 
@@ -110,6 +65,7 @@ struct State<'a> {
     camera_uniform: CameraUniform,
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
+    camera_controller: CameraController,
         
     surface: wgpu::Surface<'a>,
     device: wgpu::Device,
@@ -259,6 +215,8 @@ impl<'a> State<'a> {
             ],
         });
 
+        let camera_controller = CameraController::new(0.2);
+
         let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
             bind_group_layouts: &[
@@ -325,6 +283,7 @@ impl<'a> State<'a> {
             camera_bind_group,
             camera_buffer,
             camera_uniform,
+            camera_controller,
             window,
             surface,
             device,
@@ -354,11 +313,13 @@ impl<'a> State<'a> {
 
     // return true if the key has been fully processed, false otherwise
     fn input(&mut self, event: &WindowEvent) -> bool {
-        return false;
+        self.camera_controller.input(event)
     }
 
     fn update(&mut self) {
-    
+        self.camera_controller.update(&mut self.camera);
+        self.camera_uniform.update_view_proj(&self.camera);
+        self.queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[self.camera_uniform]));
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
