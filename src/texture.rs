@@ -1,4 +1,5 @@
 use image::GenericImageView;
+use anyhow::Result;
 
 pub struct Texture {
     pub texture: wgpu::Texture,
@@ -14,7 +15,7 @@ impl Texture {
        label: &str
    ) -> Result<Self> {
        let img = image::load_from_memory(bytes)?;
-
+       Self::from_image(device, queue, &img, Some(label))
    }
 
    pub fn from_image(
@@ -42,5 +43,35 @@ impl Texture {
            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
            view_formats: &[]
        });
+
+       queue.write_texture(
+          wgpu::ImageCopyTexture {
+              aspect: wgpu::TextureAspect::All,
+              texture: &texture,
+              mip_level: 0,
+              origin: wgpu::Origin3d::ZERO,
+          }, 
+          &rgba,
+          wgpu::ImageDataLayout {
+              offset: 0,
+              bytes_per_row: Some(4 * dimensions.0),
+              rows_per_image: Some(dimensions.1),
+          },
+          size,
+       );
+
+       let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+       let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+           address_mode_u: wgpu::AddressMode::ClampToEdge,
+           address_mode_v: wgpu::AddressMode::ClampToEdge,
+           address_mode_w: wgpu::AddressMode::ClampToEdge,
+           mag_filter: wgpu::FilterMode::Linear,
+           min_filter: wgpu::FilterMode::Nearest,
+           mipmap_filter: wgpu::FilterMode::Nearest,
+           ..Default::default()
+       });
+
+       Ok(Self { texture, view, sampler })
    }
 }
