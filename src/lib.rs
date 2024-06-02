@@ -109,7 +109,10 @@ impl<'a> State<'a> {
 
         let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor {
             required_features: wgpu::Features::empty(),
+            #[cfg(not(target_arch="wasm32"))]
             required_limits: wgpu::Limits::default(),
+            #[cfg(target_arch="wasm32")]
+            required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
             label: None,
         }, None).await.unwrap();
 
@@ -388,8 +391,25 @@ pub async fn run() {
     }
 
     let event_loop = EventLoop::new().unwrap();
-    let window = WindowBuilder::new().build(&event_loop).unwrap();
+    #[allow(unused_mut)]
+    let mut builder = WindowBuilder::new();
+    #[cfg(target_arch="wasm32")]
+    {
+        use winit::platform::web::WindowBuilderExtWebSys;
+        let canvas = web_sys::window()
+            .unwrap()
+            .document()
+            .unwrap()
+            .get_element_by_id("canvas")
+            .unwrap()
+            .dyn_into::<web_sys::HtmlCanvasElement>()
+            .unwrap();
 
+        builder = builder.with_canvas(Some(canvas));
+    }
+
+    let window = builder.build(&event_loop).unwrap();
+    info!("{:#?}", window.inner_size());
     let mut state = State::new(&window).await;
 
     event_loop.run(move |event, event_loop_target| match event {
@@ -427,21 +447,4 @@ pub async fn run() {
         Event::AboutToWait => state.window().request_redraw(),
         _ => {}
     }).unwrap();
-
-    #[cfg(target_arch="wasm32")]
-    {
-        // winit requires us to setup window's size when on web
-        use winit::dpi::PhysicalSize;
-        use winit::platform::web::WindowExtWebSys;
-        let _ = window.request_inner_size(PhysicalSize::new(450, 400));
-        web_sys::window()
-            .and_then(|win| win.document())
-            .and_then(|doc| {
-                let dst = doc.get_element_by_id("wasm-example")?;
-                let canvas = web_sys::Element::from(window.canvas()?);
-                dst.append_child(&canvas).ok()?;
-                Some(())
-            })
-        .expect("Could not append canvas to document body");
-    }
 }
