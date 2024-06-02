@@ -10,7 +10,7 @@ pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
     0.0, 0.0, 0.0, 1.0,
 );
 
-pub struct Camera {
+pub struct CameraTransform {
     pub eye: cgmath::Point3<f32>,
     pub target: cgmath::Point3<f32>,
     pub up: cgmath::Vector3<f32>,
@@ -20,10 +20,30 @@ pub struct Camera {
     pub zfar: f32,
 }
 
+pub struct Camera {
+    transform: CameraTransform,
+}
+
 impl Camera {
+    pub fn new(camera_transform: CameraTransform) -> Self {
+        Self {
+            transform: camera_transform
+        }
+    }
+
     pub fn build_view_projection_matrix(&self) -> cgmath::Matrix4<f32> {
-        let view = cgmath::Matrix4::look_at_rh(self.eye, self.target, self.up);
-        let proj = cgmath::perspective(cgmath::Deg(self.fovy), self.aspect, self.znear, self.zfar);
+        let view = cgmath::Matrix4::look_at_rh(
+            self.transform.eye,
+            self.transform.target,
+            self.transform.up
+        );
+
+        let proj = cgmath::perspective(
+            cgmath::Deg(self.transform.fovy),
+            self.transform.aspect,
+            self.transform.znear,
+            self.transform.zfar
+        );
 
         return OPENGL_TO_WGPU_MATRIX * proj * view;
     }
@@ -107,27 +127,29 @@ impl CameraController {
     }
 
     pub fn update(&self, camera: &mut Camera) {
-        let forward = camera.target - camera.eye;
+        let camera_transform = &mut camera.transform;
+
+        let forward = camera_transform.target - camera_transform.eye;
         let forward_norm = forward.normalize();
         let forward_mag = forward.magnitude();
 
         if self.is_forward_pressed && forward_mag > self.speed {
-            camera.eye += forward_norm * self.speed;
+            camera_transform.eye += forward_norm * self.speed;
         }
 
         if self.is_backward_pressed {
-            camera.eye -= forward_norm * self.speed;
+            camera_transform.eye -= forward_norm * self.speed;
         }
 
-        let up_norm = camera.up.normalize();
+        let up_norm = camera_transform.up.normalize();
         let right_norm = forward_norm.cross(up_norm);
 
         if self.is_right_pressed {
-            camera.eye += right_norm * self.speed; 
+            camera_transform.eye += right_norm * self.speed; 
         }
 
         if self.is_left_pressed {
-            camera.eye -= right_norm * self.speed;
+            camera_transform.eye -= right_norm * self.speed;
         }
     }
 }

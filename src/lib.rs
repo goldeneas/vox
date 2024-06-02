@@ -1,7 +1,7 @@
 mod texture;
 mod camera;
 
-use camera::{ Camera, CameraController, CameraUniform };
+use camera::{ Camera, CameraController, CameraTransform, CameraUniform };
 use log::{info, warn};
 use bytemuck::{Pod, Zeroable};
 use wgpu::{util::DeviceExt, RenderPipelineDescriptor};
@@ -91,7 +91,10 @@ impl<'a> State<'a> {
 
         // wgpu instance used for surfaces and adapters
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            #[cfg(not(target_arch="wasm32"))]
             backends: wgpu::Backends::PRIMARY,
+            #[cfg(target_arch="wasm32")]
+            backends: wgpu::Backends::GL,
             ..Default::default()
         });
 
@@ -169,7 +172,7 @@ impl<'a> State<'a> {
             ],
         });
 
-        let camera = Camera {
+        let camera = Camera::new(CameraTransform {
             eye: (0.0, 1.0, 2.0).into(),
             target: (0.0, 0.0, 0.0).into(),
             up: cgmath::Vector3::unit_y(),
@@ -177,7 +180,7 @@ impl<'a> State<'a> {
             fovy: 45.0,
             znear: 0.1,
             zfar: 100.0,
-        };
+        });
 
         let mut camera_uniform = CameraUniform::new();
         camera_uniform.update_view_proj(&camera);
@@ -235,6 +238,7 @@ impl<'a> State<'a> {
                 buffers: &[
                     Vertex::desc(),
                 ],
+                compilation_options: Default::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -243,7 +247,8 @@ impl<'a> State<'a> {
                     format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
-                })]
+                })],
+                compilation_options: Default::default(),
             }),
             primitive : wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
@@ -426,6 +431,7 @@ pub async fn run() {
     #[cfg(target_arch="wasm32")]
     {
         // winit requires us to setup window's size when on web
+        use winit::dpi::PhysicalSize;
         use winit::platform::web::WindowExtWebSys;
         let _ = window.request_inner_size(PhysicalSize::new(450, 400));
         web_sys::window()
