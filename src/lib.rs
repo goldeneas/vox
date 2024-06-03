@@ -85,7 +85,7 @@ struct State<'a> {
 impl<'a> State<'a> {
     // async needed for some wgpu code
     async fn new(window: &'a Window) -> State<'a> {
-        let size = window.inner_size();
+        let mut size = window.inner_size();
         
         let num_indices = INDICES.len() as u32;
 
@@ -376,7 +376,6 @@ impl<'a> State<'a> {
     }
 }
 
-#[cfg_attr(target_arch="wasm32", wasm_bindgen(start))]
 pub async fn run() {
     // set up logging
     // let javascript console print messages if running on web
@@ -384,7 +383,7 @@ pub async fn run() {
         if #[cfg(target_arch="wasm32")] {
             std::panic::set_hook(Box::new(console_error_panic_hook::hook));
             console_log::init_with_level(log::Level::Warn)
-                .expect("Could not initialize logger")
+                .expect("Could not initialize logger");
         } else {
             env_logger::init();
         }
@@ -409,7 +408,6 @@ pub async fn run() {
     }
 
     let window = builder.build(&event_loop).unwrap();
-    info!("{:#?}", window.inner_size());
     let mut state = State::new(&window).await;
 
     event_loop.run(move |event, event_loop_target| match event {
