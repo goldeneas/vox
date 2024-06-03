@@ -1,0 +1,11 @@
+/Users/nicola/Workspace/Rust/vox/target/debug/deps/libarrayvec-68f9baf49c05540a.rmeta: /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/lib.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/arrayvec_impl.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/arrayvec.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/array_string.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/char.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/errors.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/utils.rs
+
+/Users/nicola/Workspace/Rust/vox/target/debug/deps/arrayvec-68f9baf49c05540a.d: /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/lib.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/arrayvec_impl.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/arrayvec.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/array_string.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/char.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/errors.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/utils.rs
+
+/Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/lib.rs:
+/Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/arrayvec_impl.rs:
+/Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/arrayvec.rs:
+/Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/array_string.rs:
+/Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/char.rs:
+/Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/errors.rs:
+/Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arrayvec-0.7.4/src/utils.rs:

@@ -1,0 +1,12 @@
+/Users/nicola/Workspace/Rust/vox/target/debug/deps/libdispatch-72caca0ebc7023ee.rmeta: /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/lib.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/ffi.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/group.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/queue.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/once.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/sem.rs
+
+/Users/nicola/Workspace/Rust/vox/target/debug/deps/libdispatch-72caca0ebc7023ee.rlib: /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/lib.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/ffi.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/group.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/queue.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/once.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/sem.rs
+
+/Users/nicola/Workspace/Rust/vox/target/debug/deps/dispatch-72caca0ebc7023ee.d: /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/lib.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/ffi.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/group.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/queue.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/once.rs /Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/sem.rs
+
+/Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/lib.rs:
+/Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/ffi.rs:
+/Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/group.rs:
+/Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/queue.rs:
+/Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/once.rs:
+/Users/nicola/.cargo/registry/src/index.crates.io-6f17d22bba15001f/dispatch-0.2.0/src/sem.rs:

@@ -1,0 +1,1 @@
+/Users/nicola/Workspace/Rust/vox/target/debug/libvox_core.dylib: /Users/nicola/Workspace/Rust/vox/vox-core/src/camera.rs /Users/nicola/Workspace/Rust/vox/vox-core/src/happy-tree.png /Users/nicola/Workspace/Rust/vox/vox-core/src/lib.rs /Users/nicola/Workspace/Rust/vox/vox-core/src/shader.wgsl /Users/nicola/Workspace/Rust/vox/vox-core/src/texture.rs
