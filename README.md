@@ -1,2 +1,2 @@
-Desktop Build -> cargo build || 
-Web Build -> wasm-pack build
+My first attempt at a Rust project.
+Features basic 3d instanced rendering with texturing and a moving camera
