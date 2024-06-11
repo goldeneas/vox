@@ -1,6 +1,8 @@
 mod render;
 mod camera;
+mod resources;
 
+use render::model::ModelVertex;
 use render::texture::*;
 use render::vertex::*;
 use render::instance::*;
@@ -36,8 +38,6 @@ const INDICES: &[u16] = &[
 ];
 
 struct State<'a> {
-    num_indices: u32,
-
     depth_texture: Texture,
 
     instances: Vec<Instance>,
@@ -55,8 +55,6 @@ struct State<'a> {
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
     render_pipeline: wgpu::RenderPipeline,
-    vertex_buffer: wgpu::Buffer,
-    index_buffer: wgpu::Buffer,
     diffuse_bind_group: wgpu::BindGroup,
 
     // unsafe reference to window
@@ -67,8 +65,6 @@ impl<'a> State<'a> {
     // async needed for some wgpu code
     async fn new(window: &'a Window) -> State<'a> {
         let size = window.inner_size();
-        
-        let num_indices = INDICES.len() as u32;
 
         // wgpu instance used for surfaces and adapters
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -220,7 +216,7 @@ impl<'a> State<'a> {
                 module: &shader,
                 entry_point: "vs_main",
                 buffers: &[
-                    Vertex::desc(),
+                    ModelVertex::desc(),
                     InstanceRaw::desc(),
                 ],
                 compilation_options: Default::default(),
@@ -259,18 +255,6 @@ impl<'a> State<'a> {
             multiview: None
         });
 
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(VERTICES),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
-
-        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(INDICES),
-            usage: wgpu::BufferUsages::INDEX,
-        });
-
         surface.configure(&device, &config);
 
         let instances = (0..INSTANCES_PER_ROW).flat_map(|z| {
@@ -299,7 +283,6 @@ impl<'a> State<'a> {
         let depth_texture = Texture::create_depth_texture(&device, &config, "depth_texture");
 
         Self {
-            num_indices,
             depth_texture,
             instances,
             instance_buffer,
@@ -315,8 +298,6 @@ impl<'a> State<'a> {
             config,
             size,
             render_pipeline,
-            vertex_buffer,
-            index_buffer,
             diffuse_bind_group,
         }
     }
