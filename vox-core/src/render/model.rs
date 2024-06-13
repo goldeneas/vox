@@ -1,4 +1,5 @@
 use bytemuck::{Pod, Zeroable};
+use wgpu::util::DeviceExt;
 
 use crate::{ Vertex, Texture };
 
@@ -17,7 +18,7 @@ pub struct Mesh {
     pub name: String,
     pub index_buffer: wgpu::Buffer,
     pub vertex_buffer: wgpu::Buffer,
-    pub num_elements: u32,
+    pub num_indices: u32,
     pub material_id: usize,
 }
 
@@ -52,5 +53,113 @@ impl Vertex for ModelVertex {
                 },
             ]
         }
+    }
+}
+
+impl Model {
+    pub fn load(file_name: &str, device: &wgpu::Device, queue: &wgpu::Queue) -> anyhow::Result<Model> {
+        let (models, materials_opt) = tobj::load_obj(file_name, &tobj::GPU_LOAD_OPTIONS)
+            .expect("Could not load file OBJ file");
+
+        let materials = materials_opt?
+            .into_iter()
+            .map(|m| {
+                let diffuse_texture_name = &m.diffuse_texture.unwrap();
+                let diffuse_texture = Texture::load(diffuse_texture_name, device, queue)
+                    .unwrap();
+
+                let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                    label: None,
+                    entries: &[
+                        wgpu::BindGroupLayoutEntry {
+                            ty: wgpu::BindingType::Texture {
+                                multisampled: false,
+                                sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                                view_dimension: wgpu::TextureViewDimension::D2,
+                            },
+                            count: None,
+                            binding: 0,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
+                        },
+                        wgpu::BindGroupLayoutEntry {
+                            ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                            count: None,
+                            binding: 1,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
+                        },
+                    ]
+                });
+
+                let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: Some(diffuse_texture_name),
+                    layout: &bind_group_layout,
+                    entries: &[
+                        wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: wgpu::BindingResource::TextureView(&diffuse_texture.view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 1,
+                            resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
+                        },
+                    ]
+                });
+
+                Material {
+                    name: m.name,
+                    diffuse_texture,
+                    bind_group
+                }
+            }).collect::<Vec<_>>();
+
+        let meshes = models.into_iter()
+            .map(|m| {
+                let vertices = (0..m.mesh.positions.len() / 3)
+                    .map(|i| {
+                        let mut normals = [0.0, 0.0, 0.0];
+                        if !m.mesh.normals.is_empty() { 
+                            normals = [
+                                m.mesh.normals[i * 2],
+                                m.mesh.normals[i * 2 + 1],
+                                m.mesh.normals[i * 2 + 2],
+                            ];
+                        }
+
+                        ModelVertex {
+                            position: [
+                                m.mesh.positions[i * 3],
+                                m.mesh.positions[i * 3 + 1],
+                                m.mesh.positions[i * 3 + 2],
+                            ],
+                            tex_coords: [m.mesh.texcoords[i * 2], 1.0 - m.mesh.texcoords[i * 2 + 1]],
+                            normal: normals,
+                        }
+                    }).collect::<Vec<_>>();
+
+                let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some(&format!("{:?} Vertex Buffer", file_name)),
+                    usage: wgpu::BufferUsages::VERTEX,
+                    contents: bytemuck::cast_slice(&vertices),
+                });
+
+                let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some(&format!("{:?} Index Buffer", file_name)),
+                    usage: wgpu::BufferUsages::VERTEX,
+                    contents: bytemuck::cast_slice(&m.mesh.indices),
+                });
+
+                Mesh {
+                    name: file_name.to_string(),
+                    index_buffer,
+                    vertex_buffer,
+                    material_id: m.mesh.material_id.unwrap_or(0),
+                    num_indices: m.mesh.indices.len() as u32,
+                }
+            }).collect::<Vec<_>>();
+
+        Ok(Model {
+            meshes,
+            materials,
+        })
     }
 }
