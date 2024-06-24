@@ -1,3 +1,0 @@
-cargo:rustc-cfg=webgl
-cargo:rustc-cfg=webgpu
-cargo:rustc-cfg=wgpu_core

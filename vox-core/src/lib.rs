@@ -2,7 +2,7 @@ mod render;
 mod camera;
 mod resources;
 
-use render::model::ModelVertex;
+use render::model::*;
 use render::texture::*;
 use render::vertex::*;
 use render::instance::*;
@@ -19,23 +19,7 @@ use cgmath::prelude::*;
 use wasm_bindgen::prelude::*;
 
 const INSTANCES_PER_ROW: u32 = 10;
-const INSTANCE_DISPLACEMENT: cgmath::Vector3<f32> = cgmath::Vector3::new(INSTANCES_PER_ROW as f32 * 0.5, 0.0, INSTANCES_PER_ROW as f32 * 0.5);
-
-// counter-clockwise because we specified the front face to be Ccw in the frontface
-// tex_coords are 1 - y because wgpu's world coordinates are inverted
-const VERTICES: &[Vertex] = &[
-    Vertex { position: [-0.0868241, 0.49240386, 0.0], tex_coords: [0.4131759, 1.0 - 0.99240386] }, // A
-    Vertex { position: [-0.49513406, 0.06958647, 0.0], tex_coords: [0.0048659444, 1.0 - 0.56958647] }, // B
-    Vertex { position: [-0.21918549, -0.44939706, 0.0], tex_coords: [0.28081453, 1.0 - 0.05060294] }, // C
-    Vertex { position: [0.35966998, -0.3473291, 0.0], tex_coords: [0.85967, 1.0 - 0.1526709] }, // D
-    Vertex { position: [0.44147372, 0.2347359, 0.0], tex_coords: [0.9414737, 1.0 - 0.7347359] }, // E
-];
-
-const INDICES: &[u16] = &[
-    0, 1, 4,
-    1, 2, 4,
-    2, 3, 4,
-];
+const INSTANCE_DISPLACEMENT: f32 = 3.0;
 
 struct State<'a> {
     depth_texture: Texture,
@@ -57,7 +41,8 @@ struct State<'a> {
     render_pipeline: wgpu::RenderPipeline,
     diffuse_bind_group: wgpu::BindGroup,
 
-    // unsafe reference to window
+    cube_model: Model,
+
     window: &'a Window,
 }
 
@@ -259,7 +244,10 @@ impl<'a> State<'a> {
 
         let instances = (0..INSTANCES_PER_ROW).flat_map(|z| {
             (0..INSTANCES_PER_ROW).map(move |x| {
-                let position = cgmath::Vector3 { x: x as f32, y: 0.0, z: z as f32 } - INSTANCE_DISPLACEMENT;
+                let x = INSTANCE_DISPLACEMENT * (x as f32 - INSTANCES_PER_ROW as f32 / 2.0);
+                let z = INSTANCE_DISPLACEMENT * (z as f32 - INSTANCES_PER_ROW as f32 / 2.0);
+
+                let position = cgmath::Vector3 { x: x as f32, y: 0.0, z: z as f32 };
                 let rotation = if position.is_zero() {
                     cgmath::Quaternion::from_axis_angle(cgmath::Vector3::unit_z(), cgmath::Deg(0.0))
                 } else {
@@ -282,6 +270,9 @@ impl<'a> State<'a> {
 
         let depth_texture = Texture::create_depth_texture(&device, &config, "depth_texture");
 
+        let cube_model = Model::load("./res/cube.obj", &device, &queue)
+            .unwrap();
+
         Self {
             depth_texture,
             instances,
@@ -299,6 +290,7 @@ impl<'a> State<'a> {
             size,
             render_pipeline,
             diffuse_bind_group,
+            cube_model,
         }
     }
 
@@ -368,10 +360,8 @@ impl<'a> State<'a> {
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
             render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
-            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.draw_indexed(0..self.num_indices, 0, 0..self.instances.len() as _);
+            render_pass.draw_mesh_instanced(&self.cube_model.meshes[0], 0..self.instances.len() as u32);
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));

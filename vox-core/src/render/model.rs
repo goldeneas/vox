@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use bytemuck::{Pod, Zeroable};
 use wgpu::util::DeviceExt;
 
@@ -28,6 +30,24 @@ pub struct ModelVertex {
     pub position: [f32; 3],
     pub tex_coords: [f32; 2],
     pub normal: [f32; 3],
+}
+
+pub trait DrawModel<'b> {
+    fn draw_mesh(&mut self, mesh: &'b Mesh);
+    fn draw_mesh_instanced(&mut self, mesh: &'b Mesh, instances: Range<u32>);
+}
+
+impl<'a, 'b> DrawModel<'b> for wgpu::RenderPass<'a>
+where 'b: 'a {
+    fn draw_mesh(&mut self, mesh: &'b Mesh) {
+        self.draw_mesh_instanced(mesh, 0..1);
+    }
+
+    fn draw_mesh_instanced(&mut self, mesh: &'b Mesh, instances: Range<u32>) {
+        self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+        self.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+        self.draw_indexed(0..mesh.num_indices, 0, instances);
+    }
 }
 
 impl Vertex for ModelVertex {
@@ -144,7 +164,7 @@ impl Model {
 
                 let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some(&format!("{:?} Index Buffer", file_name)),
-                    usage: wgpu::BufferUsages::VERTEX,
+                    usage: wgpu::BufferUsages::INDEX,
                     contents: bytemuck::cast_slice(&m.mesh.indices),
                 });
 

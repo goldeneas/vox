@@ -2,6 +2,7 @@
 name = "vox-core"
 version = "0.1.0"
 edition = "2021"
+build = "build.rs"
 
 [dependencies]
 winit = { version = "0.29.5", features = ["rwh_06"] }
