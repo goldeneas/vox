@@ -1,5 +1,5 @@
 use image::GenericImageView;
-use crate::resources::load_binary;
+use crate::util::load_binary;
 
 pub struct Texture {
     pub texture: wgpu::Texture,

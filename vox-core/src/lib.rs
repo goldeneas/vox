@@ -1,5 +1,8 @@
 mod render;
 mod camera;
+mod util;
+mod entity;
+mod components;
 mod resources;
 
 use render::model::*;
@@ -9,6 +12,7 @@ use render::instance::*;
 
 use camera::{ Camera, CameraController, CameraTransform, CameraUniform };
 use log::{info, warn};
+use resources::input::KeyState;
 use wgpu::{util::DeviceExt, RenderPipelineDescriptor};
 use winit::{
     event::*, event_loop::EventLoop, keyboard::{KeyCode, PhysicalKey}, window::{Window, WindowBuilder}
@@ -39,7 +43,6 @@ struct State<'a> {
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
     render_pipeline: wgpu::RenderPipeline,
-    diffuse_bind_group: wgpu::BindGroup,
 
     cube_model: Model,
 
@@ -97,9 +100,6 @@ impl<'a> State<'a> {
 
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
 
-        let diffuse_bytes = include_bytes!("happy-tree.png");
-        let diffuse_texture = Texture::from_bytes(&device, &queue, diffuse_bytes, "happy-tree.png").unwrap();
-
         let texture_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("texture_bind_group_layout"),
             entries: &[
@@ -120,21 +120,6 @@ impl<'a> State<'a> {
                     count: None,
                 },
             ]
-        });
-
-        let diffuse_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("diffuse_bind_group"),
-            layout: &texture_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&diffuse_texture.view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
-                },
-            ],
         });
 
         let camera = Camera::new(CameraTransform {
@@ -289,7 +274,6 @@ impl<'a> State<'a> {
             config,
             size,
             render_pipeline,
-            diffuse_bind_group,
             cube_model,
         }
     }
@@ -310,7 +294,43 @@ impl<'a> State<'a> {
 
     // return true if the key has been fully processed, false otherwise
     fn input(&mut self, event: &WindowEvent) -> bool {
-        self.camera_controller.input(event)
+        match event {
+            WindowEvent::KeyboardInput {
+                event: KeyEvent {
+                    state,
+                    physical_key: PhysicalKey::Code(keycode), 
+                    ..
+                },
+                ..
+            } => {
+
+                match keycode {
+                    KeyCode::KeyW => {
+                        self.forward = KeyState::from(state);
+                        true
+                    },
+
+                    KeyCode::KeyA => {
+                        self.is_left_pressed = is_pressed;
+                        true
+                    },
+
+                    KeyCode::KeyS => {
+                        self.is_backward_pressed = is_pressed;
+                        true
+                    },
+
+                    KeyCode::KeyD => {
+                        self.is_right_pressed = is_pressed;
+                        true
+                    },
+
+                    _ => false
+                }
+            }
+
+            _ => false
+        }
     }
 
     fn update(&mut self) {
@@ -358,10 +378,8 @@ impl<'a> State<'a> {
             });
 
             render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
-            render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
             render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
-            render_pass.draw_mesh_instanced(&self.cube_model.meshes[0], 0..self.instances.len() as u32);
+            render_pass.draw_model_instanced(&self.cube_model, 0..self.instances.len() as u32, &self.camera_bind_group);
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
