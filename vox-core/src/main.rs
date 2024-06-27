@@ -1,4 +1,5 @@
 use vox_core::run;
+use bevy_ecs::prelude::*;
 
 fn main() {
     cfg_if::cfg_if! {

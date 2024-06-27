@@ -1,6 +1,9 @@
 use bytemuck::{Pod, Zeroable};
 use cgmath::{InnerSpace, SquareMatrix};
 use winit::{event::{KeyEvent, WindowEvent}, keyboard::{KeyCode, PhysicalKey}};
+use bevy_ecs::prelude::*;
+
+use crate::resources::input::InputRes;
 
 #[rustfmt::skip]
 pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
@@ -68,61 +71,12 @@ impl CameraUniform {
 
 pub struct CameraController {
     speed: f32,
-    is_forward_pressed: bool,
-    is_backward_pressed: bool,
-    is_right_pressed: bool,
-    is_left_pressed: bool,
 }
 
 impl CameraController {
     pub fn new(speed: f32) -> Self {
         Self {
             speed,
-            is_forward_pressed: false,
-            is_backward_pressed: false,
-            is_right_pressed: false,
-            is_left_pressed: false,
-        }
-    }
-
-    pub fn input(&mut self, event: &WindowEvent) -> bool {
-        match event {
-            WindowEvent::KeyboardInput {
-                event: KeyEvent {
-                    state,
-                    physical_key: PhysicalKey::Code(keycode), 
-                    ..
-                },
-                ..
-            } => {
-                let is_pressed = state.is_pressed();
-
-                match keycode {
-                    KeyCode::KeyW => {
-                        self.is_forward_pressed = is_pressed;
-                        true
-                    },
-
-                    KeyCode::KeyA => {
-                        self.is_left_pressed = is_pressed;
-                        true
-                    },
-
-                    KeyCode::KeyS => {
-                        self.is_backward_pressed = is_pressed;
-                        true
-                    },
-
-                    KeyCode::KeyD => {
-                        self.is_right_pressed = is_pressed;
-                        true
-                    },
-
-                    _ => false
-                }
-            }
-
-            _ => false
         }
     }
 

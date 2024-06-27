@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use winit::event::ElementState;
 
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Debug)]
 pub struct InputRes {
     pub forward: KeyState,
     pub right: KeyState,
@@ -9,7 +9,7 @@ pub struct InputRes {
     pub backward: KeyState,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct KeyState {
     pub is_pressed: bool,
     pub is_released: bool,

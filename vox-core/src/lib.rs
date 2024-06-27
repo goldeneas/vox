@@ -5,6 +5,8 @@ mod entity;
 mod components;
 mod resources;
 
+use bevy_ecs::world;
+use bevy_ecs::world::World;
 use render::model::*;
 use render::texture::*;
 use render::vertex::*;
@@ -12,6 +14,7 @@ use render::instance::*;
 
 use camera::{ Camera, CameraController, CameraTransform, CameraUniform };
 use log::{info, warn};
+use resources::input::InputRes;
 use resources::input::KeyState;
 use wgpu::{util::DeviceExt, RenderPipelineDescriptor};
 use winit::{
@@ -47,6 +50,8 @@ struct State<'a> {
     cube_model: Model,
 
     window: &'a Window,
+
+    world: World,
 }
 
 impl<'a> State<'a> {
@@ -258,6 +263,9 @@ impl<'a> State<'a> {
         let cube_model = Model::load("./res/cube.obj", &device, &queue)
             .unwrap();
 
+        let mut world = World::new();
+        world.init_resource::<InputRes>();
+
         Self {
             depth_texture,
             instances,
@@ -275,6 +283,7 @@ impl<'a> State<'a> {
             size,
             render_pipeline,
             cube_model,
+            world,
         }
     }
 
@@ -294,6 +303,9 @@ impl<'a> State<'a> {
 
     // return true if the key has been fully processed, false otherwise
     fn input(&mut self, event: &WindowEvent) -> bool {
+        let input_res = &mut self.world.get_resource_mut::<InputRes>()
+            .expect("Could not find input resource in world!");
+
         match event {
             WindowEvent::KeyboardInput {
                 event: KeyEvent {
@@ -306,22 +318,22 @@ impl<'a> State<'a> {
 
                 match keycode {
                     KeyCode::KeyW => {
-                        self.forward = KeyState::from(state);
+                        input_res.forward = KeyState::from(state);
                         true
                     },
 
                     KeyCode::KeyA => {
-                        self.is_left_pressed = is_pressed;
+                        input_res.left = KeyState::from(state);
                         true
                     },
 
                     KeyCode::KeyS => {
-                        self.is_backward_pressed = is_pressed;
+                        input_res.backward = KeyState::from(state);
                         true
                     },
 
                     KeyCode::KeyD => {
-                        self.is_right_pressed = is_pressed;
+                        input_res.right = KeyState::from(state);
                         true
                     },
 
