@@ -30,11 +30,11 @@ pub struct CameraUniform {
 }
 
 pub struct CameraController {
-    speed: f32,
+    pub speed: f32,
 }
 
 pub struct Camera {
-    uniform: CameraUniform,
+    pub uniform: CameraUniform,
     transform: CameraTransform,
     controller: CameraController,
 }
@@ -50,12 +50,9 @@ impl Camera {
         }
     }
 
-    pub fn update_controller(&mut self) {
-
-    }
-
-    pub fn update_uniform(&mut self) -> [[f32; 4]; 4] {
-        self.uniform.build_view_proj(self.transform);
+    pub fn update(&mut self, world: &World) {
+        self.controller.update(&mut self.transform, world);
+        self.uniform.build_view_proj(&self.transform);
     }
 }
 
@@ -85,31 +82,30 @@ impl CameraUniform {
 }
 
 impl CameraController {
-    pub fn update(&self, camera: &mut Camera) {
-        let camera_transform = &mut camera.transform;
-
+    pub fn update(&self, camera_transform: &mut CameraTransform, world: &World) {
         let forward = camera_transform.target - camera_transform.position;
         let forward_norm = forward.normalize();
         let forward_mag = forward.magnitude();
 
-        let input_res =
+        let input_res = world.get_resource::<InputRes>()
+            .unwrap();
 
-        if self.is_forward_pressed && forward_mag > self.speed {
+        if input_res.forward.is_pressed && forward_mag > self.speed {
             camera_transform.position += forward_norm * self.speed;
         }
 
-        if self.is_backward_pressed {
+        if input_res.backward.is_pressed {
             camera_transform.position -= forward_norm * self.speed;
         }
 
         let up_norm = camera_transform.up.normalize();
         let right_norm = forward_norm.cross(up_norm);
 
-        if self.is_right_pressed {
+        if input_res.right.is_pressed {
             camera_transform.position += right_norm * self.speed; 
         }
 
-        if self.is_left_pressed {
+        if input_res.left.is_pressed {
             camera_transform.position -= right_norm * self.speed;
         }
     }

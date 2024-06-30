@@ -35,10 +35,8 @@ struct State<'a> {
     instance_buffer: wgpu::Buffer,
 
     camera: Camera,
-    camera_uniform: CameraUniform,
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
-    camera_controller: CameraController,
         
     surface: wgpu::Surface<'a>,
     device: wgpu::Device,
@@ -135,14 +133,13 @@ impl<'a> State<'a> {
             fovy: 45.0,
             znear: 0.1,
             zfar: 100.0,
+        }, CameraController {
+            speed: 0.1,
         });
-
-        let mut camera_uniform = CameraUniform::new();
-        camera_uniform.update_view_proj(&camera);
 
         let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Camera Buffer"),
-            contents: bytemuck::cast_slice(&[camera_uniform]),
+            contents: bytemuck::cast_slice(&[camera.uniform]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -172,8 +169,6 @@ impl<'a> State<'a> {
                 },
             ],
         });
-
-        let camera_controller = CameraController::new(0.2);
 
         let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
@@ -273,8 +268,6 @@ impl<'a> State<'a> {
             camera,
             camera_bind_group,
             camera_buffer,
-            camera_uniform,
-            camera_controller,
             window,
             surface,
             device,
@@ -304,7 +297,7 @@ impl<'a> State<'a> {
     // return true if the key has been fully processed, false otherwise
     fn input(&mut self, event: &WindowEvent) -> bool {
         let input_res = &mut self.world.get_resource_mut::<InputRes>()
-            .expect("Could not find input resource in world!");
+            .unwrap();
 
         match event {
             WindowEvent::KeyboardInput {
@@ -346,9 +339,8 @@ impl<'a> State<'a> {
     }
 
     fn update(&mut self) {
-        self.camera_controller.update(&mut self.camera);
-        self.camera_uniform.update_view_proj(&self.camera);
-        self.queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[self.camera_uniform]));
+        self.camera.update(&self.world);
+        self.queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[self.camera.uniform]));
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
