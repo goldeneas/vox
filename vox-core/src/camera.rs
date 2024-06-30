@@ -14,7 +14,7 @@ pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
 );
 
 pub struct CameraTransform {
-    pub eye: cgmath::Point3<f32>,
+    pub position: cgmath::Point3<f32>,
     pub target: cgmath::Point3<f32>,
     pub up: cgmath::Vector3<f32>,
     pub aspect: f32,
@@ -23,87 +23,94 @@ pub struct CameraTransform {
     pub zfar: f32,
 }
 
-pub struct Camera {
-    transform: CameraTransform,
-}
-
-impl Camera {
-    pub fn new(camera_transform: CameraTransform) -> Self {
-        Self {
-            transform: camera_transform
-        }
-    }
-
-    pub fn build_view_projection_matrix(&self) -> cgmath::Matrix4<f32> {
-        let view = cgmath::Matrix4::look_at_rh(
-            self.transform.eye,
-            self.transform.target,
-            self.transform.up
-        );
-
-        let proj = cgmath::perspective(
-            cgmath::Deg(self.transform.fovy),
-            self.transform.aspect,
-            self.transform.znear,
-            self.transform.zfar
-        );
-
-        return OPENGL_TO_WGPU_MATRIX * proj * view;
-    }
-}
-
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Pod, Zeroable)]
 pub struct CameraUniform {
-    // 4x4 Matrix
     view_proj: [[f32; 4]; 4],
-}
-
-impl CameraUniform {
-    pub fn new() -> Self {
-        Self { view_proj: cgmath::Matrix4::identity().into(), }
-    }
-
-    pub fn update_view_proj(&mut self, camera: &Camera) {
-        self.view_proj = camera.build_view_projection_matrix().into();
-    }
 }
 
 pub struct CameraController {
     speed: f32,
 }
 
-impl CameraController {
-    pub fn new(speed: f32) -> Self {
+pub struct Camera {
+    uniform: CameraUniform,
+    transform: CameraTransform,
+    controller: CameraController,
+}
+
+impl Camera {
+    pub fn new(transform: CameraTransform, controller: CameraController) -> Self {
+        let uniform = CameraUniform::new();
+
         Self {
-            speed,
+            transform,
+            controller,
+            uniform,
         }
     }
 
+    pub fn update_controller(&mut self) {
+
+    }
+
+    pub fn update_uniform(&mut self) -> [[f32; 4]; 4] {
+        self.uniform.build_view_proj(self.transform);
+    }
+}
+
+impl CameraUniform {
+    pub fn new() -> Self {
+        Self {
+            view_proj: cgmath::Matrix4::identity().into(),
+        }
+    }
+
+    pub fn build_view_proj(&mut self, camera_transform: &CameraTransform) {
+        let view = cgmath::Matrix4::look_at_rh(
+            camera_transform.position,
+            camera_transform.target,
+            camera_transform.up
+        );
+
+        let proj = cgmath::perspective(
+            cgmath::Deg(camera_transform.fovy),
+            camera_transform.aspect,
+            camera_transform.znear,
+            camera_transform.zfar
+        );
+
+        self.view_proj = (OPENGL_TO_WGPU_MATRIX * proj * view).into();
+    }
+}
+
+impl CameraController {
     pub fn update(&self, camera: &mut Camera) {
         let camera_transform = &mut camera.transform;
 
-        let forward = camera_transform.target - camera_transform.eye;
+        let forward = camera_transform.target - camera_transform.position;
         let forward_norm = forward.normalize();
         let forward_mag = forward.magnitude();
 
+        let input_res =
+
         if self.is_forward_pressed && forward_mag > self.speed {
-            camera_transform.eye += forward_norm * self.speed;
+            camera_transform.position += forward_norm * self.speed;
         }
 
         if self.is_backward_pressed {
-            camera_transform.eye -= forward_norm * self.speed;
+            camera_transform.position -= forward_norm * self.speed;
         }
 
         let up_norm = camera_transform.up.normalize();
         let right_norm = forward_norm.cross(up_norm);
 
         if self.is_right_pressed {
-            camera_transform.eye += right_norm * self.speed; 
+            camera_transform.position += right_norm * self.speed; 
         }
 
         if self.is_left_pressed {
-            camera_transform.eye -= right_norm * self.speed;
+            camera_transform.position -= right_norm * self.speed;
         }
     }
 }
