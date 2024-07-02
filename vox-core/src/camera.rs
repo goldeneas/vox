@@ -1,6 +1,5 @@
 use bytemuck::{Pod, Zeroable};
 use cgmath::{InnerSpace, SquareMatrix};
-use winit::{event::{KeyEvent, WindowEvent}, keyboard::{KeyCode, PhysicalKey}};
 use bevy_ecs::prelude::*;
 
 use crate::resources::input::InputRes;

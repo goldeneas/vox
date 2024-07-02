@@ -5,21 +5,24 @@ mod entity;
 mod components;
 mod resources;
 
-use bevy_ecs::world;
+use std::sync::Arc;
+
 use bevy_ecs::world::World;
 use render::model::*;
 use render::texture::*;
 use render::vertex::*;
 use render::instance::*;
 
-use camera::{ Camera, CameraController, CameraTransform, CameraUniform };
-use log::{info, warn};
+use camera::{ Camera, CameraController, CameraTransform };
+use log::warn;
 use resources::input::InputRes;
 use resources::input::KeyState;
 use wgpu::{util::DeviceExt, RenderPipelineDescriptor};
 use winit::application::ApplicationHandler;
+use winit::event_loop::ActiveEventLoop;
 use winit::event_loop::ControlFlow;
 use winit::window::WindowAttributes;
+use winit::window::WindowId;
 use winit::{
     event::*, event_loop::EventLoop, keyboard::{KeyCode, PhysicalKey}, window::Window
 };
@@ -31,7 +34,7 @@ use wasm_bindgen::prelude::*;
 const INSTANCES_PER_ROW: u32 = 10;
 const INSTANCE_DISPLACEMENT: f32 = 3.0;
 
-struct App<'a> {
+struct AppState<'a> {
     depth_texture: Texture,
 
     instances: Vec<Instance>,
@@ -50,57 +53,12 @@ struct App<'a> {
 
     cube_model: Model,
 
-    window: Option<Window>,
-
     world: World,
 }
 
-impl<'a> ApplicationHandler for App<'a> {
-    fn window_event(
-        &mut self,
-        event_loop: &winit::event_loop::ActiveEventLoop,
-        window_id: winit::window::WindowId,
-        event: WindowEvent,) {
-        if self.window.id() != window_id {
-            return;
-        }
-
-        match event {
-            WindowEvent::CloseRequested | WindowEvent::KeyboardInput {
-                event: KeyEvent {
-                    state: ElementState::Pressed,
-                    physical_key: PhysicalKey::Code(KeyCode::Escape),
-                    ..
-                },
-                ..
-            } => event_loop.exit(),
-            WindowEvent::Resized(physical_size) => {
-                self.resize(physical_size);
-            },
-            WindowEvent::RedrawRequested => {
-                self.update();
-                match self.render() {
-                    Ok(_) => {}
-                    Err(wgpu::SurfaceError::Lost) => self.resize(self.size),
-                    Err(wgpu::SurfaceError::OutOfMemory) => event_loop.exit(),
-                    Err(e) => warn!("{:?}", e),
-                }
-            },
-            _ => {}
-        }
-    }
-
-    fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        self.window = event_loop.create_window(WindowAttributes::default())
-            .unwrap();
-
-        self.start();
-    }
-}
-
-impl<'a> App<'a> {
-    async fn start(&mut self) {
-        self.size = self.window.inner_size();
+impl<'a> AppState<'a> {
+    async fn new(window: Arc<Window>) -> Self {
+        let size = window.inner_size();
 
         // wgpu instance used for surfaces and adapters
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -111,16 +69,16 @@ impl<'a> App<'a> {
             ..Default::default()
         });
 
-        self.surface = instance.create_surface(&self.window)
+        let surface = instance.create_surface(window)
             .unwrap();
 
         let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::default(),
-            compatible_surface: Some(&self.surface),
+            compatible_surface: Some(&surface),
             force_fallback_adapter: false,
         }).await.unwrap();
 
-        (self.device, self.queue) = adapter.request_device(&wgpu::DeviceDescriptor {
+        let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor {
             required_features: wgpu::Features::empty(),
             #[cfg(not(target_arch="wasm32"))]
             required_limits: wgpu::Limits::default(),
@@ -129,26 +87,26 @@ impl<'a> App<'a> {
             label: None,
         }, None).await.unwrap();
 
-        let surface_caps = self.surface.get_capabilities(&adapter);
+        let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps.formats.iter()
             .find(|f| f.is_srgb())
             .copied()
             .unwrap_or(surface_caps.formats[0]);
 
-        self.config = wgpu::SurfaceConfiguration {
+        let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
-            width: self.size.width,
-            height: self.size.height,
+            width: size.width,
+            height: size.height,
             present_mode: surface_caps.present_modes[0],
             alpha_mode: surface_caps.alpha_modes[0],
             view_formats: vec![],
             desired_maximum_frame_latency: 2,
         };
 
-        let shader = self.device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
+        let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
 
-        let texture_bind_group_layout = self.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        let texture_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("texture_bind_group_layout"),
             entries: &[
                 wgpu::BindGroupLayoutEntry {
@@ -170,11 +128,11 @@ impl<'a> App<'a> {
             ]
         });
 
-        self.camera = Camera::new(CameraTransform {
+        let camera = Camera::new(CameraTransform {
             position: (0.0, 1.0, 2.0).into(),
             target: (0.0, 0.0, 0.0).into(),
             up: cgmath::Vector3::unit_y(),
-            aspect: self.config.width as f32 / self.config.height as f32,
+            aspect: config.width as f32 / config.height as f32,
             fovy: 45.0,
             znear: 0.1,
             zfar: 100.0,
@@ -182,13 +140,13 @@ impl<'a> App<'a> {
             speed: 0.1,
         });
 
-        self.camera_buffer = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Camera Buffer"),
-            contents: bytemuck::cast_slice(&[self.camera.uniform]),
+            contents: bytemuck::cast_slice(&[camera.uniform]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
-        let camera_bind_group_layout = self.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        let camera_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("camera_bind_group_layout"),
             entries: &[
                 wgpu::BindGroupLayoutEntry {
@@ -204,18 +162,18 @@ impl<'a> App<'a> {
             ],
         });
 
-        self.camera_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("camera_bind_group"),
             layout: &camera_bind_group_layout,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: self.camera_buffer.as_entire_binding(),
+                    resource: camera_buffer.as_entire_binding(),
                 },
             ],
         });
 
-        let render_pipeline_layout = self.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
             bind_group_layouts: &[
                 &texture_bind_group_layout,
@@ -224,7 +182,7 @@ impl<'a> App<'a> {
             push_constant_ranges: &[],
         });
 
-        self.render_pipeline = self.device.create_render_pipeline(&RenderPipelineDescriptor {
+        let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
@@ -240,7 +198,7 @@ impl<'a> App<'a> {
                 module: &shader,
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState {
-                    format: self.config.format,
+                    format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
@@ -270,9 +228,9 @@ impl<'a> App<'a> {
             multiview: None
         });
 
-        self.surface.configure(&self.device, &self.config);
+        surface.configure(&device, &config);
 
-        self.instances = (0..INSTANCES_PER_ROW).flat_map(|z| {
+        let instances = (0..INSTANCES_PER_ROW).flat_map(|z| {
             (0..INSTANCES_PER_ROW).map(move |x| {
                 let x = INSTANCE_DISPLACEMENT * (x as f32 - INSTANCES_PER_ROW as f32 / 2.0);
                 let z = INSTANCE_DISPLACEMENT * (z as f32 - INSTANCES_PER_ROW as f32 / 2.0);
@@ -291,90 +249,145 @@ impl<'a> App<'a> {
             })
         }).collect::<Vec<_>>();
 
-        let instance_data = self.instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
-        self.instance_buffer = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        let instance_data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
+        let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Instance Buffer"),
             contents: bytemuck::cast_slice(&instance_data),
             usage: wgpu::BufferUsages::VERTEX,
         });
 
-        self.depth_texture = Texture::create_depth_texture(&self.device, &self.config, "depth_texture");
+        let depth_texture = Texture::create_depth_texture(&device, &config, "depth_texture");
 
-        self.cube_model = Model::load("./res/cube.obj", &self.device, &self.queue)
+        let cube_model = Model::load("./res/cube.obj", &device, &queue)
             .unwrap();
 
-        self.world = World::new();
-        self.world.init_resource::<InputRes>();
-    }
+        let mut world = World::new();
+        world.init_resource::<InputRes>();
 
-    pub fn window(&self) -> &Window {
-        return &self.window;
-    }
-
-    fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
-        if new_size.width > 0 && new_size.height > 0 {
-            self.size = new_size;
-            self.config.width = new_size.width;
-            self.config.height = new_size.height;
-            self.depth_texture = Texture::create_depth_texture(&self.device, &self.config, "depth_texture");
-            self.surface.configure(&self.device, &self.config);
+        Self {
+            depth_texture,
+            instances,
+            instance_buffer,
+            camera,
+            camera_bind_group,
+            camera_buffer,
+            surface,
+            device,
+            queue,
+            config,
+            size,
+            render_pipeline,
+            cube_model,
+            world,
         }
     }
+}
 
-    // return true if the key has been fully processed, false otherwise
-    fn input(&mut self, event: &WindowEvent) -> bool {
-        let input_res = &mut self.world.get_resource_mut::<InputRes>()
-            .unwrap();
+#[derive(Default)]
+struct App<'a> {
+    window: Option<Arc<Window>>,
+    state: Option<AppState<'a>>,
+}
+
+impl<'a> ApplicationHandler for App<'a> {
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        window_id: WindowId,
+        event: WindowEvent) {
+        if self.window.as_ref().unwrap().id() != window_id {
+            return;
+        }
 
         match event {
-            WindowEvent::KeyboardInput {
+            WindowEvent::CloseRequested | WindowEvent::KeyboardInput {
                 event: KeyEvent {
-                    state,
-                    physical_key: PhysicalKey::Code(keycode), 
+                    state: ElementState::Pressed,
+                    physical_key: PhysicalKey::Code(KeyCode::Escape),
                     ..
                 },
                 ..
-            } => {
-
-                match keycode {
-                    KeyCode::KeyW => {
-                        input_res.forward = KeyState::from(state);
-                        true
-                    },
-
-                    KeyCode::KeyA => {
-                        input_res.left = KeyState::from(state);
-                        true
-                    },
-
-                    KeyCode::KeyS => {
-                        input_res.backward = KeyState::from(state);
-                        true
-                    },
-
-                    KeyCode::KeyD => {
-                        input_res.right = KeyState::from(state);
-                        true
-                    },
-
-                    _ => false
+            } => event_loop.exit(),
+            WindowEvent::Resized(physical_size) => {
+                self.resize(physical_size);
+            },
+            WindowEvent::RedrawRequested => {
+                self.update();
+                match self.render() {
+                    Ok(_) => {}
+                    Err(wgpu::SurfaceError::Lost) => self.resize(self.state.as_ref().unwrap().size),
+                    Err(wgpu::SurfaceError::OutOfMemory) => event_loop.exit(),
+                    Err(e) => warn!("{:?}", e),
                 }
-            }
+            },
+            WindowEvent::KeyboardInput {
+                event: KeyEvent {
+                    state: key_state,
+                    physical_key: PhysicalKey::Code(keycode),
+                    ..
+                },
+                ..
+            } => self.input(&keycode, &key_state),
+            _ => {}
+        }
+    }
 
-            _ => false
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        if self.window.is_some() {
+            return;
+        }
+
+        let window = Arc::new(event_loop.create_window(WindowAttributes::default()).unwrap());
+        self.window = Some(window.clone());
+
+        let state = pollster::block_on(AppState::new(window.clone()));
+        self.state = Some(state);
+    }
+
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        let window = self.window.as_ref().unwrap();
+        window.request_redraw();
+    }
+}
+
+impl<'a> App<'a> {
+    fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+        if new_size.width > 0 && new_size.height > 0 {
+            let state = self.state.as_mut().unwrap();
+            state.size = new_size;
+            state.config.width = new_size.width;
+            state.config.height = new_size.height;
+            state.depth_texture = Texture::create_depth_texture(&state.device, &state.config, "depth_texture");
+            state.surface.configure(&state.device, &state.config);
+        }
+    }
+
+    fn input(&mut self, keycode: &KeyCode, key_state: &ElementState) {
+        let state = self.state.as_mut().unwrap();
+        let input_res = &mut state.world.get_resource_mut::<InputRes>()
+            .unwrap();
+
+        match keycode {
+            KeyCode::KeyW => input_res.forward = KeyState::from(key_state),
+            KeyCode::KeyA => input_res.left = KeyState::from(key_state),
+            KeyCode::KeyS => input_res.backward = KeyState::from(key_state),
+            KeyCode::KeyD => input_res.right = KeyState::from(key_state),
+            _ => {},
         }
     }
 
     fn update(&mut self) {
-        self.camera.update(&self.world);
-        self.queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[self.camera.uniform]));
+        let state = self.state.as_mut().unwrap();
+        state.camera.update(&state.world);
+        state.queue.write_buffer(&state.camera_buffer, 0, bytemuck::cast_slice(&[state.camera.uniform]));
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-        let output = self.surface.get_current_texture()?;
+        let state = self.state.as_ref().unwrap();
+        let output = state.surface.get_current_texture()?;
         let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
 
-        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        let mut encoder = state.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Render Encoder"),
         });
 
@@ -397,7 +410,7 @@ impl<'a> App<'a> {
                     },
                 })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &self.depth_texture.view,
+                    view: &state.depth_texture.view,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(1.0),
                         store: wgpu::StoreOp::Store,
@@ -408,12 +421,12 @@ impl<'a> App<'a> {
                 timestamp_writes: None,
             });
 
-            render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
-            render_pass.draw_model_instanced(&self.cube_model, 0..self.instances.len() as u32, &self.camera_bind_group);
+            render_pass.set_pipeline(&state.render_pipeline);
+            render_pass.set_vertex_buffer(1, state.instance_buffer.slice(..));
+            render_pass.draw_model_instanced(&state.cube_model, 0..state.instances.len() as u32, &state.camera_bind_group);
         }
 
-        self.queue.submit(std::iter::once(encoder.finish()));
+        state.queue.submit(std::iter::once(encoder.finish()));
         output.present();
 
         return Ok(());
@@ -450,5 +463,6 @@ pub async fn run() {
         builder = builder.with_canvas(Some(canvas));
     }
 
-    let mut app = App::new(&window).await;
+    let mut app = App::default();
+    let _ = event_loop.run_app(&mut app);
 }
