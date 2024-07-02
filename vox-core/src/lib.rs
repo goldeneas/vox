@@ -340,7 +340,12 @@ impl<'a> ApplicationHandler for App<'a> {
         let window = Arc::new(event_loop.create_window(WindowAttributes::default()).unwrap());
         self.window = Some(window.clone());
 
+        #[cfg(not(target_arch = "wasm32"))]
         let state = pollster::block_on(AppState::new(window.clone()));
+
+        #[cfg(target_arch = "wasm32")]
+        let state = wasm_bindgen_futures::spawn_local(AppState::new(window.clone()));
+
         self.state = Some(state);
     }
 
@@ -433,7 +438,7 @@ impl<'a> App<'a> {
     }
 }
 
-pub async fn run() {
+pub fn run() {
     // set up logging
     // let javascript console print messages if running on web
     cfg_if::cfg_if! {
