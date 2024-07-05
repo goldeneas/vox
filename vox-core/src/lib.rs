@@ -17,6 +17,7 @@ use camera::{ Camera, CameraController, CameraTransform };
 use log::warn;
 use resources::input::InputRes;
 use resources::input::KeyState;
+use wgpu::PipelineCompilationOptions;
 use wgpu::{util::DeviceExt, RenderPipelineDescriptor};
 use winit::application::ApplicationHandler;
 use winit::event_loop::ActiveEventLoop;
@@ -192,7 +193,7 @@ impl<'a> AppState<'a> {
                     ModelVertex::desc(),
                     InstanceRaw::desc(),
                 ],
-                compilation_options: Default::default(),
+                compilation_options: PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -202,7 +203,7 @@ impl<'a> AppState<'a> {
                     blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
-                compilation_options: Default::default(),
+                compilation_options: PipelineCompilationOptions::default(),
             }),
             primitive : wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
@@ -349,6 +350,7 @@ impl<'a> ApplicationHandler for App<'a> {
         self.state = Some(state);
     }
 
+    // TODO: Calling window.request_redraw here might not be good
     fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
         let window = self.window.as_ref().unwrap();
         window.request_redraw();
@@ -439,8 +441,6 @@ impl<'a> App<'a> {
 }
 
 pub fn run() {
-    // set up logging
-    // let javascript console print messages if running on web
     cfg_if::cfg_if! {
         if #[cfg(target_arch="wasm32")] {
             std::panic::set_hook(Box::new(console_error_panic_hook::hook));
