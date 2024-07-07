@@ -1,5 +1,5 @@
 use glyphon::{Attrs, Buffer, Cache, Color, FontSystem, Metrics, Shaping, SwashCache, TextArea, TextAtlas, TextBounds, TextRenderer, Viewport};
-use wgpu::{Device, MultisampleState, Queue, RenderPass, TextureFormat};
+use wgpu::{Device, MultisampleState, Queue, RenderPass};
 use crate::Texture;
 
 pub struct GlyphonRenderer<'a> {
@@ -13,23 +13,23 @@ pub struct GlyphonRenderer<'a> {
 
 struct GlyphonLabel<'a> {
     buffer: Buffer,
-    descriptor: &'a GlyphonLabelDescriptor<'a>,
+    descriptor: GlyphonLabelDescriptor<'a>,
 }
 
 pub struct GlyphonLabelDescriptor<'a> {
-    x: f32,
-    y: f32,
-    width: f32,
-    height: f32,
-    scale: f32,
-    text: &'a str,
-    attributes: Attrs<'a>,
-    shaping: Shaping,
-    metrics: Metrics,
+    pub left: f32,
+    pub top: f32,
+    pub width: f32,
+    pub height: f32,
+    pub scale: f32,
+    pub text: &'a str,
+    pub attributes: Attrs<'a>,
+    pub shaping: Shaping,
+    pub metrics: Metrics,
 }
 
 impl<'a> GlyphonLabel<'a> {
-    fn new(renderer: &mut GlyphonRenderer, descriptor: &'a GlyphonLabelDescriptor) -> Self {
+    fn new(renderer: &mut GlyphonRenderer, descriptor: GlyphonLabelDescriptor<'a>) -> Self {
         let mut buffer = Buffer::new(&mut renderer.font_system, descriptor.metrics);
         buffer.set_size(&mut renderer.font_system,
             descriptor.width,
@@ -50,11 +50,11 @@ impl<'a> GlyphonLabel<'a> {
     fn get_area(&self) -> TextArea {
         TextArea {
             buffer: &self.buffer,
-            top: self.descriptor.y,
-            left: self.descriptor.x,
+            top: self.descriptor.top,
+            left: self.descriptor.left,
             scale: self.descriptor.scale,
             bounds: TextBounds::default(),
-            default_color: Color::rgba(255, 255, 255, 255),
+            default_color: Color::rgb(255, 255, 255),
         }
     }
 }
@@ -102,10 +102,8 @@ impl<'a> GlyphonRenderer<'a> {
             .expect("Could not draw GlyphonRenderer");
     }
 
-    pub fn add_label(&mut self, descriptor: &'a GlyphonLabelDescriptor) -> &mut Self {
+    pub fn add_label(&mut self, descriptor: GlyphonLabelDescriptor<'a>) {
         let label = GlyphonLabel::new(self, descriptor);
         self.labels.push(label);
-
-        self
     }
 }

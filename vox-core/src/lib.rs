@@ -8,8 +8,12 @@ mod resources;
 use std::sync::Arc;
 
 use bevy_ecs::world::World;
+use glyphon::Attrs;
+use glyphon::Family;
+use glyphon::Metrics;
 use glyphon::Resolution;
 use render::model::*;
+use render::text::GlyphonLabelDescriptor;
 use render::text::GlyphonRenderer;
 use render::texture::*;
 use render::vertex::*;
@@ -411,41 +415,57 @@ impl<'a> App<'a> {
             label: Some("Render Encoder"),
         });
 
+       // {
+       //     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+       //         label: Some("Render Pass"),
+       //         // this is what @location(0) in the fragment shader target
+       //         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+       //             view: &view,
+       //             resolve_target: None,
+       //             ops: wgpu::Operations {
+       //                 load: wgpu::LoadOp::Clear(wgpu::Color {
+       //                     r: 0.1,
+       //                     g: 0.2,
+       //                     b: 0.3,
+       //                     a: 1.0,
+       //                 }),
+
+       //                 store: wgpu::StoreOp::Store,
+       //             },
+       //         })],
+       //         depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+       //             view: &state.depth_texture.view,
+       //             depth_ops: Some(wgpu::Operations {
+       //                 load: wgpu::LoadOp::Clear(1.0),
+       //                 store: wgpu::StoreOp::Store,
+       //             }),
+       //             stencil_ops: None,
+       //         }),
+       //         occlusion_query_set: None,
+       //         timestamp_writes: None,
+       //     });
+
+       //     render_pass.set_pipeline(&state.render_pipeline);
+       //     render_pass.set_vertex_buffer(1, state.instance_buffer.slice(..));
+       //     render_pass.draw_model_instanced(&state.cube_model, 0..state.instances.len() as u32, &state.camera_bind_group);
+       // }
         {
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
-                // this is what @location(0) in the fragment shader target
+            let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.1,
-                            g: 0.2,
-                            b: 0.3,
-                            a: 1.0,
-                        }),
-
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                         store: wgpu::StoreOp::Store,
                     },
                 })],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &state.depth_texture.view,
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.0),
-                        store: wgpu::StoreOp::Store,
-                    }),
-                    stencil_ops: None,
-                }),
-                occlusion_query_set: None,
+                depth_stencil_attachment: None,
                 timestamp_writes: None,
+                occlusion_query_set: None,
             });
 
-            state.renderer.draw(&mut render_pass);
-
-            render_pass.set_pipeline(&state.render_pipeline);
-            render_pass.set_vertex_buffer(1, state.instance_buffer.slice(..));
-            render_pass.draw_model_instanced(&state.cube_model, 0..state.instances.len() as u32, &state.camera_bind_group);
+            state.renderer.draw(&mut pass);
         }
 
         state.queue.submit(std::iter::once(encoder.finish()));
@@ -485,4 +505,17 @@ pub fn run() {
 
     let mut app = App::default();
     let _ = event_loop.run_app(&mut app);
+    let mut state = app.state.unwrap();
+    state.renderer
+        .add_label(GlyphonLabelDescriptor {
+            left: 0.0,
+            top: 0.0,
+            text: "Hello world! 👋\nThis is rendered with 🦅 glyphon 🦁\nThe text below should be partially clipped.\na b c d e f g h i j k l m n o p q r s t u v w x y z",
+            width: 1920.0,
+            height: 1080.0,
+            scale: 1.0,
+            shaping: glyphon::Shaping::Advanced,
+            metrics: Metrics::default(),
+            attributes: Attrs::new().family(Family::SansSerif),
+        });
 }

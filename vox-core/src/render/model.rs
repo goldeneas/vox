@@ -118,6 +118,8 @@ impl Vertex for ModelVertex {
     }
 }
 
+// TODO: we dont want to be constrained on also having  a materials file. We should make the
+// materials optional
 impl Model {
     pub fn load(file_name: &str, device: &wgpu::Device, queue: &wgpu::Queue) -> anyhow::Result<Model> {
         let (models, materials_opt) = tobj::load_obj(file_name, &tobj::GPU_LOAD_OPTIONS)
