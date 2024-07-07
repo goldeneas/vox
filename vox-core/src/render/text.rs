@@ -1,6 +1,5 @@
 use glyphon::{Attrs, Buffer, Cache, Color, FontSystem, Metrics, Shaping, SwashCache, TextArea, TextAtlas, TextBounds, TextRenderer, Viewport};
 use wgpu::{Device, MultisampleState, Queue, RenderPass};
-use crate::Texture;
 
 pub struct GlyphonRenderer<'a> {
     font_system: FontSystem,
@@ -17,8 +16,8 @@ struct GlyphonLabel<'a> {
 }
 
 pub struct GlyphonLabelDescriptor<'a> {
-    pub left: f32,
-    pub top: f32,
+    pub x: f32,
+    pub y: f32,
     pub width: f32,
     pub height: f32,
     pub scale: f32,
@@ -50,8 +49,8 @@ impl<'a> GlyphonLabel<'a> {
     fn get_area(&self) -> TextArea {
         TextArea {
             buffer: &self.buffer,
-            top: self.descriptor.top,
-            left: self.descriptor.left,
+            top: self.descriptor.y,
+            left: self.descriptor.x,
             scale: self.descriptor.scale,
             bounds: TextBounds::default(),
             default_color: Color::rgb(255, 255, 255),
