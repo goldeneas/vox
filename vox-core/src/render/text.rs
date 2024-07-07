@@ -65,7 +65,11 @@ impl<'a> GlyphonRenderer<'a> {
         let swash_cache = SwashCache::new();
         let cache = Cache::new(device);
         let viewport = Viewport::new(device, &cache);
-        let mut text_atlas = TextAtlas::new(device, queue, &cache, Texture::TEXTURE_FORMAT);
+        let mut text_atlas = TextAtlas::new(device,
+            queue,
+            &cache,
+            wgpu::TextureFormat::Bgra8UnormSrgb
+        );
         let renderer = TextRenderer::new(&mut text_atlas,
             device,
             MultisampleState::default(),
