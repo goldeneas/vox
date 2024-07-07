@@ -273,7 +273,19 @@ impl<'a> AppState<'a> {
         let mut world = World::new();
         world.init_resource::<InputRes>();
 
-        let renderer = GlyphonRenderer::new(&device, &queue);
+        let mut renderer = GlyphonRenderer::new(&device, &queue);
+        renderer
+        .add_label(GlyphonLabelDescriptor {
+            left: 10.0,
+            top: 10.0,
+            text: "Hello world! 👋\nThis is rendered with 🦅 glyphon 🦁\nThe text below should be partially clipped.\na b c d e f g h i j k l m n o p q r s t u v w x y z",
+            width: 1920.0,
+            height: 1080.0,
+            scale: 1.0,
+            shaping: glyphon::Shaping::Advanced,
+            metrics: Metrics::new(30.0, 42.0),
+            attributes: Attrs::new().family(Family::SansSerif),
+        });
 
         Self {
             depth_texture,
@@ -505,17 +517,4 @@ pub fn run() {
 
     let mut app = App::default();
     let _ = event_loop.run_app(&mut app);
-    let mut state = app.state.unwrap();
-    state.renderer
-        .add_label(GlyphonLabelDescriptor {
-            left: 0.0,
-            top: 0.0,
-            text: "Hello world! 👋\nThis is rendered with 🦅 glyphon 🦁\nThe text below should be partially clipped.\na b c d e f g h i j k l m n o p q r s t u v w x y z",
-            width: 1920.0,
-            height: 1080.0,
-            scale: 1.0,
-            shaping: glyphon::Shaping::Advanced,
-            metrics: Metrics::default(),
-            attributes: Attrs::new().family(Family::SansSerif),
-        });
 }
