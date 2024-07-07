@@ -8,7 +8,9 @@ mod resources;
 use std::sync::Arc;
 
 use bevy_ecs::world::World;
+use glyphon::Resolution;
 use render::model::*;
+use render::text::GlyphonRenderer;
 use render::texture::*;
 use render::vertex::*;
 use render::instance::*;
@@ -53,6 +55,8 @@ struct AppState<'a> {
     render_pipeline: wgpu::RenderPipeline,
 
     cube_model: Model,
+
+    renderer: GlyphonRenderer<'a>,
 
     world: World,
 }
@@ -265,6 +269,8 @@ impl<'a> AppState<'a> {
         let mut world = World::new();
         world.init_resource::<InputRes>();
 
+        let renderer = GlyphonRenderer::new(&device, &queue);
+
         Self {
             depth_texture,
             instances,
@@ -280,6 +286,7 @@ impl<'a> AppState<'a> {
             render_pipeline,
             cube_model,
             world,
+            renderer,
         }
     }
 }
@@ -314,7 +321,7 @@ impl<'a> ApplicationHandler for App<'a> {
             },
             WindowEvent::RedrawRequested => {
                 self.update();
-                match self.render() {
+                match self.draw() {
                     Ok(_) => {}
                     Err(wgpu::SurfaceError::Lost) => self.resize(self.state.as_ref().unwrap().size),
                     Err(wgpu::SurfaceError::OutOfMemory) => event_loop.exit(),
@@ -389,10 +396,16 @@ impl<'a> App<'a> {
         state.queue.write_buffer(&state.camera_buffer, 0, bytemuck::cast_slice(&[state.camera.uniform]));
     }
 
-    fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-        let state = self.state.as_ref().unwrap();
+    fn draw(&mut self) -> Result<(), wgpu::SurfaceError> {
+        let state = self.state.as_mut().unwrap();
         let output = state.surface.get_current_texture()?;
         let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        state.renderer.viewport.update(&state.queue, Resolution{
+            width: state.config.width,
+            height: state.config.height,
+        });
+        state.renderer.prepare(&state.device, &state.queue);
 
         let mut encoder = state.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Render Encoder"),
@@ -427,6 +440,8 @@ impl<'a> App<'a> {
                 occlusion_query_set: None,
                 timestamp_writes: None,
             });
+
+            state.renderer.draw(&mut render_pass);
 
             render_pass.set_pipeline(&state.render_pipeline);
             render_pass.set_vertex_buffer(1, state.instance_buffer.slice(..));
