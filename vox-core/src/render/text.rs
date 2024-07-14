@@ -1,6 +1,9 @@
 use glyphon::{Attrs, Buffer, Cache, Color, FontSystem, Metrics, Shaping, SwashCache, TextArea, TextAtlas, TextBounds, TextRenderer, Viewport};
 use wgpu::{Device, MultisampleState, Queue, RenderPass};
 
+#[derive(PartialEq, Eq, Clone, Copy)]
+pub struct GlyphonLabelId(u32);
+
 pub struct GlyphonRenderer<'a> {
     font_system: FontSystem,
     swash_cache: SwashCache,
@@ -8,11 +11,13 @@ pub struct GlyphonRenderer<'a> {
     text_atlas: TextAtlas,
     renderer: TextRenderer,
     labels: Vec<GlyphonLabel<'a>>,
+    labels_generated: u32,
 }
 
-struct GlyphonLabel<'a> {
+pub struct GlyphonLabel<'a> {
     buffer: Buffer,
     descriptor: GlyphonLabelDescriptor<'a>,
+    id: GlyphonLabelId,
 }
 
 pub struct GlyphonLabelDescriptor<'a> {
@@ -28,7 +33,7 @@ pub struct GlyphonLabelDescriptor<'a> {
 }
 
 impl<'a> GlyphonLabel<'a> {
-    fn new(renderer: &mut GlyphonRenderer, descriptor: GlyphonLabelDescriptor<'a>) -> Self {
+    fn new(renderer: &mut GlyphonRenderer, descriptor: GlyphonLabelDescriptor<'a>, id: GlyphonLabelId) -> Self {
         let mut buffer = Buffer::new(&mut renderer.font_system, descriptor.metrics);
         buffer.set_size(&mut renderer.font_system,
             descriptor.width,
@@ -41,6 +46,7 @@ impl<'a> GlyphonLabel<'a> {
         );
 
         Self {
+            id,
             buffer,
             descriptor,
         }
@@ -75,8 +81,10 @@ impl<'a> GlyphonRenderer<'a> {
             None
         );
         let labels = Vec::new();
+        let labels_generated = 0;
 
         Self {
+            labels_generated,
             font_system,
             swash_cache,
             viewport,
@@ -105,8 +113,24 @@ impl<'a> GlyphonRenderer<'a> {
             .expect("Could not draw GlyphonRenderer");
     }
 
-    pub fn add_label(&mut self, descriptor: GlyphonLabelDescriptor<'a>) {
-        let label = GlyphonLabel::new(self, descriptor);
+    pub fn add_label(&mut self, descriptor: GlyphonLabelDescriptor<'a>) -> GlyphonLabelId {
+        let id = GlyphonLabelId(self.labels_generated);
+        let label = GlyphonLabel::new(self, descriptor, id);
         self.labels.push(label);
+        self.labels_generated += 1;
+
+        id
+    }
+
+    pub fn set_text(&mut self, id: GlyphonLabelId, text: &str) {
+        let label = self.labels.iter_mut()
+            .find(|label| { label.id == id })
+            .unwrap();
+
+        label.buffer.set_text(&mut self.font_system,
+            text, 
+            label.descriptor.attributes,
+            label.descriptor.shaping
+        );
     }
 }

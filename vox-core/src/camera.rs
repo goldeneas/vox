@@ -1,5 +1,5 @@
 use bytemuck::{Pod, Zeroable};
-use cgmath::{InnerSpace, SquareMatrix};
+use cgmath::{num_traits::{real::Real, Float}, InnerSpace, SquareMatrix};
 use bevy_ecs::prelude::*;
 
 use crate::resources::input::InputRes;
@@ -12,6 +12,12 @@ pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
     0.0, 0.0, 0.0, 1.0,
 );
 
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Pod, Zeroable)]
+pub struct CameraUniform {
+    view_proj: [[f32; 4]; 4],
+}
+
 pub struct CameraTransform {
     pub position: cgmath::Point3<f32>,
     pub target: cgmath::Point3<f32>,
@@ -20,12 +26,8 @@ pub struct CameraTransform {
     pub fovy: f32,
     pub znear: f32,
     pub zfar: f32,
-}
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, Pod, Zeroable)]
-pub struct CameraUniform {
-    view_proj: [[f32; 4]; 4],
+    pub yaw: f32,
+    pub pitch: f32,
 }
 
 pub struct CameraController {
@@ -107,5 +109,9 @@ impl CameraController {
         if input_res.left.is_pressed {
             camera_transform.position -= right_norm * self.speed;
         }
+
+        let yaw: f32 = 30.0;
+        camera_transform.target.x = forward_mag * yaw.cos();
+        camera_transform.target.z = forward_mag * yaw.sin();
     }
 }

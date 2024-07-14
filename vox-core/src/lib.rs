@@ -12,6 +12,7 @@ use glyphon::Attrs;
 use glyphon::Metrics;
 use glyphon::Resolution;
 use render::model::*;
+use render::text::GlyphonLabel;
 use render::text::GlyphonLabelDescriptor;
 use render::text::GlyphonRenderer;
 use render::texture::*;
@@ -144,6 +145,8 @@ impl<'a> AppState<'a> {
             fovy: 45.0,
             znear: 0.1,
             zfar: 100.0,
+            yaw: 0.0,
+            pitch: 0.0,
         }, CameraController {
             speed: 0.1,
         });
@@ -273,7 +276,7 @@ impl<'a> AppState<'a> {
         world.init_resource::<InputRes>();
 
         let mut renderer = GlyphonRenderer::new(&device, &queue);
-        renderer.add_label(GlyphonLabelDescriptor {
+        let id = renderer.add_label(GlyphonLabelDescriptor {
             x: 0.0,
             y: 10.0,
             text: "HI",
@@ -285,6 +288,8 @@ impl<'a> AppState<'a> {
             metrics: Metrics::new(30.0, 42.0),
             attributes: Attrs::new(),
         });
+
+        renderer.set_text(id, "HELLO2");
 
         Self {
             depth_texture,
