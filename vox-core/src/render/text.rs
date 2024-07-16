@@ -14,7 +14,7 @@ pub struct GlyphonRenderer<'a> {
     labels_generated: u32,
 }
 
-pub struct GlyphonLabel<'a> {
+struct GlyphonLabel<'a> {
     buffer: Buffer,
     descriptor: GlyphonLabelDescriptor<'a>,
     id: GlyphonLabelId,
@@ -26,7 +26,7 @@ pub struct GlyphonLabelDescriptor<'a> {
     pub width: f32,
     pub height: f32,
     pub scale: f32,
-    pub text: &'a str,
+    pub text: String,
     pub attributes: Attrs<'a>,
     pub shaping: Shaping,
     pub metrics: Metrics,
@@ -40,7 +40,7 @@ impl<'a> GlyphonLabel<'a> {
             descriptor.height
         );
         buffer.set_text(&mut renderer.font_system,
-            descriptor.text, 
+            &descriptor.text, 
             descriptor.attributes,
             descriptor.shaping
         );
@@ -122,13 +122,13 @@ impl<'a> GlyphonRenderer<'a> {
         id
     }
 
-    pub fn set_text(&mut self, id: GlyphonLabelId, text: &str) {
+    pub fn set_text(&mut self, id: GlyphonLabelId, text: String) {
         let label = self.labels.iter_mut()
             .find(|label| { label.id == id })
             .unwrap();
 
         label.buffer.set_text(&mut self.font_system,
-            text, 
+            &text, 
             label.descriptor.attributes,
             label.descriptor.shaping
         );

@@ -36,7 +36,7 @@ pub struct CameraController {
 
 pub struct Camera {
     pub uniform: CameraUniform,
-    transform: CameraTransform,
+    pub transform: CameraTransform,
     controller: CameraController,
 }
 

@@ -12,8 +12,8 @@ use glyphon::Attrs;
 use glyphon::Metrics;
 use glyphon::Resolution;
 use render::model::*;
-use render::text::GlyphonLabel;
 use render::text::GlyphonLabelDescriptor;
+use render::text::GlyphonLabelId;
 use render::text::GlyphonRenderer;
 use render::texture::*;
 use render::vertex::*;
@@ -50,6 +50,9 @@ struct AppState<'a> {
     camera: Camera,
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
+
+    welcome_label: GlyphonLabelId,
+    camera_label: GlyphonLabelId,
         
     surface: wgpu::Surface<'a>,
     device: wgpu::Device,
@@ -276,10 +279,10 @@ impl<'a> AppState<'a> {
         world.init_resource::<InputRes>();
 
         let mut renderer = GlyphonRenderer::new(&device, &queue);
-        let id = renderer.add_label(GlyphonLabelDescriptor {
+        let welcome_label = renderer.add_label(GlyphonLabelDescriptor {
             x: 0.0,
             y: 10.0,
-            text: "HI",
+            text: "Welcome to Vox!".to_owned(),
             width: 1920.0,
             height: 1080.0,
             scale: 1.0,
@@ -289,9 +292,22 @@ impl<'a> AppState<'a> {
             attributes: Attrs::new(),
         });
 
-        renderer.set_text(id, "HELLO2");
+        let camera_label = renderer.add_label(GlyphonLabelDescriptor {
+            x: 0.0,
+            y: 42.0,
+            text: "".to_owned(),
+            width: 1920.0,
+            height: 1080.0,
+            scale: 1.0,
+            shaping: glyphon::Shaping::Advanced,
+            // TODO: change this one, we dont really want a default for metrics
+            metrics: Metrics::new(30.0, 42.0),
+            attributes: Attrs::new(),
+        });
 
         Self {
+            welcome_label,
+            camera_label,
             depth_texture,
             instances,
             instance_buffer,
@@ -414,6 +430,9 @@ impl<'a> App<'a> {
         let state = self.state.as_mut().unwrap();
         state.camera.update(&state.world);
         state.queue.write_buffer(&state.camera_buffer, 0, bytemuck::cast_slice(&[state.camera.uniform]));
+
+        state.renderer.set_text(state.camera_label,
+            format!("XYZ: {:?}", state.camera.transform.position));
     }
 
     fn draw(&mut self) -> Result<(), wgpu::SurfaceError> {
