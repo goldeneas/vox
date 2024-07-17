@@ -32,6 +32,22 @@ pub struct GlyphonLabelDescriptor<'a> {
     pub metrics: Metrics,
 }
 
+impl Default for GlyphonLabelDescriptor<'_> {
+    fn default() -> Self {
+        GlyphonLabelDescriptor {
+            x: 0.0,
+            y: 0.0,
+            text: "Default Text".to_owned(),
+            width: 1920.0,
+            height: 1080.0,
+            scale: 1.0,
+            shaping: Shaping::Advanced,
+            metrics: Metrics::new(30.0, 42.0),
+            attributes: Attrs::new(),
+        }
+    }
+}
+
 impl<'a> GlyphonLabel<'a> {
     fn new(renderer: &mut GlyphonRenderer, descriptor: GlyphonLabelDescriptor<'a>, id: GlyphonLabelId) -> Self {
         let mut buffer = Buffer::new(&mut renderer.font_system, descriptor.metrics);

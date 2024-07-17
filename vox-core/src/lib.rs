@@ -52,6 +52,7 @@ struct AppState<'a> {
     camera_bind_group: wgpu::BindGroup,
 
     welcome_label: GlyphonLabelId,
+    target_label: GlyphonLabelId,
     camera_label: GlyphonLabelId,
         
     surface: wgpu::Surface<'a>,
@@ -285,11 +286,7 @@ impl<'a> AppState<'a> {
             text: "Welcome to Vox!".to_owned(),
             width: 1920.0,
             height: 1080.0,
-            scale: 1.0,
-            shaping: glyphon::Shaping::Advanced,
-            // TODO: change this one, we dont really want a default for metrics
-            metrics: Metrics::new(30.0, 42.0),
-            attributes: Attrs::new(),
+            ..Default::default()
         });
 
         let camera_label = renderer.add_label(GlyphonLabelDescriptor {
@@ -298,14 +295,20 @@ impl<'a> AppState<'a> {
             text: "".to_owned(),
             width: 1920.0,
             height: 1080.0,
-            scale: 1.0,
-            shaping: glyphon::Shaping::Advanced,
-            // TODO: change this one, we dont really want a default for metrics
-            metrics: Metrics::new(30.0, 42.0),
-            attributes: Attrs::new(),
+            ..Default::default()
+        });
+
+        let target_label = renderer.add_label(GlyphonLabelDescriptor {
+            x: 0.0,
+            y: 84.0,
+            text: "".to_owned(),
+            width: 1920.0,
+            height: 1080.0,
+            ..Default::default()
         });
 
         Self {
+            target_label,
             welcome_label,
             camera_label,
             depth_texture,
@@ -432,7 +435,10 @@ impl<'a> App<'a> {
         state.queue.write_buffer(&state.camera_buffer, 0, bytemuck::cast_slice(&[state.camera.uniform]));
 
         state.renderer.set_text(state.camera_label,
-            format!("XYZ: {:?}", state.camera.transform.position));
+            format!("POS: {:?}", state.camera.transform.position));
+
+        state.renderer.set_text(state.target_label,
+            format!("TAR: {:?}", state.camera.transform.target));
     }
 
     fn draw(&mut self) -> Result<(), wgpu::SurfaceError> {
