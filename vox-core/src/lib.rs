@@ -146,13 +146,11 @@ impl<'a> AppState<'a> {
         let camera = Camera::new(CameraTransform {
             position: (0.0, 1.0, 2.0).into(),
             target: (0.0, 0.0, 0.0).into(),
-            up: cgmath::Vector3::unit_y(),
             aspect: config.width as f32 / config.height as f32,
             fovy: 45.0,
             znear: 0.1,
             zfar: 100.0,
-            yaw: 0.0,
-            pitch: 0.0,
+            ..Default::default()
         }, CameraController {
             speed: 0.1,
         });

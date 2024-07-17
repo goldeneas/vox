@@ -21,13 +21,31 @@ pub struct CameraUniform {
 pub struct CameraTransform {
     pub position: cgmath::Point3<f32>,
     pub target: cgmath::Point3<f32>,
-    pub up: cgmath::Vector3<f32>,
     pub aspect: f32,
     pub fovy: f32,
     pub znear: f32,
     pub zfar: f32,
+    pub last_mouse_pos: (f64, f64),
+    pub up: cgmath::Vector3<f32>,
     pub yaw: f32,
     pub pitch: f32,
+}
+
+impl Default for CameraTransform {
+    fn default() -> Self {
+        Self {
+            position: (0.0, 1.0, 2.0).into(),
+            target: (0.0, 0.0, 0.0).into(),
+            up: cgmath::Vector3::unit_y(),
+            aspect: 1920.0 / 1080.0,
+            fovy: 45.0,
+            znear: 0.1,
+            zfar: 100.0,
+            yaw: 0.0,
+            pitch: 0.0,
+            last_mouse_pos: (0.0, 0.0),
+        }
+    }
 }
 
 pub struct CameraController {
@@ -118,7 +136,7 @@ impl CameraController {
             .unwrap();
 
         let yaw: f32 = (mouse_res.pos.0 * 0.1) as f32;
-        camera_transform.target.x = forward_norm.x * yaw.cos();
-        camera_transform.target.z = forward_norm.y * yaw.sin();
+        //camera_transform.target.x = forward_mag * yaw.cos();
+        //camera_transform.target.z = yaw.sin();
     }
 }
