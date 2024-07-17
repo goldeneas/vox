@@ -2,7 +2,7 @@ use bytemuck::{Pod, Zeroable};
 use cgmath::{num_traits::{real::Real, Float}, InnerSpace, SquareMatrix};
 use bevy_ecs::prelude::*;
 
-use crate::resources::input::InputRes;
+use crate::resources::{input::InputRes, mouse::MouseRes};
 
 #[rustfmt::skip]
 pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
@@ -93,10 +93,12 @@ impl CameraController {
 
         if input_res.forward.is_pressed && forward_mag > self.speed {
             camera_transform.position += forward_norm * self.speed;
+            camera_transform.target += forward_norm * self.speed;
         }
 
         if input_res.backward.is_pressed {
             camera_transform.position -= forward_norm * self.speed;
+            camera_transform.target -= forward_norm * self.speed;
         }
 
         let up_norm = camera_transform.up.normalize();
@@ -104,14 +106,19 @@ impl CameraController {
 
         if input_res.right.is_pressed {
             camera_transform.position += right_norm * self.speed; 
+            camera_transform.target += right_norm * self.speed;
         }
 
         if input_res.left.is_pressed {
             camera_transform.position -= right_norm * self.speed;
+            camera_transform.target -= right_norm * self.speed;
         }
 
-        let yaw: f32 = 30.0;
-        camera_transform.target.x = forward_mag * yaw.cos();
-        camera_transform.target.z = forward_mag * yaw.sin();
+        let mouse_res = world.get_resource::<MouseRes>()
+            .unwrap();
+
+        let yaw: f32 = (mouse_res.pos.0 * 0.1) as f32;
+        camera_transform.target.x = forward_norm.x * yaw.cos();
+        camera_transform.target.z = forward_norm.y * yaw.sin();
     }
 }

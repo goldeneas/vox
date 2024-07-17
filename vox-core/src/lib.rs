@@ -23,11 +23,13 @@ use camera::{ Camera, CameraController, CameraTransform };
 use log::warn;
 use resources::input::InputRes;
 use resources::input::KeyState;
+use resources::mouse::MouseRes;
 use wgpu::PipelineCompilationOptions;
 use wgpu::{util::DeviceExt, RenderPipelineDescriptor};
 use winit::application::ApplicationHandler;
 use winit::event_loop::ActiveEventLoop;
 use winit::event_loop::ControlFlow;
+use winit::window::CursorGrabMode;
 use winit::window::WindowAttributes;
 use winit::window::WindowId;
 use winit::{
@@ -278,6 +280,7 @@ impl<'a> AppState<'a> {
 
         let mut world = World::new();
         world.init_resource::<InputRes>();
+        world.init_resource::<MouseRes>();
 
         let mut renderer = GlyphonRenderer::new(&device, &queue);
         let welcome_label = renderer.add_label(GlyphonLabelDescriptor {
@@ -379,12 +382,28 @@ impl<'a> ApplicationHandler for App<'a> {
         }
     }
 
+    fn device_event(
+        &mut self,
+        _event_loop: &ActiveEventLoop,
+        _device_id: DeviceId,
+        event: DeviceEvent) {
+        match event {
+            DeviceEvent::MouseMotion { delta } => self.mouse_moved(delta),
+            _ => {}
+        }
+    }
+
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.window.is_some() {
             return;
         }
 
         let window = Arc::new(event_loop.create_window(WindowAttributes::default()).unwrap());
+        window.set_cursor_grab(CursorGrabMode::Locked)
+            .or_else(|_e| window.set_cursor_grab(CursorGrabMode::Confined))
+            .unwrap();
+        window.set_cursor_visible(false);
+
         self.window = Some(window.clone());
 
         #[cfg(not(target_arch = "wasm32"))]
@@ -427,6 +446,15 @@ impl<'a> App<'a> {
             KeyCode::KeyD => input_res.right = KeyState::from(key_state),
             _ => {},
         }
+    }
+
+    fn mouse_moved(&mut self, delta: (f64, f64)) {
+        let state = self.state.as_mut().unwrap();
+        let mouse_res = &mut state.world.get_resource_mut::<MouseRes>()
+            .unwrap();
+
+        mouse_res.pos.0 += delta.0;
+        mouse_res.pos.1 += delta.1;
     }
 
     fn update(&mut self) {
