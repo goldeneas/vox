@@ -477,10 +477,10 @@ impl<'a> App<'a> {
         });
         state.renderer.prepare(&state.device, &state.queue);
 
-        let diffuse_texture = Texture::load("cube-normal.png", &state.device, &state.queue)
+        let diffuse_texture = Texture::load("debug.png", &state.device, &state.queue)
             .unwrap();
 
-        let cube: Model = CubeModel::new(&state.device, 1.0, diffuse_texture)
+        let cube_primitive: Model = CubeModel::new(&state.device, 1.0, diffuse_texture)
             .into();
 
         let mut encoder = state.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -520,7 +520,7 @@ impl<'a> App<'a> {
             render_pass.set_pipeline(&state.render_pipeline);
             render_pass.set_vertex_buffer(1, state.instance_buffer.slice(..));
             render_pass.draw_model_instanced(
-                &cube,
+                &cube_primitive,
                 0..state.instances.len() as u32,
                 &state.camera_bind_group
             );
