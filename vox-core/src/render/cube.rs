@@ -19,12 +19,12 @@ impl<'a> CubeModel<'a> {
     }
 }
 
-impl<'a> Into<Model> for CubeModel<'a> {
-    fn into(self) -> Model {
-        Model::new(self.device,
-            &cube_vertices(self.scale),
+impl From<CubeModel<'_>> for Model {
+    fn from(cube: CubeModel) -> Model {
+        Model::new(cube.device,
+            &cube_vertices(cube.scale),
             &cube_indices(),
-            self.diffuse_texture,
+            cube.diffuse_texture,
             Some("Cube"),
         )
     }
