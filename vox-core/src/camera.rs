@@ -1,5 +1,5 @@
 use bytemuck::{Pod, Zeroable};
-use cgmath::{num_traits::{real::Real, Float}, InnerSpace, SquareMatrix};
+use cgmath::{num_traits::{pow, real::Real, Float}, InnerSpace, SquareMatrix};
 use bevy_ecs::prelude::*;
 
 use crate::resources::{input::InputRes, mouse::MouseRes};
@@ -111,12 +111,12 @@ impl CameraController {
 
         if input_res.forward.is_pressed && forward_mag > self.speed {
             camera_transform.position += forward_norm * self.speed;
-            camera_transform.target += forward_norm * self.speed;
+            //camera_transform.target += forward_norm * self.speed;
         }
 
         if input_res.backward.is_pressed {
             camera_transform.position -= forward_norm * self.speed;
-            camera_transform.target -= forward_norm * self.speed;
+            //camera_transform.target -= forward_norm * self.speed;
         }
 
         let up_norm = camera_transform.up.normalize();
@@ -124,19 +124,21 @@ impl CameraController {
 
         if input_res.right.is_pressed {
             camera_transform.position += right_norm * self.speed; 
-            camera_transform.target += right_norm * self.speed;
+            //camera_transform.target += right_norm * self.speed;
         }
 
         if input_res.left.is_pressed {
             camera_transform.position -= right_norm * self.speed;
-            camera_transform.target -= right_norm * self.speed;
+            //camera_transform.target -= right_norm * self.speed;
         }
 
         let mouse_res = world.get_resource::<MouseRes>()
             .unwrap();
 
-        let yaw: f32 = (mouse_res.pos.0 * 0.1) as f32;
-        //camera_transform.target.x = forward_mag * yaw.cos();
-        //camera_transform.target.z = yaw.sin();
+        println!("{}", forward_mag);
+
+        let yaw: f32 = (mouse_res.pos.0 * 0.01) as f32;
+        camera_transform.target.x = 2.23 * yaw.cos();
+        camera_transform.target.z = 2.23 * yaw.sin();
     }
 }

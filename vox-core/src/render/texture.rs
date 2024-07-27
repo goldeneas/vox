@@ -16,7 +16,7 @@ impl Texture {
         queue: &wgpu::Queue,
         bytes: &[u8],
         label: &str,
-        ) -> anyhow::Result<Self> {
+    ) -> anyhow::Result<Self> {
         let img = image::load_from_memory(bytes)?;
         Self::from_image(device, queue, &img, Some(label))
     }
@@ -26,7 +26,7 @@ impl Texture {
         queue: &wgpu::Queue,
         img: &image::DynamicImage,
         label: Option<&str>
-        ) -> anyhow::Result<Self> {
+    ) -> anyhow::Result<Self> {
         let rgba = img.to_rgba8();
         let dimensions = img.dimensions();
  
@@ -82,7 +82,7 @@ impl Texture {
         file_name: &str,
         device: &wgpu::Device,
         queue: &wgpu::Queue
-        ) -> anyhow::Result<Texture> {
+    ) -> anyhow::Result<Texture> {
         let data = load_binary(file_name)?;
         Texture::from_bytes(device, queue, &data, file_name)
     }
@@ -90,7 +90,8 @@ impl Texture {
     pub fn create_depth_texture(
         device: &wgpu::Device,
         config: &wgpu::SurfaceConfiguration,
-        label: &str) -> Self {
+        label: &str
+    ) -> Self {
         let size = wgpu::Extent3d {
             width: config.width,
             height: config.height,

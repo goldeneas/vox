@@ -8,9 +8,8 @@ mod resources;
 use std::sync::Arc;
 
 use bevy_ecs::world::World;
-use glyphon::Attrs;
-use glyphon::Metrics;
 use glyphon::Resolution;
+use render::cube::CubeModel;
 use render::model::*;
 use render::text::GlyphonLabelDescriptor;
 use render::text::GlyphonLabelId;
@@ -478,6 +477,11 @@ impl<'a> App<'a> {
         });
         state.renderer.prepare(&state.device, &state.queue);
 
+        let diffuse_texture = Texture::load("cube-normal.png", &state.device, &state.queue)
+            .unwrap();
+
+        let cube = CubeModel::new(&state.device, 1.0, diffuse_texture);
+
         let mut encoder = state.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Render Encoder"),
         });
@@ -514,8 +518,13 @@ impl<'a> App<'a> {
 
             render_pass.set_pipeline(&state.render_pipeline);
             render_pass.set_vertex_buffer(1, state.instance_buffer.slice(..));
-            render_pass.draw_model_instanced(&state.cube_model, 0..state.instances.len() as u32, &state.camera_bind_group);
+            render_pass.draw_model_instanced(
+                &cube.into(),
+                0..state.instances.len() as u32,
+                &state.camera_bind_group
+            );
         }
+
         {
             let mut glyphon_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Glyphon Render Pass"),
