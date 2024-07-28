@@ -3,10 +3,12 @@ use std::ops::Range;
 use bytemuck::{Pod, Zeroable};
 use wgpu::util::{DeviceExt, RenderEncoder};
 
-use crate::{ Instance, InstanceRaw, Texture, Vertex };
+use crate::{ Instance, Texture, Vertex };
+
+use super::object::Object;
 
 pub struct Model {
-    pub meshes: Vec<ModelMesh>,
+    pub meshes: Vec<Mesh>,
     pub materials: Vec<Material>,
 }
 
@@ -16,12 +18,13 @@ pub struct Material {
     pub bind_group: wgpu::BindGroup,
 }
 
-pub struct ModelMesh {
+pub struct Mesh {
     pub name: String,
     pub index_buffer: wgpu::Buffer,
     pub vertex_buffer: wgpu::Buffer,
     pub num_indices: u32,
-    pub material_id: usize,
+    // the material assigned to this mesh from the materials
+    pub material_id: usize, 
 }
 
 #[repr(C)]
@@ -32,13 +35,13 @@ pub struct ModelVertex {
     pub normal: [f32; 3],
 }
 
-pub trait DrawModel<'b> {
+pub trait DrawObject<'b> {
     fn draw_mesh(&mut self,
-        mesh: &'b ModelMesh,
+        mesh: &'b Mesh,
         material: &'b Material,
         camera_bind_group: &'b wgpu::BindGroup);
     fn draw_mesh_instanced(&mut self,
-        mesh: &'b ModelMesh,
+        mesh: &'b Mesh,
         material: &'b Material,
         instances: Range<u32>,
         camera_bind_group: &'b wgpu::BindGroup);
@@ -49,16 +52,19 @@ pub trait DrawModel<'b> {
         model: &'b Model,
         instances: Range<u32>,
         camera_bind_group: &'b wgpu::BindGroup);
-    fn draw_model_as(&mut self,
-        model: &'b Model,
-        instance_buffer: &'b wgpu::Buffer,
+    fn draw_object(&mut self,
+        object: &'b Object,
+        camera_bind_group: &'b wgpu::BindGroup);
+    fn draw_object_instanced(&mut self,
+        object: &'b Object,
+        instances: Range<u32>,
         camera_bind_group: &'b wgpu::BindGroup);
 }
 
-impl<'a, 'b> DrawModel<'b> for wgpu::RenderPass<'a>
+impl<'a, 'b> DrawObject<'b> for wgpu::RenderPass<'a>
 where 'b: 'a {
     fn draw_mesh(&mut self,
-        mesh: &'b ModelMesh,
+        mesh: &'b Mesh,
         material: &'b Material,
         camera_bind_group: &'b wgpu::BindGroup
     ) {
@@ -66,7 +72,7 @@ where 'b: 'a {
     }
 
     fn draw_mesh_instanced(&mut self,
-        mesh: &'b ModelMesh,
+        mesh: &'b Mesh,
         material: &'b Material,
         instances: Range<u32>,
         camera_bind_group: &'b wgpu::BindGroup
@@ -99,13 +105,21 @@ where 'b: 'a {
         }
     }
 
-    fn draw_model_as(&mut self,
-        model: &'b Model,
-        instance_buffer: &'b wgpu::Buffer,
+    fn draw_object(&mut self,
+        object: &'b Object,
         camera_bind_group: &'b wgpu::BindGroup
     ) {
-        self.set_vertex_buffer(1, instance_buffer.slice(..));
-        self.draw_model(model, camera_bind_group);
+        self.draw_object_instanced(object, 0..1, camera_bind_group);
+    }
+
+    fn draw_object_instanced(&mut self,
+        object: &'b Object,
+        instances: Range<u32>,
+        camera_bind_group: &'b wgpu::BindGroup
+    ) {
+        // FIXME: This slot is hardcoded since we only have one shader for now
+        self.set_vertex_buffer(1, object.instance_buffer.slice(..));
+        self.draw_model_instanced(&object.model, instances, camera_bind_group);
     }
 }
 
@@ -208,7 +222,7 @@ impl Model {
 
         let mut meshes = Vec::new();
 
-        let mesh = ModelMesh {
+        let mesh = Mesh {
             name: format!("Model Mesh - {}", model_name),
             index_buffer,
             num_indices,
@@ -315,7 +329,7 @@ impl Model {
                     contents: bytemuck::cast_slice(&m.mesh.indices),
                 });
 
-                ModelMesh {
+                Mesh {
                     name: file_name.to_string(),
                     index_buffer,
                     vertex_buffer,

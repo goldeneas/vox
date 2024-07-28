@@ -12,6 +12,7 @@ use cgmath::Quaternion;
 use glyphon::Resolution;
 use render::cube::CubeModel;
 use render::model::*;
+use render::object::Object;
 use render::text::GlyphonLabelDescriptor;
 use render::text::GlyphonLabelId;
 use render::text::GlyphonRenderer;
@@ -478,16 +479,14 @@ impl<'a> App<'a> {
         });
         state.renderer.prepare(&state.device, &state.queue);
 
-        let diffuse_texture = Texture::load("debug.png", &state.device, &state.queue)
-            .unwrap();
-
-        let cube_primitive: Model = CubeModel::new(&state.device, 1.0, diffuse_texture)
-            .into();
-
-        let cube_buf = Instance {
-            position: (10.0, 0.5, -1.0).into(),
-            rotation: Quaternion::zero(),
-        }.to_raw().to_vertex_buffer(&state.device);
+        let object = Object::new(&state.device,
+            CubeModel::new(&state.device, 0.5, state.depth_texture).into(),
+            &[
+                Instance {
+                    position: (0.0, 0.0, 0.0).into(),
+                    rotation: Quaternion::zero(),
+                }
+            ]);
 
         let mut encoder = state.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Render Encoder"),
@@ -524,12 +523,7 @@ impl<'a> App<'a> {
             });
 
             render_pass.set_pipeline(&state.render_pipeline);
-            //render_pass.set_vertex_buffer(1, cube_buf.slice(..));
-            render_pass.draw_model_as(
-                &cube_primitive,
-                &cube_buf,
-                &state.camera_bind_group
-            );
+            render_pass.draw_object(&object, &state.camera_bind_group);
         }
 
         {
