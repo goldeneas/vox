@@ -1,4 +1,5 @@
 use bytemuck::{Pod, Zeroable};
+use wgpu::util::{DeviceExt, RenderEncoder};
 
 pub struct Instance {
     pub position: cgmath::Vector3<f32>,
@@ -20,6 +21,14 @@ pub struct InstanceRaw {
 }
 
 impl InstanceRaw {
+    pub fn to_vertex_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer {
+        device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Instance Raw Buffer"),
+            usage: wgpu::BufferUsages::VERTEX,
+            contents: bytemuck::cast_slice(&self.model),
+        })
+    }
+
     pub fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,

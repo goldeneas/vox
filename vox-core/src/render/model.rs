@@ -1,9 +1,9 @@
 use std::ops::Range;
 
 use bytemuck::{Pod, Zeroable};
-use wgpu::util::DeviceExt;
+use wgpu::util::{DeviceExt, RenderEncoder};
 
-use crate::{ Texture, Vertex };
+use crate::{ Instance, InstanceRaw, Texture, Vertex };
 
 pub struct Model {
     pub meshes: Vec<ModelMesh>,
@@ -49,6 +49,10 @@ pub trait DrawModel<'b> {
         model: &'b Model,
         instances: Range<u32>,
         camera_bind_group: &'b wgpu::BindGroup);
+    fn draw_model_as(&mut self,
+        model: &'b Model,
+        instance_buffer: &'b wgpu::Buffer,
+        camera_bind_group: &'b wgpu::BindGroup);
 }
 
 impl<'a, 'b> DrawModel<'b> for wgpu::RenderPass<'a>
@@ -93,6 +97,15 @@ where 'b: 'a {
             let material = &model.materials[mesh.material_id];
             self.draw_mesh_instanced(mesh, material, instances.clone(), camera_bind_group);
         }
+    }
+
+    fn draw_model_as(&mut self,
+        model: &'b Model,
+        instance_buffer: &'b wgpu::Buffer,
+        camera_bind_group: &'b wgpu::BindGroup
+    ) {
+        self.set_vertex_buffer(1, instance_buffer.slice(..));
+        self.draw_model(model, camera_bind_group);
     }
 }
 

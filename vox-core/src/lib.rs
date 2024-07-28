@@ -8,6 +8,7 @@ mod resources;
 use std::sync::Arc;
 
 use bevy_ecs::world::World;
+use cgmath::Quaternion;
 use glyphon::Resolution;
 use render::cube::CubeModel;
 use render::model::*;
@@ -483,6 +484,11 @@ impl<'a> App<'a> {
         let cube_primitive: Model = CubeModel::new(&state.device, 1.0, diffuse_texture)
             .into();
 
+        let cube_buf = Instance {
+            position: (10.0, 0.5, -1.0).into(),
+            rotation: Quaternion::zero(),
+        }.to_raw().to_vertex_buffer(&state.device);
+
         let mut encoder = state.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Render Encoder"),
         });
@@ -518,10 +524,10 @@ impl<'a> App<'a> {
             });
 
             render_pass.set_pipeline(&state.render_pipeline);
-            render_pass.set_vertex_buffer(1, state.instance_buffer.slice(..));
-            render_pass.draw_model_instanced(
+            //render_pass.set_vertex_buffer(1, cube_buf.slice(..));
+            render_pass.draw_model_as(
                 &cube_primitive,
-                0..state.instances.len() as u32,
+                &cube_buf,
                 &state.camera_bind_group
             );
         }
