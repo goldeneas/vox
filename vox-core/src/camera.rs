@@ -100,6 +100,7 @@ impl CameraUniform {
     }
 }
 
+// TODO: Movement :)
 impl CameraController {
     pub fn update(&self, camera_transform: &mut CameraTransform, world: &World) {
         let forward = camera_transform.target - camera_transform.position;
@@ -134,8 +135,6 @@ impl CameraController {
 
         let mouse_res = world.get_resource::<MouseRes>()
             .unwrap();
-
-        println!("{}", forward_mag);
 
         let yaw: f32 = (mouse_res.pos.0 * 0.01) as f32;
         camera_transform.target.x = 2.23 * yaw.cos();

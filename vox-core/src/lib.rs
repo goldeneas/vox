@@ -378,7 +378,6 @@ impl<'a> ApplicationHandler for App<'a> {
         self.state = Some(state);
     }
 
-    // TODO: Calling window.request_redraw here might not be good
     fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
         let window = self.window.as_ref().unwrap();
         window.request_redraw();
@@ -494,7 +493,7 @@ impl<'a> App<'a> {
             });
 
             render_pass.set_pipeline(&state.render_pipeline);
-            render_pass.draw_object_instanced(&object, 1..2, &state.camera_bind_group);
+            render_pass.draw_object_instanced(&object, 0..2, &state.camera_bind_group);
             render_pass.draw_model(&state.cube_model, &state.camera_bind_group);
         }
 
