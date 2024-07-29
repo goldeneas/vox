@@ -18,7 +18,6 @@ use render::text::LabelDescriptor;
 use render::text::LabelId;
 use render::text::LabelRenderer;
 use render::texture::*;
-use render::vertex::*;
 use render::instance::*;
 
 use camera::{ Camera, CameraController, CameraTransform };
@@ -203,7 +202,7 @@ impl<'a> AppState<'a> {
                 module: &shader,
                 entry_point: "vs_main",
                 buffers: &[
-                    ModelVertex::desc(),
+                    Vertex::desc(),
                     InstanceRaw::desc(),
                 ],
                 compilation_options: PipelineCompilationOptions::default(),

@@ -145,7 +145,7 @@ where 'b: 'a {
 }
 
 impl Vertex {
-    fn desc() -> wgpu::VertexBufferLayout<'static> {
+    pub fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
             step_mode: wgpu::VertexStepMode::Vertex,
             array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
@@ -292,19 +292,33 @@ impl Model {
         let (models, materials_opt) = tobj::load_obj(file_name, &tobj::GPU_LOAD_OPTIONS)
             .expect("Could not load file OBJ file");
 
-        let materials = materials_opt?
-            .into_iter()
-            .map(|m| {
-                let diffuse_texture_name = &m.diffuse_texture.unwrap();
-                let diffuse_texture = Texture::load(diffuse_texture_name, device, queue)
+        let materials = match materials_opt {
+            Ok(tobj_materials) => {
+                tobj_materials
+                    .into_iter()
+                    .map(|m| {
+                        let diffuse_texture_name = &m.diffuse_texture.unwrap();
+                        let diffuse_texture = Texture::load(diffuse_texture_name, device, queue)
+                            .unwrap();
+
+                        Material::new(device, MaterialDescriptor {
+                            name: format!("Material - {}", diffuse_texture_name),
+                            diffuse_texture
+                        })
+                    }).collect::<Vec<_>>()
+            },
+            Err(_) => {
+                let diffuse_texture = Texture::load("debug.png", device, queue)
                     .unwrap();
 
-                Material::new(device,
-                    m.name,
+                let material = Material::new(device, MaterialDescriptor {
+                    name: "Debug Material".to_owned(),
                     diffuse_texture
-                )
+                });
 
-            }).collect::<Vec<_>>();
+                vec![material]
+            }
+        };
 
         let meshes = models.into_iter()
             .map(|m| {
