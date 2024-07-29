@@ -18,6 +18,11 @@ pub struct Material {
     pub bind_group: wgpu::BindGroup,
 }
 
+pub struct MaterialDescriptor {
+    pub name: String,
+    pub diffuse_texture: Rc<Texture>,
+}
+
 pub struct Mesh {
     pub name: String,
     pub index_buffer: wgpu::Buffer,
@@ -25,6 +30,12 @@ pub struct Mesh {
     pub num_indices: u32,
     // the material assigned to this mesh from the materials
     pub material_id: usize, 
+}
+
+pub struct MeshDescriptor {
+    pub name: String,
+    pub vertices: Vec<Vertex>,
+    pub indices: Vec<u32>,
 }
 
 #[repr(C)]
@@ -160,7 +171,10 @@ impl Vertex {
 }
 
 impl Material {
-    fn new(device: &wgpu::Device, name: String, diffuse_texture: Rc<Texture>) -> Self {
+    fn new(device: &wgpu::Device, descriptor: MaterialDescriptor) -> Self {
+        let name = descriptor.name;
+        let diffuse_texture = descriptor.diffuse_texture;
+
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: None,
             entries: &[
@@ -202,6 +216,38 @@ impl Material {
             name,
             diffuse_texture,
             bind_group,
+        }
+    }
+}
+
+impl Mesh {
+    pub fn new(device: &wgpu::Device, descriptor: MeshDescriptor) -> Self {
+        let name = descriptor.name;
+        let indices = descriptor.indices;
+        let vertices = descriptor.vertices;
+
+        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some(&format!("{:?} Vertex Buffer", name)),
+            usage: wgpu::BufferUsages::VERTEX,
+            contents: bytemuck::cast_slice(&vertices),
+        });
+        
+        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some(&format!("{:?} Index Buffer", name)),
+            usage: wgpu::BufferUsages::INDEX,
+            contents: bytemuck::cast_slice(&indices),
+        });
+
+        let num_indices = indices.len() as u32;
+
+        let material_id = 0;
+        
+        Mesh {
+            name,
+            index_buffer,
+            vertex_buffer,
+            material_id,
+            num_indices,
         }
     }
 }
