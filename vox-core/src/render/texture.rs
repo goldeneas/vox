@@ -1,6 +1,9 @@
+use std::rc::Rc;
+
 use image::GenericImageView;
 use crate::util::load_binary;
 
+// TODO: add texture name to identify or id maybe
 pub struct Texture {
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,
@@ -16,7 +19,7 @@ impl Texture {
         queue: &wgpu::Queue,
         bytes: &[u8],
         label: &str,
-    ) -> anyhow::Result<Self> {
+    ) -> anyhow::Result<Rc<Texture>> {
         let img = image::load_from_memory(bytes)?;
         Self::from_image(device, queue, &img, Some(label))
     }
@@ -26,7 +29,7 @@ impl Texture {
         queue: &wgpu::Queue,
         img: &image::DynamicImage,
         label: Option<&str>
-    ) -> anyhow::Result<Self> {
+    ) -> anyhow::Result<Rc<Texture>> {
         let rgba = img.to_rgba8();
         let dimensions = img.dimensions();
  
@@ -74,15 +77,16 @@ impl Texture {
             mipmap_filter: wgpu::FilterMode::Nearest,
             ..Default::default()
         });
- 
-        Ok(Self { texture, view, sampler })
+
+        let texture = Rc::new(Self { texture, view, sampler });
+        Ok(texture)
     }
 
     pub fn load(
         file_name: &str,
         device: &wgpu::Device,
         queue: &wgpu::Queue
-    ) -> anyhow::Result<Texture> {
+    ) -> anyhow::Result<Rc<Texture>> {
         let data = load_binary(file_name)?;
         Texture::from_bytes(device, queue, &data, file_name)
     }
@@ -91,7 +95,7 @@ impl Texture {
         device: &wgpu::Device,
         config: &wgpu::SurfaceConfiguration,
         label: &str
-    ) -> Self {
+    ) -> Rc<Texture> {
         let size = wgpu::Extent3d {
             width: config.width,
             height: config.height,
@@ -124,10 +128,12 @@ impl Texture {
             ..Default::default()
         });
  
-        Self {
+        let texture = Self {
             texture,
             view,
             sampler
-        }
+        };
+
+        Rc::new(texture)
     }
 }

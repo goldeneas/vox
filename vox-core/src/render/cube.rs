@@ -1,31 +1,19 @@
-use crate::{Model, ModelVertex, Texture};
+use std::rc::Rc;
 
-pub struct CubeModel<'a> {
-    device: &'a wgpu::Device,
-    scale: f32,
-    diffuse_texture: Texture,
+use crate::{IntoModel, Model, ModelVertex, Texture};
+
+pub struct CubeModel {
+    pub scale: f32,
+    pub diffuse_texture: Rc<Texture>,
 }
 
-impl<'a> CubeModel<'a> {
-    pub fn new(device: &'a wgpu::Device,
-        scale: f32,
-        diffuse_texture: Texture
-    ) -> Self {
-        Self {
-            device,
-            scale,
-            diffuse_texture,
-        }
-    }
-}
-
-impl From<CubeModel<'_>> for Model {
-    fn from(cube: CubeModel) -> Model {
-        Model::new(cube.device,
-            &cube_vertices(cube.scale),
+impl IntoModel for CubeModel {
+    fn to_model(&self, device: &wgpu::Device) -> Model {
+        Model::new(device,
+            &cube_vertices(self.scale),
             &cube_indices(),
-            cube.diffuse_texture,
-            Some("Cube"),
+            self.diffuse_texture.clone(),
+            Some("Cube Model"),
         )
     }
 }

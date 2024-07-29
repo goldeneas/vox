@@ -5,6 +5,7 @@ mod entity;
 mod components;
 mod resources;
 
+use std::rc::Rc;
 use std::sync::Arc;
 
 use bevy_ecs::world::World;
@@ -13,9 +14,9 @@ use glyphon::Resolution;
 use render::cube::CubeModel;
 use render::model::*;
 use render::object::Object;
-use render::text::GlyphonLabelDescriptor;
-use render::text::GlyphonLabelId;
-use render::text::GlyphonRenderer;
+use render::text::LabelDescriptor;
+use render::text::LabelId;
+use render::text::LabelRenderer;
 use render::texture::*;
 use render::vertex::*;
 use render::instance::*;
@@ -44,8 +45,12 @@ use wasm_bindgen::prelude::*;
 const INSTANCES_PER_ROW: u32 = 10;
 const INSTANCE_DISPLACEMENT: f32 = 3.0;
 
+// GOOD MANNERS:
+// Dont store references to struct in your own structs
+
 struct AppState<'a> {
-    depth_texture: Texture,
+    depth_texture: Rc<Texture>,
+    debug_texture: Rc<Texture>,
 
     instances: Vec<Instance>,
     instance_buffer: wgpu::Buffer,
@@ -54,9 +59,9 @@ struct AppState<'a> {
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
 
-    welcome_label: GlyphonLabelId,
-    target_label: GlyphonLabelId,
-    camera_label: GlyphonLabelId,
+    welcome_label: LabelId,
+    target_label: LabelId,
+    camera_label: LabelId,
         
     surface: wgpu::Surface<'a>,
     device: wgpu::Device,
@@ -67,7 +72,7 @@ struct AppState<'a> {
 
     cube_model: Model,
 
-    renderer: GlyphonRenderer<'a>,
+    renderer: LabelRenderer<'a>,
 
     world: World,
 }
@@ -273,6 +278,8 @@ impl<'a> AppState<'a> {
         });
 
         let depth_texture = Texture::create_depth_texture(&device, &config, "depth_texture");
+        let debug_texture = Texture::load("cube-diffuse.jpg", &device, &queue)
+            .unwrap();
 
         let cube_model = Model::load("./res/cube.obj", &device, &queue)
             .unwrap();
@@ -281,8 +288,8 @@ impl<'a> AppState<'a> {
         world.init_resource::<InputRes>();
         world.init_resource::<MouseRes>();
 
-        let mut renderer = GlyphonRenderer::new(&device, &queue);
-        let welcome_label = renderer.add_label(GlyphonLabelDescriptor {
+        let mut renderer = LabelRenderer::new(&device, &queue);
+        let welcome_label = renderer.add_label(LabelDescriptor {
             x: 0.0,
             y: 10.0,
             text: "Welcome to Vox!".to_owned(),
@@ -291,7 +298,7 @@ impl<'a> AppState<'a> {
             ..Default::default()
         });
 
-        let camera_label = renderer.add_label(GlyphonLabelDescriptor {
+        let camera_label = renderer.add_label(LabelDescriptor {
             x: 0.0,
             y: 42.0,
             text: "".to_owned(),
@@ -300,7 +307,7 @@ impl<'a> AppState<'a> {
             ..Default::default()
         });
 
-        let target_label = renderer.add_label(GlyphonLabelDescriptor {
+        let target_label = renderer.add_label(LabelDescriptor {
             x: 0.0,
             y: 84.0,
             text: "".to_owned(),
@@ -314,6 +321,7 @@ impl<'a> AppState<'a> {
             welcome_label,
             camera_label,
             depth_texture,
+            debug_texture,
             instances,
             instance_buffer,
             camera,
@@ -480,10 +488,17 @@ impl<'a> App<'a> {
         state.renderer.prepare(&state.device, &state.queue);
 
         let object = Object::new(&state.device,
-            CubeModel::new(&state.device, 0.5, state.depth_texture).into(),
+            CubeModel {
+                scale: 0.5,
+                diffuse_texture: state.debug_texture.clone(),
+            },
             &[
                 Instance {
-                    position: (0.0, 0.0, 0.0).into(),
+                    position: (2.0, 2.0, 0.0).into(),
+                    rotation: Quaternion::zero(),
+                },
+                Instance {
+                    position: (1.0, 1.0, 0.0).into(),
                     rotation: Quaternion::zero(),
                 }
             ]);
@@ -523,7 +538,8 @@ impl<'a> App<'a> {
             });
 
             render_pass.set_pipeline(&state.render_pipeline);
-            render_pass.draw_object(&object, &state.camera_bind_group);
+            render_pass.draw_object_instanced(&object, 1..2, &state.camera_bind_group);
+            render_pass.draw_model(&state.cube_model, &state.camera_bind_group);
         }
 
         {

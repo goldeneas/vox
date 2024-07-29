@@ -1,6 +1,6 @@
 use wgpu::util::DeviceExt;
 
-use crate::{Instance, Model};
+use crate::{Instance, IntoModel, Model};
 
 pub struct Object {
     pub model: Model,
@@ -8,7 +8,7 @@ pub struct Object {
 }
 
 impl Object {
-    pub fn new(device: &wgpu::Device, model: Model, instances: &[Instance]) -> Self {
+    pub fn new(device: &wgpu::Device, model: impl IntoModel, instances: &[Instance]) -> Self {
         let instance_data = instances
             .iter()
             .map(Instance::to_raw)
@@ -20,8 +20,10 @@ impl Object {
             contents: bytemuck::cast_slice(&instance_data),
         });
 
+        let base_model = model.to_model(device);
+
         Self {
-            model,
+            model: base_model,
             instance_buffer,
         }
     }

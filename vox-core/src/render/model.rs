@@ -1,9 +1,9 @@
-use std::ops::Range;
+use std::{ops::Range, rc::Rc};
 
 use bytemuck::{Pod, Zeroable};
-use wgpu::util::{DeviceExt, RenderEncoder};
+use wgpu::util::DeviceExt;
 
-use crate::{ Instance, Texture, Vertex };
+use crate::{ Texture, Vertex };
 
 use super::object::Object;
 
@@ -14,7 +14,7 @@ pub struct Model {
 
 pub struct Material {
     pub name: String,
-    pub diffuse_texture: Texture,
+    pub diffuse_texture: Rc<Texture>,
     pub bind_group: wgpu::BindGroup,
 }
 
@@ -33,6 +33,10 @@ pub struct ModelVertex {
     pub position: [f32; 3],
     pub tex_coords: [f32; 2],
     pub normal: [f32; 3],
+}
+
+pub trait IntoModel {
+    fn to_model(&self, device: &wgpu::Device) -> Model;
 }
 
 pub trait DrawObject<'b> {
@@ -61,6 +65,8 @@ pub trait DrawObject<'b> {
         camera_bind_group: &'b wgpu::BindGroup);
 }
 
+// TODO: maybe let the non instanced versions of these function spawn all instances instead of just
+// one
 impl<'a, 'b> DrawObject<'b> for wgpu::RenderPass<'a>
 where 'b: 'a {
     fn draw_mesh(&mut self,
@@ -71,6 +77,9 @@ where 'b: 'a {
         self.draw_mesh_instanced(mesh, material, 0..1, camera_bind_group);
     }
 
+    // TODO: set the instance buffer to empty before drawing
+    // since it might have been set before when calling an instanced version
+    // of the drawing
     fn draw_mesh_instanced(&mut self,
         mesh: &'b Mesh,
         material: &'b Material,
@@ -155,7 +164,7 @@ impl Model {
     pub fn new(device: &wgpu::Device,
         vertices: &[ModelVertex],
         indices: &[u32],
-        diffuse_texture: Texture,
+        diffuse_texture: Rc<Texture>,
         name_opt: Option<&str>
     ) -> Self {
         let model_name = name_opt.unwrap_or_default();
