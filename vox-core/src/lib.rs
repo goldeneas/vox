@@ -42,9 +42,6 @@ use cgmath::prelude::*;
 #[cfg(target_arch="wasm32")]
 use wasm_bindgen::prelude::*;
 
-const INSTANCES_PER_ROW: u32 = 10;
-const INSTANCE_DISPLACEMENT: f32 = 3.0;
-
 // GOOD MANNERS:
 // Dont store references to struct in your own structs
 
@@ -52,14 +49,10 @@ struct AppState<'a> {
     depth_texture: Rc<Texture>,
     debug_texture: Rc<Texture>,
 
-    instances: Vec<Instance>,
-    instance_buffer: wgpu::Buffer,
-
     camera: Camera,
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
 
-    welcome_label: LabelId,
     target_label: LabelId,
     camera_label: LabelId,
         
@@ -251,32 +244,6 @@ impl<'a> AppState<'a> {
 
         surface.configure(&device, &config);
 
-        let instances = (0..INSTANCES_PER_ROW).flat_map(|z| {
-            (0..INSTANCES_PER_ROW).map(move |x| {
-                let x = INSTANCE_DISPLACEMENT * (x as f32 - INSTANCES_PER_ROW as f32 / 2.0);
-                let z = INSTANCE_DISPLACEMENT * (z as f32 - INSTANCES_PER_ROW as f32 / 2.0);
-
-                let position = cgmath::Vector3 { x: x as f32, y: 0.0, z: z as f32 };
-                let rotation = if position.is_zero() {
-                    cgmath::Quaternion::from_axis_angle(cgmath::Vector3::unit_z(), cgmath::Deg(0.0))
-                } else {
-                    cgmath::Quaternion::from_axis_angle(position.normalize(), cgmath::Deg(45.0))
-                };
-
-                Instance {
-                    position,
-                    rotation,
-                }
-            })
-        }).collect::<Vec<_>>();
-
-        let instance_data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
-        let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Instance Buffer"),
-            contents: bytemuck::cast_slice(&instance_data),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
-
         let depth_texture = Texture::create_depth_texture(&device, &config, "depth_texture");
         let debug_texture = Texture::load("cube-diffuse.jpg", &device, &queue)
             .unwrap();
@@ -289,14 +256,6 @@ impl<'a> AppState<'a> {
         world.init_resource::<MouseRes>();
 
         let mut renderer = LabelRenderer::new(&device, &queue);
-        let welcome_label = renderer.add_label(LabelDescriptor {
-            x: 0.0,
-            y: 10.0,
-            text: "Welcome to Vox!".to_owned(),
-            width: 1920.0,
-            height: 1080.0,
-            ..Default::default()
-        });
 
         let camera_label = renderer.add_label(LabelDescriptor {
             x: 0.0,
@@ -318,12 +277,9 @@ impl<'a> AppState<'a> {
 
         Self {
             target_label,
-            welcome_label,
             camera_label,
             depth_texture,
             debug_texture,
-            instances,
-            instance_buffer,
             camera,
             camera_bind_group,
             camera_buffer,

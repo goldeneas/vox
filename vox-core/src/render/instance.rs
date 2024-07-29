@@ -1,5 +1,4 @@
 use bytemuck::{Pod, Zeroable};
-use wgpu::util::{DeviceExt, RenderEncoder};
 
 pub struct Instance {
     pub position: cgmath::Vector3<f32>,

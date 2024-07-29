@@ -3,7 +3,6 @@ use std::rc::Rc;
 use image::GenericImageView;
 use crate::util::load_binary;
 
-// TODO: add texture name to identify or id maybe
 pub struct Texture {
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,

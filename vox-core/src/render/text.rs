@@ -1,6 +1,4 @@
-use std::fmt::Debug;
 
-use cgmath::Point3;
 use glyphon::{Attrs, Buffer, Cache, Color, FontSystem, Metrics, Shaping, SwashCache, TextArea, TextAtlas, TextBounds, TextRenderer, Viewport};
 use wgpu::{Device, MultisampleState, Queue, RenderPass};
 

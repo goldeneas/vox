@@ -1,5 +1,5 @@
 use bytemuck::{Pod, Zeroable};
-use cgmath::{num_traits::{pow, real::Real, Float}, InnerSpace, SquareMatrix};
+use cgmath::{InnerSpace, SquareMatrix};
 use bevy_ecs::prelude::*;
 
 use crate::resources::{input::InputRes, mouse::MouseRes};
