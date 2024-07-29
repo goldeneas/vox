@@ -1,7 +1,6 @@
 use std::{ops::Range, rc::Rc};
 
 use bytemuck::{Pod, Zeroable};
-use tobj::Material;
 use wgpu::util::DeviceExt;
 
 use crate::Texture;
@@ -36,6 +35,7 @@ pub struct Vertex {
     pub normal: [f32; 3],
 }
 
+// TODO: maybe move to convert.rs
 pub trait IntoModel {
     fn to_model(&self, device: &wgpu::Device) -> Model;
 }
