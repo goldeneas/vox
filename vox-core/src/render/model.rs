@@ -8,14 +8,13 @@ use crate::Texture;
 use super::object::Object;
 
 pub struct Model {
-    pub meshes: Vec<Mesh>,
-    pub materials: Vec<Material>,
+    meshes: Vec<Mesh>,
+    materials: Vec<Material>,
 }
 
 pub struct Material {
-    pub name: String,
-    pub diffuse_texture: Rc<Texture>,
-    pub bind_group: wgpu::BindGroup,
+    diffuse_texture: Rc<Texture>,
+    bind_group: wgpu::BindGroup,
 }
 
 pub struct MaterialDescriptor {
@@ -24,12 +23,11 @@ pub struct MaterialDescriptor {
 }
 
 pub struct Mesh {
-    pub name: String,
-    pub index_buffer: wgpu::Buffer,
-    pub vertex_buffer: wgpu::Buffer,
-    pub num_indices: u32,
+    index_buffer: wgpu::Buffer,
+    vertex_buffer: wgpu::Buffer,
+    num_indices: u32,
     // the material assigned to this mesh from the materials
-    pub material_id: usize, 
+    material_id: usize, 
 }
 
 pub struct MeshDescriptor {
@@ -213,7 +211,6 @@ impl Material {
         });
 
         Material {
-            name,
             diffuse_texture,
             bind_group,
         }
@@ -243,7 +240,6 @@ impl Mesh {
         let material_id = 0;
         
         Mesh {
-            name,
             index_buffer,
             vertex_buffer,
             material_id,
@@ -357,7 +353,6 @@ impl Model {
                 });
 
                 Mesh {
-                    name: file_name.to_string(),
                     index_buffer,
                     vertex_buffer,
                     material_id: m.mesh.material_id.unwrap_or(0),
