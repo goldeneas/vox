@@ -34,8 +34,8 @@ pub struct Mesh {
 
 pub struct MeshDescriptor {
     pub name: String,
-    pub vertices: Vec<Vertex>,
-    pub indices: Vec<u32>,
+    pub indices: Box<[u32]>,
+    pub vertices: Box<[Vertex]>,
 }
 
 #[repr(C)]
@@ -254,46 +254,31 @@ impl Mesh {
 
 // TODO: we dont want to be constrained on also having  a materials file. We should make the
 // materials optional
+// TODO: Make materials cached so that when reusing the same we dont create another
 impl Model {
     pub fn new(device: &wgpu::Device,
-        vertices: &[Vertex],
-        indices: &[u32],
+        vertices: Box<[Vertex]>,
+        indices: Box<[u32]>,
         diffuse_texture: Rc<Texture>,
         name_opt: Option<&str>
     ) -> Self {
         let model_name = name_opt.unwrap_or_default();
 
         let mut materials = Vec::new();
-        let material = Material::new(device,
-            format!("Material for {}", model_name),
-            diffuse_texture
-        );
+        let material = Material::new(device, MaterialDescriptor {
+            name: format!("Material - {}", model_name),
+            diffuse_texture,
+        });
 
         materials.push(material);
 
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Primitive Vertex Buffer"),
-            usage: wgpu::BufferUsages::VERTEX,
-            contents: bytemuck::cast_slice(vertices),
-        });
-
-        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Primitive Index Buffer"),
-            usage: wgpu::BufferUsages::INDEX,
-            contents: bytemuck::cast_slice(indices),
-        });
-
-        let num_indices = indices.len() as u32;
-
         let mut meshes = Vec::new();
 
-        let mesh = Mesh {
-            name: format!("Model Mesh - {}", model_name),
-            index_buffer,
-            num_indices,
-            vertex_buffer,
-            material_id: 0,
-        };
+        let mesh = Mesh::new(device, MeshDescriptor {
+            name: format!("Mesh - {}", model_name),
+            vertices,
+            indices
+        });
 
         meshes.push(mesh);
 
