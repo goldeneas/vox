@@ -247,7 +247,7 @@ impl<'a> AppState<'a> {
         let debug_texture = Texture::load("cube-diffuse.jpg", &device, &queue)
             .unwrap();
 
-        let cube_model = Model::load("./res/cube.obj", &device, &queue)
+        let cube_model = Model::load("./res/untitled.obj", &device, &queue)
             .unwrap();
 
         let mut world = World::new();
@@ -442,10 +442,7 @@ impl<'a> App<'a> {
         state.renderer.prepare(&state.device, &state.queue);
 
         let object = Object::new(&state.device,
-            CubeModel {
-                scale: 0.5,
-                diffuse_texture: state.debug_texture.clone(),
-            },
+            state.cube_model,
             &[
                 Instance {
                     position: (2.0, 2.0, 0.0).into(),
