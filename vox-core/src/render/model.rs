@@ -1,9 +1,10 @@
 use std::{ops::Range, rc::Rc};
 
 use bytemuck::{Pod, Zeroable};
+use tobj::Material;
 use wgpu::util::DeviceExt;
 
-use crate::{ Texture, Vertex };
+use crate::Texture;
 
 use super::object::Object;
 
@@ -29,7 +30,7 @@ pub struct Mesh {
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
-pub struct ModelVertex {
+pub struct Vertex {
     pub position: [f32; 3],
     pub tex_coords: [f32; 2],
     pub normal: [f32; 3],
@@ -132,11 +133,11 @@ where 'b: 'a {
     }
 }
 
-impl Vertex for ModelVertex {
+impl Vertex {
     fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
             step_mode: wgpu::VertexStepMode::Vertex,
-            array_stride: std::mem::size_of::<ModelVertex>() as wgpu::BufferAddress,
+            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
             attributes: &[
                 wgpu::VertexAttribute {
                     shader_location: 0,
@@ -158,17 +159,8 @@ impl Vertex for ModelVertex {
     }
 }
 
-// TODO: we dont want to be constrained on also having  a materials file. We should make the
-// materials optional
-impl Model {
-    pub fn new(device: &wgpu::Device,
-        vertices: &[ModelVertex],
-        indices: &[u32],
-        diffuse_texture: Rc<Texture>,
-        name_opt: Option<&str>
-    ) -> Self {
-        let model_name = name_opt.unwrap_or_default();
-
+impl Material {
+    fn new(device: &wgpu::Device, name: String, diffuse_texture: Rc<Texture>) -> Self {
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: None,
             entries: &[
@@ -192,7 +184,7 @@ impl Model {
         });
         
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("Model Bind Group"),
+            label: Some("Material Bind Group"),
             layout: &bind_group_layout,
             entries: &[
                 wgpu::BindGroupEntry {
@@ -206,12 +198,30 @@ impl Model {
             ]
         });
 
-        let mut materials = Vec::new();
-        let material = Material {
-            name: format!("Model Material - {}", model_name),
+        Material {
+            name,
             diffuse_texture,
             bind_group,
-        };
+        }
+    }
+}
+
+// TODO: we dont want to be constrained on also having  a materials file. We should make the
+// materials optional
+impl Model {
+    pub fn new(device: &wgpu::Device,
+        vertices: &[Vertex],
+        indices: &[u32],
+        diffuse_texture: Rc<Texture>,
+        name_opt: Option<&str>
+    ) -> Self {
+        let model_name = name_opt.unwrap_or_default();
+
+        let mut materials = Vec::new();
+        let material = Material::new(device,
+            format!("Material for {}", model_name),
+            diffuse_texture
+        );
 
         materials.push(material);
 
@@ -258,48 +268,11 @@ impl Model {
                 let diffuse_texture = Texture::load(diffuse_texture_name, device, queue)
                     .unwrap();
 
-                let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                    label: None,
-                    entries: &[
-                        wgpu::BindGroupLayoutEntry {
-                            ty: wgpu::BindingType::Texture {
-                                multisampled: false,
-                                sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                                view_dimension: wgpu::TextureViewDimension::D2,
-                            },
-                            count: None,
-                            binding: 0,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                        },
-                        wgpu::BindGroupLayoutEntry {
-                            ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                            count: None,
-                            binding: 1,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                        },
-                    ]
-                });
+                Material::new(device,
+                    m.name,
+                    diffuse_texture
+                )
 
-                let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    label: Some(diffuse_texture_name),
-                    layout: &bind_group_layout,
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: wgpu::BindingResource::TextureView(&diffuse_texture.view),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
-                        },
-                    ]
-                });
-
-                Material {
-                    name: m.name,
-                    diffuse_texture,
-                    bind_group
-                }
             }).collect::<Vec<_>>();
 
         let meshes = models.into_iter()
@@ -315,7 +288,7 @@ impl Model {
                             ];
                         }
 
-                        ModelVertex {
+                        Vertex {
                             position: [
                                 m.mesh.positions[i * 3],
                                 m.mesh.positions[i * 3 + 1],
