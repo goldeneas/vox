@@ -5,6 +5,8 @@ mod entity;
 mod components;
 mod resources;
 
+use std::borrow::Borrow;
+use std::cell::Cell;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Instant;
@@ -44,6 +46,8 @@ use cgmath::prelude::*;
 #[cfg(target_arch="wasm32")]
 use wasm_bindgen::prelude::*;
 
+const SIM_DT: f32 = 1.0/20.0;
+
 struct AppState<'a> {
     import_model: Rc<Model>,
     depth_texture: Rc<Texture>,
@@ -65,7 +69,8 @@ struct AppState<'a> {
     camera_label: LabelId,
     dt_label: LabelId,
 
-    last_frame: Instant,
+    delta_time: Instant,
+    accumulator: f32,
 
     world: World,
 }
@@ -284,7 +289,9 @@ impl<'a> AppState<'a> {
             ..Default::default()
         });
 
-        let last_frame = Instant::now();
+        let delta_time = Instant::now();
+
+        let accumulator = 0.0;
 
         Self {
             target_label,
@@ -304,7 +311,8 @@ impl<'a> AppState<'a> {
             import_model,
             world,
             renderer,
-            last_frame,
+            delta_time,
+            accumulator,
         }
     }
 }
@@ -339,7 +347,7 @@ impl<'a> ApplicationHandler for App<'a> {
                 self.resize(physical_size);
             },
             WindowEvent::RedrawRequested => {
-                self.redraw_request(event_loop);
+                self.redraw_requested(event_loop);
             },
             WindowEvent::KeyboardInput {
                 event: KeyEvent {
@@ -395,7 +403,7 @@ impl<'a> ApplicationHandler for App<'a> {
 impl<'a> App<'a> {
     fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
-            let state = self.state.as_mut().unwrap();
+            let state = self.state_mut();
             state.size = new_size;
             state.config.width = new_size.width;
             state.config.height = new_size.height;
@@ -405,7 +413,7 @@ impl<'a> App<'a> {
     }
 
     fn input(&mut self, keycode: &KeyCode, key_state: &ElementState) {
-        let state = self.state.as_mut().unwrap();
+        let state = self.state_mut();
         let input_res = &mut state.world.get_resource_mut::<InputRes>()
             .unwrap();
 
@@ -419,7 +427,7 @@ impl<'a> App<'a> {
     }
 
     fn mouse_moved(&mut self, delta: (f64, f64)) {
-        let state = self.state.as_mut().unwrap();
+        let state = self.state_mut();
         let mouse_res = &mut state.world.get_resource_mut::<MouseRes>()
             .unwrap();
 
@@ -427,24 +435,47 @@ impl<'a> App<'a> {
         mouse_res.pos.1 += delta.1;
     }
 
-    fn redraw_request(&mut self, event_loop: &ActiveEventLoop) {
-        self.update();
+    fn redraw_requested(&mut self, event_loop: &ActiveEventLoop) {
+        {
+            let state = self.state_mut();
+            state.accumulator += state.delta_time
+                .elapsed().as_secs_f32();
+            state.delta_time = Instant::now();
+        }
+
+        while self.state_ref().accumulator >= SIM_DT {
+            self.update();
+            self.state_mut().accumulator -= SIM_DT;
+        }
+
         match self.draw() {
             Ok(_) => {}
-            Err(wgpu::SurfaceError::Lost) => self.resize(self.state.as_ref().unwrap().size),
+            Err(wgpu::SurfaceError::Lost) => self.resize(self.state_ref().size),
             Err(wgpu::SurfaceError::OutOfMemory) => event_loop.exit(),
             Err(e) => warn!("{:?}", e),
         }
 
-        let state = self.state.as_mut().unwrap();
-        state.last_frame = Instant::now();
+        //state.last_frame = Instant::now();
     }
 
     fn update(&mut self) {
-        let state = self.state.as_mut().unwrap();
+        let state = self.state_mut();
 
         state.camera.update(&state.world);
         state.queue.write_buffer(&state.camera_buffer, 0, bytemuck::cast_slice(&[state.camera.uniform]));
+    }
+
+    fn draw(&mut self) -> Result<(), wgpu::SurfaceError> {
+        let state = self.state_mut();
+        let output = state.surface.get_current_texture()?;
+        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        state.renderer.viewport.update(&state.queue, Resolution{
+            width: state.config.width,
+            height: state.config.height,
+        });
+
+        state.renderer.prepare(&state.device, &state.queue);
 
         state.renderer.set_text(state.camera_label,
             format!("POS: {:?}", state.camera.transform.position));
@@ -453,19 +484,7 @@ impl<'a> App<'a> {
             format!("TAR: {:?}", state.camera.transform.target));
 
         state.renderer.set_text(state.dt_label,
-            format!("DT: {:?}", state.last_frame.elapsed()));
-    }
-
-    fn draw(&mut self) -> Result<(), wgpu::SurfaceError> {
-        let state = self.state.as_mut().unwrap();
-        let output = state.surface.get_current_texture()?;
-        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
-
-        state.renderer.viewport.update(&state.queue, Resolution{
-            width: state.config.width,
-            height: state.config.height,
-        });
-        state.renderer.prepare(&state.device, &state.queue);
+            format!("DT: {:?}", state.delta_time.elapsed()));
 
         let object = Object::new(&state.device,
             CubeModel {
@@ -553,6 +572,14 @@ impl<'a> App<'a> {
         output.present();
 
         return Ok(());
+    }
+
+    fn state_ref(&self) -> &AppState<'a> {
+        self.state.as_ref().unwrap()
+    }
+
+    fn state_mut(&mut self) -> &mut AppState<'a> {
+        self.state.as_mut().unwrap()
     }
 }
 
