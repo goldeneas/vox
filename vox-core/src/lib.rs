@@ -7,6 +7,7 @@ mod ecs;
 
 use std::rc::Rc;
 use std::sync::Arc;
+use std::time::Instant;
 
 use bevy_ecs::world::World;
 use cgmath::Quaternion;
@@ -441,11 +442,12 @@ impl<'a> App<'a> {
         });
         state.renderer.prepare(&state.device, &state.queue);
 
+        let now = Instant::now();
         let object = Object::new(&state.device,
             CubeModel {
                 scale: 1.0,
-                diffuse_texture: 
-            }.into(),
+                diffuse_texture: state.debug_texture.clone() 
+            }.to_model(&state.device),
             &[
                 Instance {
                     position: (2.0, 2.0, 0.0).into(),

@@ -8,8 +8,8 @@ use crate::Texture;
 use super::object::Object;
 
 pub struct Model {
-    meshes: Vec<Mesh>,
-    materials: Vec<Material>,
+    meshes: Box<[Mesh]>,
+    materials: Box<[Material]>,
 }
 
 pub struct Material {
@@ -107,7 +107,7 @@ where 'b: 'a {
         model: &'b Model,
         camera_bind_group: &'b wgpu::BindGroup
     ) {
-        for mesh in &model.meshes {
+        for mesh in model.meshes.as_ref() {
             let material = &model.materials[mesh.material_id];
             self.draw_mesh(mesh, material, camera_bind_group);
         }
@@ -118,7 +118,7 @@ where 'b: 'a {
         instances: Range<u32>,
         camera_bind_group: &'b wgpu::BindGroup
     ) {
-        for mesh in &model.meshes {
+        for mesh in model.meshes.as_ref() {
             let material = &model.materials[mesh.material_id];
             self.draw_mesh_instanced(mesh, material, instances.clone(), camera_bind_group);
         }
@@ -260,15 +260,12 @@ impl Model {
     ) -> Rc<Self> {
         let model_name = name_opt.unwrap_or_default();
 
-        let mut materials = Vec::new();
         let material = Material::new(device, MaterialDescriptor {
             name: format!("Material - {}", model_name),
             diffuse_texture,
         });
 
-        materials.push(material);
-
-        let mut meshes = Vec::new();
+        let materials = Box::new([material]);
 
         let mesh = Mesh::new(device, MeshDescriptor {
             name: format!("Mesh - {}", model_name),
@@ -276,7 +273,7 @@ impl Model {
             indices
         });
 
-        meshes.push(mesh);
+        let meshes = Box::new([mesh]);
 
         let model = Model {
             materials,
@@ -290,9 +287,9 @@ impl Model {
         let (models, materials_opt) = tobj::load_obj(file_name, &tobj::GPU_LOAD_OPTIONS)
             .expect("Could not load file OBJ file");
 
-        let materials = match materials_opt {
+        let materials: Box<[Material]> = match materials_opt {
             Ok(tobj_materials) => {
-                tobj_materials
+                let materials = tobj_materials
                     .into_iter()
                     .map(|m| {
                         let diffuse_texture_name = &m.diffuse_texture.unwrap();
@@ -303,7 +300,9 @@ impl Model {
                             name: format!("Material - {}", diffuse_texture_name),
                             diffuse_texture
                         })
-                    }).collect::<Vec<_>>()
+                    }).collect::<Vec<_>>();
+
+                materials.try_into().unwrap()
             },
             Err(_) => {
                 let diffuse_texture = Texture::load("debug.png", device, queue)
@@ -314,13 +313,13 @@ impl Model {
                     diffuse_texture
                 });
 
-                vec![material]
+                Box::new([material])
             }
         };
 
-        let meshes = models.into_iter()
+        let meshes: Box<[Mesh]> = models.into_iter()
             .map(|m| {
-                let vertices = (0..m.mesh.positions.len() / 3)
+                let vertices: Box<[Vertex]> = (0..m.mesh.positions.len() / 3)
                     .map(|i| {
                         let mut normals = [0.0, 0.0, 0.0];
                         if !m.mesh.normals.is_empty() { 
@@ -340,27 +339,19 @@ impl Model {
                             tex_coords: [m.mesh.texcoords[i * 2], 1.0 - m.mesh.texcoords[i * 2 + 1]],
                             normal: normals,
                         }
-                    }).collect::<Vec<_>>();
+                    }).collect::<Vec<_>>()
+                .try_into().unwrap();
 
-                let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some(&format!("{:?} Vertex Buffer", file_name)),
-                    usage: wgpu::BufferUsages::VERTEX,
-                    contents: bytemuck::cast_slice(&vertices),
-                });
+                let indices: Box<[u32]> = m.mesh.indices
+                    .try_into().unwrap();
 
-                let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some(&format!("{:?} Index Buffer", file_name)),
-                    usage: wgpu::BufferUsages::INDEX,
-                    contents: bytemuck::cast_slice(&m.mesh.indices),
-                });
-
-                Mesh {
-                    index_buffer,
-                    vertex_buffer,
-                    material_id: m.mesh.material_id.unwrap_or(0),
-                    num_indices: m.mesh.indices.len() as u32,
-                }
-            }).collect::<Vec<_>>();
+                Mesh::new(device, MeshDescriptor {
+                    vertices,
+                    indices,
+                    name: file_name.to_owned(),
+                })
+            }).collect::<Vec<_>>()
+        .try_into().unwrap();
 
         let model = Model {
             meshes,
