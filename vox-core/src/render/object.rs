@@ -2,11 +2,12 @@ use std::rc::Rc;
 
 use wgpu::util::DeviceExt;
 
-use crate::{Instance, IntoModel, Model};
+use crate::{Instance, Model};
 
 pub struct Object {
-    pub model: Rc<Model>,
-    pub instance_buffer: wgpu::Buffer,
+    model: Rc<Model>,
+    instance_buffer: wgpu::Buffer,
+    num_instances: u32,
 }
 
 impl Object {
@@ -22,9 +23,24 @@ impl Object {
             contents: bytemuck::cast_slice(&instance_data),
         });
 
+        let num_instances = instances.len() as u32;
+
         Self {
             model,
             instance_buffer,
+            num_instances,
         }
+    }
+
+    pub fn model(&self) -> &Model {
+        self.model.as_ref()
+    }
+
+    pub fn instance_buffer(&self) -> &wgpu::Buffer {
+        &self.instance_buffer
+    }
+
+    pub fn num_instances(&self) -> u32 {
+        self.num_instances
     }
 }

@@ -20,7 +20,6 @@ pub struct Vertex {
     pub normal: [f32; 3],
 }
 
-// TODO: maybe move to convert.rs
 pub trait IntoModel {
     fn to_model(&self, device: &wgpu::Device) -> Rc<Model>;
 }
@@ -45,7 +44,7 @@ pub trait DrawObject<'b> {
     fn draw_object(&mut self,
         object: &'b Object,
         camera_bind_group: &'b wgpu::BindGroup);
-    fn draw_object_instanced(&mut self,
+    fn draw_object_selective(&mut self,
         object: &'b Object,
         instances: Range<u32>,
         camera_bind_group: &'b wgpu::BindGroup);
@@ -104,17 +103,16 @@ where 'b: 'a {
         object: &'b Object,
         camera_bind_group: &'b wgpu::BindGroup
     ) {
-        self.draw_object_instanced(object, 0..1, camera_bind_group);
+        self.draw_object_selective(object, 0..object.num_instances(), camera_bind_group);
     }
 
-    fn draw_object_instanced(&mut self,
+    fn draw_object_selective(&mut self,
         object: &'b Object,
         instances: Range<u32>,
         camera_bind_group: &'b wgpu::BindGroup
     ) {
-        // FIXME: This slot is hardcoded since we only have one shader for now
-        self.set_vertex_buffer(1, object.instance_buffer.slice(..));
-        self.draw_model_instanced(&object.model, instances, camera_bind_group);
+        self.set_vertex_buffer(1, object.instance_buffer().slice(..));
+        self.draw_model_instanced(&object.model(), instances, camera_bind_group);
     }
 }
 

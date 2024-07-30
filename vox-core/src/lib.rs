@@ -7,9 +7,12 @@ mod resources;
 
 use std::rc::Rc;
 use std::sync::Arc;
+use std::time::Instant;
 
 use bevy_ecs::world::World;
+use cgmath::Deg;
 use cgmath::Quaternion;
+use cgmath::Rad;
 use glyphon::Resolution;
 use render::cube::CubeModel;
 use render::model::*;
@@ -41,19 +44,14 @@ use cgmath::prelude::*;
 #[cfg(target_arch="wasm32")]
 use wasm_bindgen::prelude::*;
 
-// GOOD MANNERS:
-// Dont store references to struct in your own structs
-
 struct AppState<'a> {
+    import_model: Rc<Model>,
     depth_texture: Rc<Texture>,
     debug_texture: Rc<Texture>,
 
     camera: Camera,
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
-
-    target_label: LabelId,
-    camera_label: LabelId,
         
     surface: wgpu::Surface<'a>,
     device: wgpu::Device,
@@ -62,9 +60,11 @@ struct AppState<'a> {
     size: winit::dpi::PhysicalSize<u32>,
     render_pipeline: wgpu::RenderPipeline,
 
-    import_model: Rc<Model>,
-
     renderer: LabelRenderer<'a>,
+    target_label: LabelId,
+    camera_label: LabelId,
+
+    last_frame: Instant,
 
     world: World,
 }
@@ -274,6 +274,8 @@ impl<'a> AppState<'a> {
             ..Default::default()
         });
 
+        let last_frame = Instant::now();
+
         Self {
             target_label,
             camera_label,
@@ -291,6 +293,7 @@ impl<'a> AppState<'a> {
             import_model: cube_model,
             world,
             renderer,
+            last_frame,
         }
     }
 }
@@ -459,6 +462,10 @@ impl<'a> App<'a> {
                     position: (3.0, 2.0, 0.0).into(),
                     rotation: Quaternion::zero(),
                 },
+                Instance {
+                    position: (3.0, 2.0, 0.0).into(),
+                    rotation: Quaternion::from_angle_z(Rad(20.0)),
+                },
             ]);
 
         let mut encoder = state.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -496,7 +503,7 @@ impl<'a> App<'a> {
             });
 
             render_pass.set_pipeline(&state.render_pipeline);
-            render_pass.draw_object_instanced(&object, 0..3, &state.camera_bind_group);
+            render_pass.draw_object(&object, &state.camera_bind_group);
             render_pass.draw_model(&state.import_model, &state.camera_bind_group);
         }
 
