@@ -1,9 +1,6 @@
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 
-struct Handle<T>(Rc<T>);
-
-impl<T> Handle<T> {
-    pub fn new(value: T) -> Rc<T> {
-        Rc::new(value)
-    }
+pub enum Handle<T> {
+    Strong(Rc<T>),
+    Weak(Weak<T>),
 }

@@ -8,7 +8,7 @@ pub struct Object {
 }
 
 impl Object {
-    pub fn new(device: &wgpu::Device, model: impl IntoModel, instances: &[Instance]) -> Self {
+    pub fn new(device: &wgpu::Device, model: Model, instances: &[Instance]) -> Self {
         let instance_data = instances
             .iter()
             .map(Instance::to_raw)
@@ -20,10 +20,8 @@ impl Object {
             contents: bytemuck::cast_slice(&instance_data),
         });
 
-        let base_model = model.to_model(device);
-
         Self {
-            model: base_model,
+            model,
             instance_buffer,
         }
     }
