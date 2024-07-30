@@ -46,7 +46,7 @@ pub struct Vertex {
 
 // TODO: maybe move to convert.rs
 pub trait IntoModel {
-    fn to_model(&self, device: &wgpu::Device) -> Model;
+    fn to_model(&self, device: &wgpu::Device) -> Rc<Model>;
 }
 
 pub trait DrawObject<'b> {
@@ -196,7 +196,7 @@ impl Material {
         });
         
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("Material Bind Group"),
+            label: Some(&format!("Material Bind Group - {}", name)),
             layout: &bind_group_layout,
             entries: &[
                 wgpu::BindGroupEntry {
@@ -257,7 +257,7 @@ impl Model {
         indices: Box<[u32]>,
         diffuse_texture: Rc<Texture>,
         name_opt: Option<&str>
-    ) -> Self {
+    ) -> Rc<Self> {
         let model_name = name_opt.unwrap_or_default();
 
         let mut materials = Vec::new();
@@ -278,13 +278,15 @@ impl Model {
 
         meshes.push(mesh);
 
-        Model {
+        let model = Model {
             materials,
             meshes,
-        }
+        };
+
+        Rc::new(model)
     }
 
-    pub fn load(file_name: &str, device: &wgpu::Device, queue: &wgpu::Queue) -> anyhow::Result<Model> {
+    pub fn load(file_name: &str, device: &wgpu::Device, queue: &wgpu::Queue) -> anyhow::Result<Rc<Model>> {
         let (models, materials_opt) = tobj::load_obj(file_name, &tobj::GPU_LOAD_OPTIONS)
             .expect("Could not load file OBJ file");
 
@@ -360,9 +362,11 @@ impl Model {
                 }
             }).collect::<Vec<_>>();
 
-        Ok(Model {
+        let model = Model {
             meshes,
             materials,
-        })
+        };
+
+        Ok(Rc::new(model))
     }
 }

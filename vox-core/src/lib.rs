@@ -4,7 +4,6 @@ mod util;
 mod entity;
 mod components;
 mod ecs;
-mod resource_handle;
 
 use std::rc::Rc;
 use std::sync::Arc;
@@ -63,7 +62,7 @@ struct AppState<'a> {
     size: winit::dpi::PhysicalSize<u32>,
     render_pipeline: wgpu::RenderPipeline,
 
-    cube_model: Model,
+    import_model: Rc<Model>,
 
     renderer: LabelRenderer<'a>,
 
@@ -289,7 +288,7 @@ impl<'a> AppState<'a> {
             config,
             size,
             render_pipeline,
-            cube_model,
+            import_model: cube_model,
             world,
             renderer,
         }
@@ -443,7 +442,10 @@ impl<'a> App<'a> {
         state.renderer.prepare(&state.device, &state.queue);
 
         let object = Object::new(&state.device,
-            state.cube_model,
+            CubeModel {
+                scale: 1.0,
+                diffuse_texture: 
+            }.into(),
             &[
                 Instance {
                     position: (2.0, 2.0, 0.0).into(),
@@ -452,7 +454,11 @@ impl<'a> App<'a> {
                 Instance {
                     position: (1.0, 1.0, 0.0).into(),
                     rotation: Quaternion::zero(),
-                }
+                },
+                Instance {
+                    position: (3.0, 2.0, 0.0).into(),
+                    rotation: Quaternion::zero(),
+                },
             ]);
 
         let mut encoder = state.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -490,8 +496,8 @@ impl<'a> App<'a> {
             });
 
             render_pass.set_pipeline(&state.render_pipeline);
-            render_pass.draw_object_instanced(&object, 0..2, &state.camera_bind_group);
-            render_pass.draw_model(&state.cube_model, &state.camera_bind_group);
+            render_pass.draw_object_instanced(&object, 0..3, &state.camera_bind_group);
+            render_pass.draw_model(&state.import_model, &state.camera_bind_group);
         }
 
         {

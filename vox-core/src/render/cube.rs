@@ -8,7 +8,7 @@ pub struct CubeModel {
 }
 
 impl IntoModel for CubeModel {
-    fn to_model(&self, device: &wgpu::Device) -> Model {
+    fn to_model(&self, device: &wgpu::Device) -> Rc<Model> {
         Model::new(device,
             cube_vertices(self.scale),
             cube_indices(),
