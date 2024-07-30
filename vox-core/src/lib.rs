@@ -3,11 +3,10 @@ mod camera;
 mod util;
 mod entity;
 mod components;
-mod ecs;
+mod resources;
 
 use std::rc::Rc;
 use std::sync::Arc;
-use std::time::Instant;
 
 use bevy_ecs::world::World;
 use cgmath::Quaternion;
@@ -23,9 +22,9 @@ use render::instance::*;
 
 use camera::{ Camera, CameraController, CameraTransform };
 use log::warn;
-use ecs::input::InputRes;
-use ecs::input::KeyState;
-use ecs::mouse::MouseRes;
+use resources::input::InputRes;
+use resources::input::KeyState;
+use resources::mouse::MouseRes;
 use wgpu::PipelineCompilationOptions;
 use wgpu::{util::DeviceExt, RenderPipelineDescriptor};
 use winit::application::ApplicationHandler;
@@ -442,7 +441,6 @@ impl<'a> App<'a> {
         });
         state.renderer.prepare(&state.device, &state.queue);
 
-        let now = Instant::now();
         let object = Object::new(&state.device,
             CubeModel {
                 scale: 1.0,

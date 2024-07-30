@@ -2,7 +2,7 @@ use bytemuck::{Pod, Zeroable};
 use cgmath::{InnerSpace, SquareMatrix};
 use bevy_ecs::prelude::*;
 
-use crate::ecs::{input::InputRes, mouse::MouseRes};
+use crate::resources::{input::InputRes, mouse::MouseRes};
 
 #[rustfmt::skip]
 pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(

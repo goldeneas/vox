@@ -5,35 +5,11 @@ use wgpu::util::DeviceExt;
 
 use crate::Texture;
 
-use super::object::Object;
+use super::{material::{Material, MaterialDescriptor}, mesh::{Mesh, MeshDescriptor}, object::Object};
 
 pub struct Model {
     meshes: Box<[Mesh]>,
     materials: Box<[Material]>,
-}
-
-pub struct Material {
-    diffuse_texture: Rc<Texture>,
-    bind_group: wgpu::BindGroup,
-}
-
-pub struct MaterialDescriptor {
-    pub name: String,
-    pub diffuse_texture: Rc<Texture>,
-}
-
-pub struct Mesh {
-    index_buffer: wgpu::Buffer,
-    vertex_buffer: wgpu::Buffer,
-    num_indices: u32,
-    // the material assigned to this mesh from the materials
-    material_id: usize, 
-}
-
-pub struct MeshDescriptor {
-    pub name: String,
-    pub indices: Box<[u32]>,
-    pub vertices: Box<[Vertex]>,
 }
 
 #[repr(C)]
@@ -96,11 +72,11 @@ where 'b: 'a {
         instances: Range<u32>,
         camera_bind_group: &'b wgpu::BindGroup
     ) {
-        self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-        self.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-        self.set_bind_group(0, &material.bind_group, &[]);
+        self.set_vertex_buffer(0, mesh.vertex_buffer().slice(..));
+        self.set_index_buffer(mesh.index_buffer().slice(..), wgpu::IndexFormat::Uint32);
+        self.set_bind_group(0, &material.bind_group(), &[]);
         self.set_bind_group(1, camera_bind_group, &[]);
-        self.draw_indexed(0..mesh.num_indices, 0, instances);
+        self.draw_indexed(0..mesh.num_indices(), 0, instances);
     }
 
     fn draw_model(&mut self,
@@ -108,7 +84,7 @@ where 'b: 'a {
         camera_bind_group: &'b wgpu::BindGroup
     ) {
         for mesh in model.meshes.as_ref() {
-            let material = &model.materials[mesh.material_id];
+            let material = &model.materials[mesh.material_id()];
             self.draw_mesh(mesh, material, camera_bind_group);
         }
     }
@@ -119,7 +95,7 @@ where 'b: 'a {
         camera_bind_group: &'b wgpu::BindGroup
     ) {
         for mesh in model.meshes.as_ref() {
-            let material = &model.materials[mesh.material_id];
+            let material = &model.materials[mesh.material_id()];
             self.draw_mesh_instanced(mesh, material, instances.clone(), camera_bind_group);
         }
     }
@@ -168,88 +144,6 @@ impl Vertex {
     }
 }
 
-impl Material {
-    fn new(device: &wgpu::Device, descriptor: MaterialDescriptor) -> Self {
-        let name = descriptor.name;
-        let diffuse_texture = descriptor.diffuse_texture;
-
-        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: None,
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    ty: wgpu::BindingType::Texture {
-                        multisampled: false,
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                    },
-                    count: None,
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                },
-            ]
-        });
-        
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some(&format!("Material Bind Group - {}", name)),
-            layout: &bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&diffuse_texture.view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
-                },
-            ]
-        });
-
-        Material {
-            diffuse_texture,
-            bind_group,
-        }
-    }
-}
-
-impl Mesh {
-    pub fn new(device: &wgpu::Device, descriptor: MeshDescriptor) -> Self {
-        let name = descriptor.name;
-        let indices = descriptor.indices;
-        let vertices = descriptor.vertices;
-
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some(&format!("{:?} Vertex Buffer", name)),
-            usage: wgpu::BufferUsages::VERTEX,
-            contents: bytemuck::cast_slice(&vertices),
-        });
-        
-        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some(&format!("{:?} Index Buffer", name)),
-            usage: wgpu::BufferUsages::INDEX,
-            contents: bytemuck::cast_slice(&indices),
-        });
-
-        let num_indices = indices.len() as u32;
-
-        let material_id = 0;
-        
-        Mesh {
-            index_buffer,
-            vertex_buffer,
-            material_id,
-            num_indices,
-        }
-    }
-}
-
-// TODO: we dont want to be constrained on also having  a materials file. We should make the
-// materials optional
 // TODO: Make materials cached so that when reusing the same we dont create another
 impl Model {
     pub fn new(device: &wgpu::Device,
