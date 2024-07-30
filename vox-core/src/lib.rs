@@ -3,7 +3,8 @@ mod camera;
 mod util;
 mod entity;
 mod components;
-mod resources;
+mod ecs;
+mod resource_handle;
 
 use std::rc::Rc;
 use std::sync::Arc;
@@ -22,9 +23,9 @@ use render::instance::*;
 
 use camera::{ Camera, CameraController, CameraTransform };
 use log::warn;
-use resources::input::InputRes;
-use resources::input::KeyState;
-use resources::mouse::MouseRes;
+use ecs::input::InputRes;
+use ecs::input::KeyState;
+use ecs::mouse::MouseRes;
 use wgpu::PipelineCompilationOptions;
 use wgpu::{util::DeviceExt, RenderPipelineDescriptor};
 use winit::application::ApplicationHandler;
