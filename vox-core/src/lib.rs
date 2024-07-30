@@ -63,6 +63,7 @@ struct AppState<'a> {
     renderer: LabelRenderer<'a>,
     target_label: LabelId,
     camera_label: LabelId,
+    dt_label: LabelId,
 
     last_frame: Instant,
 
@@ -247,7 +248,7 @@ impl<'a> AppState<'a> {
         let debug_texture = Texture::load("cube-diffuse.jpg", &device, &queue)
             .unwrap();
 
-        let cube_model = Model::load("./res/untitled.obj", &device, &queue)
+        let import_model = Model::load("./res/untitled.obj", &device, &queue)
             .unwrap();
 
         let mut world = World::new();
@@ -274,11 +275,21 @@ impl<'a> AppState<'a> {
             ..Default::default()
         });
 
+        let dt_label = renderer.add_label(LabelDescriptor {
+            x: 0.0,
+            y: 120.0,
+            text: "".to_owned(),
+            width: 1920.0,
+            height: 1080.0,
+            ..Default::default()
+        });
+
         let last_frame = Instant::now();
 
         Self {
             target_label,
             camera_label,
+            dt_label,
             depth_texture,
             debug_texture,
             camera,
@@ -290,7 +301,7 @@ impl<'a> AppState<'a> {
             config,
             size,
             render_pipeline,
-            import_model: cube_model,
+            import_model,
             world,
             renderer,
             last_frame,
@@ -309,7 +320,8 @@ impl<'a> ApplicationHandler for App<'a> {
         &mut self,
         event_loop: &ActiveEventLoop,
         window_id: WindowId,
-        event: WindowEvent) {
+        event: WindowEvent
+    ) {
         if self.window.as_ref().unwrap().id() != window_id {
             return;
         }
@@ -327,13 +339,7 @@ impl<'a> ApplicationHandler for App<'a> {
                 self.resize(physical_size);
             },
             WindowEvent::RedrawRequested => {
-                self.update();
-                match self.draw() {
-                    Ok(_) => {}
-                    Err(wgpu::SurfaceError::Lost) => self.resize(self.state.as_ref().unwrap().size),
-                    Err(wgpu::SurfaceError::OutOfMemory) => event_loop.exit(),
-                    Err(e) => warn!("{:?}", e),
-                }
+                self.redraw_request(event_loop);
             },
             WindowEvent::KeyboardInput {
                 event: KeyEvent {
@@ -421,8 +427,22 @@ impl<'a> App<'a> {
         mouse_res.pos.1 += delta.1;
     }
 
+    fn redraw_request(&mut self, event_loop: &ActiveEventLoop) {
+        self.update();
+        match self.draw() {
+            Ok(_) => {}
+            Err(wgpu::SurfaceError::Lost) => self.resize(self.state.as_ref().unwrap().size),
+            Err(wgpu::SurfaceError::OutOfMemory) => event_loop.exit(),
+            Err(e) => warn!("{:?}", e),
+        }
+
+        let state = self.state.as_mut().unwrap();
+        state.last_frame = Instant::now();
+    }
+
     fn update(&mut self) {
         let state = self.state.as_mut().unwrap();
+
         state.camera.update(&state.world);
         state.queue.write_buffer(&state.camera_buffer, 0, bytemuck::cast_slice(&[state.camera.uniform]));
 
@@ -431,6 +451,9 @@ impl<'a> App<'a> {
 
         state.renderer.set_text(state.target_label,
             format!("TAR: {:?}", state.camera.transform.target));
+
+        state.renderer.set_text(state.dt_label,
+            format!("DT: {:?}", state.last_frame.elapsed()));
     }
 
     fn draw(&mut self) -> Result<(), wgpu::SurfaceError> {
