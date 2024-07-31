@@ -10,6 +10,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Instant;
 
+use assets::asset_server;
 use assets::asset_server::AssetServer;
 use bevy_ecs::world::World;
 use cgmath::Quaternion;
@@ -48,10 +49,6 @@ use wasm_bindgen::prelude::*;
 const SIM_DT: f32 = 1.0/20.0;
 
 struct AppState<'a> {
-    import_model: Rc<Model>,
-    depth_texture: Rc<Texture>,
-    debug_texture: Rc<Texture>,
-
     asset_server: AssetServer,
 
     camera: Camera,
@@ -250,13 +247,6 @@ impl<'a> AppState<'a> {
 
         surface.configure(&device, &config);
 
-        let depth_texture = Texture::create_depth_texture(&device, &config, "depth_texture");
-        let debug_texture = Texture::load("cube-diffuse.jpg", &device, &queue)
-            .unwrap();
-
-        let import_model = Model::load("./res/untitled.obj", &device, &queue)
-            .unwrap();
-
         let mut world = World::new();
         world.init_resource::<InputRes>();
         world.init_resource::<MouseRes>();
@@ -294,15 +284,22 @@ impl<'a> AppState<'a> {
 
         let accumulator = 0.0;
 
-        let asset_server = AssetServer::new();
+        let mut asset_server = AssetServer::new();
+
+        let depth_texture = Texture::create_depth_texture(&device, &config, "depth_texture");
+        let debug_texture = Texture::load("cube-diffuse.jpg", &device, &queue)
+            .unwrap();
+
+        asset_server.insert(debug_texture);
+
+        let import_model = Model::load("./res/untitled.obj", &device, &queue)
+            .unwrap();
 
         Self {
             asset_server,
             target_label,
             camera_label,
             dt_label,
-            depth_texture,
-            debug_texture,
             camera,
             camera_bind_group,
             camera_buffer,
@@ -312,7 +309,6 @@ impl<'a> AppState<'a> {
             config,
             size,
             render_pipeline,
-            import_model,
             world,
             renderer,
             delta_time,
@@ -493,7 +489,7 @@ impl<'a> App<'a> {
         let object = Object::new(&state.device,
             CubeModel {
                 scale: 1.0,
-                diffuse_texture: state.debug_texture.clone() 
+                diffuse_texture: state.asset_server.get("debug_texture.jpg"), 
             }.to_model(&state.device),
             &[
                 Instance {

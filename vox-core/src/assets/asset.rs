@@ -1,3 +1,5 @@
 pub trait Asset {
-    type AssetId;
+    // This is treated as an ID
+    // Two resources CANNOT have the same file_name
+    fn file_name(&self) -> &str;
 }

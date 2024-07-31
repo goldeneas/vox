@@ -4,9 +4,16 @@ use image::GenericImageView;
 use crate::{assets::asset::Asset, util::load_binary};
 
 pub struct Texture {
-    pub texture: wgpu::Texture,
-    pub view: wgpu::TextureView,
-    pub sampler: wgpu::Sampler,
+    texture: wgpu::Texture,
+    view: wgpu::TextureView,
+    sampler: wgpu::Sampler,
+    name: String,
+}
+
+impl Asset for Texture {
+    fn file_name(&self) -> &str {
+        &self.name
+    }
 }
 
 impl Texture {
@@ -17,18 +24,18 @@ impl Texture {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         bytes: &[u8],
-        label: &str,
-    ) -> anyhow::Result<Rc<Texture>> {
+        file_name: &str,
+    ) -> anyhow::Result<Texture> {
         let img = image::load_from_memory(bytes)?;
-        Self::from_image(device, queue, &img, Some(label))
+        Self::from_image(device, queue, &img, file_name)
     }
  
     pub fn from_image(
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         img: &image::DynamicImage,
-        label: Option<&str>
-    ) -> anyhow::Result<Rc<Texture>> {
+        file_name: &str
+    ) -> anyhow::Result<Texture> {
         let rgba = img.to_rgba8();
         let dimensions = img.dimensions();
  
@@ -39,7 +46,7 @@ impl Texture {
         };
  
         let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label,
+            label: Some(file_name),
             size,
             mip_level_count: 1,
             sample_count: 1,
@@ -77,15 +84,21 @@ impl Texture {
             ..Default::default()
         });
 
-        let texture = Rc::new(Self { texture, view, sampler });
-        Ok(texture)
+        let name = file_name.to_string();
+
+        Ok(Self {
+            texture,
+            view,
+            sampler,
+            name,
+        })
     }
 
     pub fn load(
         file_name: &str,
         device: &wgpu::Device,
         queue: &wgpu::Queue
-    ) -> anyhow::Result<Rc<Texture>> {
+    ) -> anyhow::Result<Texture> {
         let data = load_binary(file_name)?;
         Texture::from_bytes(device, queue, &data, file_name)
     }
@@ -93,7 +106,7 @@ impl Texture {
     pub fn create_depth_texture(
         device: &wgpu::Device,
         config: &wgpu::SurfaceConfiguration,
-        label: &str
+        name: &str
     ) -> Rc<Texture> {
         let size = wgpu::Extent3d {
             width: config.width,
@@ -102,7 +115,7 @@ impl Texture {
         };
  
         let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some(label),
+            label: Some(name),
             size,
             mip_level_count: 1,
             sample_count: 1,
@@ -126,13 +139,24 @@ impl Texture {
             lod_max_clamp: 100.0,
             ..Default::default()
         });
+
+        let name = name.to_string();
  
         let texture = Self {
             texture,
             view,
-            sampler
+            sampler,
+            name,
         };
 
         Rc::new(texture)
+    }
+
+    pub fn view(&self) -> &wgpu::TextureView {
+        &self.view
+    }
+
+    pub fn sampler(&self) -> &wgpu::Sampler {
+        &self.sampler
     }
 }
