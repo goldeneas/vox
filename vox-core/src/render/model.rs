@@ -1,7 +1,6 @@
 use std::{ops::Range, rc::Rc};
 
 use bytemuck::{Pod, Zeroable};
-use wgpu::util::DeviceExt;
 
 use crate::Texture;
 
@@ -50,8 +49,6 @@ pub trait DrawObject<'b> {
         camera_bind_group: &'b wgpu::BindGroup);
 }
 
-// TODO: maybe let the non instanced versions of these function spawn all instances instead of just
-// one
 impl<'a, 'b> DrawObject<'b> for wgpu::RenderPass<'a>
 where 'b: 'a {
     fn draw_mesh(&mut self,

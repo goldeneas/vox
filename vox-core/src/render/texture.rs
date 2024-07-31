@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use image::GenericImageView;
-use crate::util::load_binary;
+use crate::{assets::asset::Asset, util::load_binary};
 
 pub struct Texture {
     pub texture: wgpu::Texture,

@@ -4,15 +4,14 @@ mod util;
 mod entity;
 mod components;
 mod resources;
+mod assets;
 
-use std::borrow::Borrow;
-use std::cell::Cell;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Instant;
 
+use assets::asset_server::AssetServer;
 use bevy_ecs::world::World;
-use cgmath::Deg;
 use cgmath::Quaternion;
 use cgmath::Rad;
 use glyphon::Resolution;
@@ -52,6 +51,8 @@ struct AppState<'a> {
     import_model: Rc<Model>,
     depth_texture: Rc<Texture>,
     debug_texture: Rc<Texture>,
+
+    asset_server: AssetServer,
 
     camera: Camera,
     camera_buffer: wgpu::Buffer,
@@ -293,7 +294,10 @@ impl<'a> AppState<'a> {
 
         let accumulator = 0.0;
 
+        let asset_server = AssetServer::new();
+
         Self {
+            asset_server,
             target_label,
             camera_label,
             dt_label,
