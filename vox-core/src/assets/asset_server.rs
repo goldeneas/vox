@@ -53,4 +53,49 @@ impl AssetServer {
                     .ok()
             })
     }
+
+    pub fn get_or_load<T>(&mut self, file_name: &str, device: &wgpu::Device, queue: &wgpu::Queue)
+        -> Option<Rc<T>>
+    where
+        T: Asset + 'static,
+    {
+        let type_id = TypeId::of::<T>();
+        let hash = {
+            let mut hasher = DefaultHasher::new();
+            file_name.hash(&mut hasher);
+            hasher.finish()
+        };
+
+        match self.map.get(&(type_id, hash)) {
+            Some(any) => any.clone().downcast().ok(),
+            None => {
+                self.load::<T>(file_name, device, queue);
+                self.get(file_name)
+            }
+        }
+    }
+
+    fn load<T>(&mut self, file_name: &str, device: &wgpu::Device, queue: &wgpu::Queue) {
+        let extension = get_extension(file_name);
+
+        match extension {
+            Some(".png") | Some(".jpg") => self.load_texture(file_name, device, queue),
+            Some(".obj") => self.load_model(file_name, device, queue),
+            _ => {}
+        }
+    }
+
+    fn load_texture(&mut self, file_name: &str, device: &wgpu::Device, queue: &wgpu::Queue) {
+        let texture = Texture::load(file_name, device, queue)
+            .unwrap();
+
+        self.insert(texture);
+    }
+
+    fn load_model(&mut self, file_name: &str, device: &wgpu::Device, queue: &wgpu::Queue) {
+        let model = Model::load(file_name, self, device, queue)
+            .unwrap();
+
+        self.insert(model);
+    }
 }

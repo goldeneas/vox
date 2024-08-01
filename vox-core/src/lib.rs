@@ -51,7 +51,6 @@ const SIM_DT: f32 = 1.0/20.0;
 struct AppState<'a> {
     asset_server: AssetServer,
     depth_texture: Rc<Texture>,
-    import_model: Rc<Model>,
 
     camera: Camera,
     camera_buffer: wgpu::Buffer,
@@ -289,20 +288,12 @@ impl<'a> AppState<'a> {
         let mut asset_server = AssetServer::new();
 
         let depth_texture = Texture::create_depth_texture(&device, &config, "depth_texture");
-        let debug_texture = Texture::load("cube-diffuse.jpg", &device, &queue)
-            .unwrap();
-
-        asset_server.insert(debug_texture);
-
-        let import_model = Model::load("./res/untitled.obj", &device, &queue)
-            .unwrap();
 
         Self {
             asset_server,
             target_label,
             camera_label,
             depth_texture,
-            import_model,
             dt_label,
             camera,
             camera_bind_group,
@@ -519,6 +510,11 @@ impl<'a> App<'a> {
             label: Some("Render Encoder"),
         });
 
+        let import_model = state.asset_server.get_or_load("./res/untitled.obj",
+            &state.device,
+            &state.queue
+        ).unwrap();
+
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
@@ -551,7 +547,7 @@ impl<'a> App<'a> {
 
             render_pass.set_pipeline(&state.render_pipeline);
             render_pass.draw_object(&object, &state.camera_bind_group);
-            render_pass.draw_model(&state.import_model, &state.camera_bind_group);
+            render_pass.draw_model(&import_model, &state.camera_bind_group);
         }
 
         {

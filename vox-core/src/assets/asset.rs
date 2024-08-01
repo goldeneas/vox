@@ -1,3 +1,5 @@
+use std::any::Any;
+
 pub trait Asset {
     // This is treated as an ID
     // Two resources CANNOT have the same file_name

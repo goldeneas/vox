@@ -2,13 +2,20 @@ use std::{ops::Range, rc::Rc};
 
 use bytemuck::{Pod, Zeroable};
 
-use crate::Texture;
+use crate::{assets::{asset::Asset, asset_server::AssetServer}, Texture};
 
 use super::{material::{Material, MaterialDescriptor}, mesh::{Mesh, MeshDescriptor}, object::Object};
 
 pub struct Model {
     meshes: Box<[Mesh]>,
     materials: Box<[Material]>,
+    name: String,
+}
+
+impl Asset for Model {
+    fn file_name(&self) -> &str {
+        &self.name
+    }
 }
 
 #[repr(C)]
@@ -145,28 +152,29 @@ impl Model {
         vertices: Box<[Vertex]>,
         indices: Box<[u32]>,
         diffuse_texture: Rc<Texture>,
-        name_opt: Option<&str>
+        name: &str
     ) -> Self {
-        let model_name = name_opt.unwrap_or_default();
-
         let material = Material::new(device, MaterialDescriptor {
-            name: format!("Material - {}", model_name),
+            name: format!("Material - {}", name),
             diffuse_texture,
         });
 
         let materials = Box::new([material]);
 
         let mesh = Mesh::new(device, MeshDescriptor {
-            name: format!("Mesh - {}", model_name),
+            name: format!("Mesh - {}", name),
             vertices,
             indices
         });
 
         let meshes = Box::new([mesh]);
 
+        let name = name.to_string();
+
         Model {
             materials,
             meshes,
+            name,
         }
     }
 
@@ -180,7 +188,7 @@ impl Model {
                     .into_iter()
                     .map(|m| {
                         let diffuse_texture_name = &m.diffuse_texture.unwrap();
-                        let diffuse_texture = Texture::load(diffuse_texture_name, device, queue)
+                        let diffuse_texture = asset_server.get(diffuse_texture_name, device, queue)
                             .unwrap();
 
                         Material::new(device, MaterialDescriptor {
