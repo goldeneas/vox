@@ -50,6 +50,8 @@ const SIM_DT: f32 = 1.0/20.0;
 
 struct AppState<'a> {
     asset_server: AssetServer,
+    depth_texture: Rc<Texture>,
+    import_model: Rc<Model>,
 
     camera: Camera,
     camera_buffer: wgpu::Buffer,
@@ -299,6 +301,8 @@ impl<'a> AppState<'a> {
             asset_server,
             target_label,
             camera_label,
+            depth_texture,
+            import_model,
             dt_label,
             camera,
             camera_bind_group,
@@ -489,7 +493,8 @@ impl<'a> App<'a> {
         let object = Object::new(&state.device,
             CubeModel {
                 scale: 1.0,
-                diffuse_texture: state.asset_server.get("debug_texture.jpg"), 
+                diffuse_texture: state.asset_server.get("debug_texture.jpg")
+                    .unwrap(), 
             }.to_model(&state.device),
             &[
                 Instance {
@@ -533,7 +538,7 @@ impl<'a> App<'a> {
                     },
                 })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &state.depth_texture.view,
+                    view: &state.depth_texture.view(),
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(1.0),
                         store: wgpu::StoreOp::Store,

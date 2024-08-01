@@ -1,14 +1,13 @@
-use std::{any::{Any, TypeId}, collections::HashMap, hash::{DefaultHasher, Hash, Hasher}, path::Path};
+use std::{any::{Any, TypeId}, collections::HashMap, hash::{DefaultHasher, Hash, Hasher}, path::Path, rc::Rc};
 
 use crate::{util::get_extension, Model, Texture};
 
 use super::asset::Asset;
 
 pub struct AssetServer {
-    map: HashMap<(TypeId, u64), Box<dyn Any>>,
+    map: HashMap<(TypeId, u64), Rc<dyn Any>>,
 }
 
-// HERE LIES MAGIC!
 impl AssetServer {
     pub fn new() -> Self {
         let map = HashMap::new();
@@ -19,7 +18,7 @@ impl AssetServer {
     }
 
     pub fn insert<T>(&mut self, asset: T)
-        -> Option<Box<(dyn Any + 'static)>>
+        -> Option<Rc<(dyn Any + 'static)>>
     where
         T: Asset + 'static,
     {
@@ -32,11 +31,11 @@ impl AssetServer {
             hasher.finish()
         };
 
-        self.map.insert((type_id, hash), Box::new(asset))
+        self.map.insert((type_id, hash), Rc::new(asset))
     }
 
     pub fn get<T>(&mut self, file_name: &str)
-        -> Option<&T>
+        -> Option<Rc<T>>
     where
         T: Asset + 'static,
     {
@@ -48,6 +47,10 @@ impl AssetServer {
         };
 
         self.map.get(&(type_id, hash))
-            .and_then(|any| any.downcast_ref())
+            .and_then(|any| {
+                any.clone()
+                    .downcast::<T>()
+                    .ok()
+            })
     }
 }

@@ -2,18 +2,18 @@ use std::rc::Rc;
 
 use crate::Texture;
 
-pub struct Material<'a> {
-    diffuse_texture: &'a Texture,
+pub struct Material {
+    diffuse_texture: Rc<Texture>,
     bind_group: wgpu::BindGroup,
 }
 
-pub struct MaterialDescriptor<'a> {
+pub struct MaterialDescriptor {
     pub name: String,
-    pub diffuse_texture: &'a Texture,
+    pub diffuse_texture: Rc<Texture>,
 }
 
-impl<'a> Material<'a> {
-    pub fn new(device: &wgpu::Device, descriptor: MaterialDescriptor<'a>) -> Self {
+impl Material {
+    pub fn new(device: &wgpu::Device, descriptor: MaterialDescriptor) -> Self {
         let name = descriptor.name;
         let diffuse_texture = descriptor.diffuse_texture;
 
@@ -60,8 +60,8 @@ impl<'a> Material<'a> {
         }
     }
 
-    pub fn diffuse_texture(&self) -> &Texture {
-        self.diffuse_texture
+    pub fn diffuse_texture(&self) -> Rc<Texture> {
+        self.diffuse_texture.clone()
     }
 
     pub fn bind_group(&self) -> &wgpu::BindGroup {

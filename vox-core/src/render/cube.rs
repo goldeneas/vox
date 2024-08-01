@@ -4,7 +4,7 @@ use crate::{IntoModel, Model, Vertex, Texture};
 
 pub struct CubeModel {
     pub scale: f32,
-    pub diffuse_texture: &'static Texture,
+    pub diffuse_texture: Rc<Texture>,
 }
 
 impl IntoModel for CubeModel {

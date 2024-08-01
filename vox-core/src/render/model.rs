@@ -144,9 +144,9 @@ impl Model {
     pub fn new(device: &wgpu::Device,
         vertices: Box<[Vertex]>,
         indices: Box<[u32]>,
-        diffuse_texture: &Texture,
+        diffuse_texture: Rc<Texture>,
         name_opt: Option<&str>
-    ) -> Rc<Self> {
+    ) -> Self {
         let model_name = name_opt.unwrap_or_default();
 
         let material = Material::new(device, MaterialDescriptor {
@@ -164,15 +164,13 @@ impl Model {
 
         let meshes = Box::new([mesh]);
 
-        let model = Model {
+        Model {
             materials,
             meshes,
-        };
-
-        Rc::new(model)
+        }
     }
 
-    pub fn load(file_name: &str, device: &wgpu::Device, queue: &wgpu::Queue) -> anyhow::Result<Model> {
+    pub fn load(file_name: &str, asset_server: &AssetServer, device: &wgpu::Device, queue: &wgpu::Queue) -> anyhow::Result<Model> {
         let (models, materials_opt) = tobj::load_obj(file_name, &tobj::GPU_LOAD_OPTIONS)
             .expect("Could not load file OBJ file");
 
