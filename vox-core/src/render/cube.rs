@@ -9,12 +9,14 @@ pub struct CubeModel {
 
 impl IntoModel for CubeModel {
     fn to_model(&self, device: &wgpu::Device) -> Rc<Model> {
-        Model::new(device,
+        let model = Model::new(device,
             cube_vertices(self.scale),
             cube_indices(),
-            self.diffuse_texture,
-            Some("Cube Model"),
-        )
+            self.diffuse_texture.clone(),
+            "Cube Model",
+        );
+
+        Rc::new(model)
     }
 }
 

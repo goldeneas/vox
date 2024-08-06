@@ -26,6 +26,7 @@ pub struct Vertex {
     pub normal: [f32; 3],
 }
 
+// TODO: maybe this rc is not needed in the trait
 pub trait IntoModel {
     fn to_model(&self, device: &wgpu::Device) -> Rc<Model>;
 }
@@ -178,7 +179,7 @@ impl Model {
         }
     }
 
-    pub fn load(file_name: &str, asset_server: &AssetServer, device: &wgpu::Device, queue: &wgpu::Queue) -> anyhow::Result<Model> {
+    pub fn load(file_name: &str, asset_server: &mut AssetServer, device: &wgpu::Device, queue: &wgpu::Queue) -> anyhow::Result<Model> {
         let (models, materials_opt) = tobj::load_obj(file_name, &tobj::GPU_LOAD_OPTIONS)
             .expect("Could not load file OBJ file");
 
@@ -188,7 +189,8 @@ impl Model {
                     .into_iter()
                     .map(|m| {
                         let diffuse_texture_name = &m.diffuse_texture.unwrap();
-                        let diffuse_texture = asset_server.get(diffuse_texture_name, device, queue)
+                        let diffuse_texture = asset_server
+                            .get_or_load(diffuse_texture_name, device, queue)
                             .unwrap();
 
                         Material::new(device, MaterialDescriptor {
@@ -200,7 +202,8 @@ impl Model {
                 materials.try_into().unwrap()
             },
             Err(_) => {
-                let diffuse_texture = Texture::load("debug.png", device, queue)
+                let diffuse_texture = asset_server
+                    .get_or_load("debug.png", device, queue)
                     .unwrap();
 
                 let material = Material::new(device, MaterialDescriptor {
@@ -248,9 +251,12 @@ impl Model {
             }).collect::<Vec<_>>()
         .try_into().unwrap();
 
+        let name = file_name.to_string();
+
         let model = Model {
             meshes,
             materials,
+            name,
         };
 
         Ok(model)

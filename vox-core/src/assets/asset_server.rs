@@ -1,4 +1,4 @@
-use std::{any::{Any, TypeId}, collections::HashMap, hash::{DefaultHasher, Hash, Hasher}, path::Path, rc::Rc};
+use std::{any::{Any, TypeId}, collections::HashMap, hash::{DefaultHasher, Hash, Hasher}, rc::Rc};
 
 use crate::{util::get_extension, Model, Texture};
 
@@ -79,8 +79,8 @@ impl AssetServer {
         let extension = get_extension(file_name);
 
         match extension {
-            Some(".png") | Some(".jpg") => self.load_texture(file_name, device, queue),
-            Some(".obj") => self.load_model(file_name, device, queue),
+            Some("png") | Some("jpg") => self.load_texture(file_name, device, queue),
+            Some("obj") => self.load_model(file_name, device, queue),
             _ => {}
         }
     }

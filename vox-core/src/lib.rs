@@ -10,7 +10,6 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Instant;
 
-use assets::asset_server;
 use assets::asset_server::AssetServer;
 use bevy_ecs::world::World;
 use cgmath::Quaternion;
@@ -30,6 +29,8 @@ use log::warn;
 use resources::input::InputRes;
 use resources::input::KeyState;
 use resources::mouse::MouseRes;
+use wgpu::core::device;
+use wgpu::core::device::queue;
 use wgpu::PipelineCompilationOptions;
 use wgpu::{util::DeviceExt, RenderPipelineDescriptor};
 use winit::application::ApplicationHandler;
@@ -46,7 +47,7 @@ use cgmath::prelude::*;
 #[cfg(target_arch="wasm32")]
 use wasm_bindgen::prelude::*;
 
-const SIM_DT: f32 = 1.0/20.0;
+const SIM_DT: f32 = 1.0/60.0;
 
 struct AppState<'a> {
     asset_server: AssetServer,
@@ -285,7 +286,7 @@ impl<'a> AppState<'a> {
 
         let accumulator = 0.0;
 
-        let mut asset_server = AssetServer::new();
+        let asset_server = AssetServer::new();
 
         let depth_texture = Texture::create_depth_texture(&device, &config, "depth_texture");
 
@@ -449,8 +450,6 @@ impl<'a> App<'a> {
             Err(wgpu::SurfaceError::OutOfMemory) => event_loop.exit(),
             Err(e) => warn!("{:?}", e),
         }
-
-        //state.last_frame = Instant::now();
     }
 
     fn update(&mut self) {
@@ -484,7 +483,8 @@ impl<'a> App<'a> {
         let object = Object::new(&state.device,
             CubeModel {
                 scale: 1.0,
-                diffuse_texture: state.asset_server.get("debug_texture.jpg")
+                diffuse_texture: state.asset_server
+                    .get_or_load("debug.png", &state.device, &state.queue)
                     .unwrap(), 
             }.to_model(&state.device),
             &[
