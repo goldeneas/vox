@@ -11,6 +11,8 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use assets::asset_server::AssetServer;
+use bevy_ecs::event::EventReader;
+use bevy_ecs::event::EventWriter;
 use bevy_ecs::system::Query;
 use bevy_ecs::system::Res;
 use bevy_ecs::system::Resource;
@@ -18,13 +20,9 @@ use bevy_ecs::world::World;
 use cgmath::Quaternion;
 use cgmath::Rad;
 use cgmath::Vector3;
-use components::PositionComponent;
-use components::RenderComponent;
-use components::RotationComponent;
 use glyphon::Resolution;
 use render::cube::CubeModel;
 use render::model::*;
-use render::object::Object;
 use render::text::LabelDescriptor;
 use render::text::LabelId;
 use render::text::LabelRenderer;
@@ -312,7 +310,7 @@ impl<'a> AppState<'a> {
                     .get_or_load("debug.png", &device, &queue)
                     .unwrap(),
             }.to_model(&device), &[
-                InstanceTransform {
+                InstanceData {
                     position: (0.0, 0.0, 0.0).into(),
                     rotation: Quaternion::zero(),
                 }
@@ -488,7 +486,7 @@ impl<'a> App<'a> {
         state.queue.write_buffer(&state.camera_buffer, 0, bytemuck::cast_slice(&[state.camera.uniform]));
 
         state.target_indicator.set_instances(&[
-            InstanceTransform {
+            InstanceData {
                 position: state.camera.transform.target.to_vec(),
                 rotation: Quaternion::zero(),
             },
@@ -551,7 +549,7 @@ impl<'a> App<'a> {
             });
 
             render_pass.set_pipeline(&state.render_pipeline);
-            render_pass.draw_object(&state.target_indicator, &state.camera_bind_group);
+            render_pass.draw_entity(&state.target_indicator, &state.camera_bind_group);
         }
 
         {
@@ -581,8 +579,9 @@ impl<'a> App<'a> {
 
     fn render_entities(mut query: Query<(
             &PositionComponent,
-            &mut RenderComponent,
+            &mut DrawComponent,
             Option<&RotationComponent>)>,
+            mut render_event: EventWriter<RenderReady>,
             device_res: Res<DeviceRes>,
     ) {
         let device = &device_res.device;
@@ -600,12 +599,14 @@ impl<'a> App<'a> {
             };
 
             render_component.set_instances(&[
-                InstanceTransform {
+                InstanceData {
                     position,
                     rotation,
                 }
             ], &device);
         }
+
+        render_event.send(RenderReady::default());
     }
 
     fn state_ref(&self) -> &AppState<'a> {

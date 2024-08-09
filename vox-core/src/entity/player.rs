@@ -1,6 +1,6 @@
 use bevy_ecs::prelude::*;
 
-use crate::{assets::asset_server::AssetServer, components::{PositionComponent, RenderComponent}, InstanceTransform};
+use crate::{assets::asset_server::AssetServer, components::position::PositionComponent};
 
 pub struct Character {
     pub id: Entity,
@@ -18,7 +18,7 @@ impl Character {
             z: 0.0
         };
 
-        let render = RenderComponent::new(asset_server
+        let render = DrawComponent::new(asset_server
             .get_or_load("debug.png", device, queue)
             .unwrap(),
         );

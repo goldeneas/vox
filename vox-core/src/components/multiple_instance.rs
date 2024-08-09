@@ -1,57 +1,49 @@
-use std::sync::Arc;
-
 use bevy_ecs::component::Component;
 use wgpu::util::DeviceExt;
 
-use crate::{InstanceTransform, Model};
+use crate::InstanceData;
 
 #[derive(Component)]
-pub struct Object {
-    model: Arc<Model>,
-    instance_buffer: wgpu::Buffer,
+pub struct MultipleInstanceComponent {
     num_instances: u32,
+    instance_buffer: wgpu::Buffer,
 }
 
-impl Object {
-    pub fn new(device: &wgpu::Device, model: Arc<Model>, instances: &[InstanceTransform]) -> Self {
-        let instance_data = instances
+impl MultipleInstanceComponent {
+    pub fn new(instances: &[InstanceData], device: &wgpu::Device) -> Self {
+        let instances_raw = instances
             .iter()
-            .map(InstanceTransform::to_raw)
+            .map(InstanceData::to_raw)
             .collect::<Vec<_>>();
 
         let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Object Instance Buffer"),
             usage: wgpu::BufferUsages::VERTEX,
-            contents: bytemuck::cast_slice(&instance_data),
+            contents: bytemuck::cast_slice(&instances_raw),
         });
 
         let num_instances = instances.len() as u32;
 
         Self {
-            model,
             instance_buffer,
             num_instances,
         }
     }
 
-    pub fn set_instances(&mut self, instances: &[InstanceTransform], device: &wgpu::Device) {
-        let instance_data = instances
+    pub fn set_instances(&mut self, instances: &[InstanceData], device: &wgpu::Device) {
+        let instances_raw = instances
             .iter()
-            .map(InstanceTransform::to_raw)
+            .map(InstanceData::to_raw)
             .collect::<Vec<_>>();
 
         let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Object Instance Buffer"),
             usage: wgpu::BufferUsages::VERTEX,
-            contents: bytemuck::cast_slice(&instance_data),
+            contents: bytemuck::cast_slice(&instances_raw),
         });
 
         self.num_instances = instances.len() as u32;
         self.instance_buffer = instance_buffer;
-    }
-
-    pub fn model(&self) -> &Model {
-        self.model.as_ref()
     }
 
     pub fn instance_buffer(&self) -> &wgpu::Buffer {

@@ -2,7 +2,7 @@ use std::{ops::Range, sync::Arc};
 
 use bytemuck::{Pod, Zeroable};
 
-use crate::{assets::{asset::Asset, asset_server::AssetServer}, components::RenderComponent, Texture};
+use crate::{assets::{asset::Asset, asset_server::AssetServer}, components::DrawComponent, Texture};
 
 use super::{material::{Material, MaterialDescriptor}, mesh::{Mesh, MeshDescriptor}, object::Object};
 
@@ -48,11 +48,11 @@ pub trait DrawObject<'b> {
         model: &'b Model,
         instances: Range<u32>,
         camera_bind_group: &'b wgpu::BindGroup);
-    fn draw_object(&mut self,
-        object: &'b Object,
+    fn draw_entity(&mut self,
+        object: &'b DrawComponent,
         camera_bind_group: &'b wgpu::BindGroup);
-    fn draw_object_selective(&mut self,
-        object: &'b RenderComponent,
+    fn draw_entity_selective(&mut self,
+        object: &'b DrawComponent,
         instances: Range<u32>,
         camera_bind_group: &'b wgpu::BindGroup);
 }
@@ -104,15 +104,15 @@ where 'b: 'a {
         }
     }
 
-    fn draw_object(&mut self,
-        object: &'b Object,
+    fn draw_entity(&mut self,
+        object: &'b DrawComponent,
         camera_bind_group: &'b wgpu::BindGroup
     ) {
-        self.draw_object_selective(object, 0..object.num_instances(), camera_bind_group);
+        self.draw_entity_selective(object, 0..object.num_instances(), camera_bind_group);
     }
 
-    fn draw_object_selective(&mut self,
-        object: &'b RenderComponent,
+    fn draw_entity_selective(&mut self,
+        object: &'b DrawComponent,
         instances: Range<u32>,
         camera_bind_group: &'b wgpu::BindGroup
     ) {
