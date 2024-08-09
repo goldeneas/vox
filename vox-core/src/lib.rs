@@ -69,6 +69,8 @@ struct AppState<'a> {
     camera_label: LabelId,
     dt_label: LabelId,
 
+    target_indicator: Object,
+
     delta_time: Instant,
     accumulator: f32,
 
@@ -286,11 +288,25 @@ impl<'a> AppState<'a> {
 
         let accumulator = 0.0;
 
-        let asset_server = AssetServer::new();
+        let mut asset_server = AssetServer::new();
 
         let depth_texture = Texture::create_depth_texture(&device, &config, "depth_texture");
 
+        let target_indicator = Object::new(&device,
+            CubeModel {
+                scale: 0.3,
+                diffuse_texture: asset_server
+                    .get_or_load("debug.png", &device, &queue)
+                    .unwrap(),
+            }.to_model(&device), &[
+                Instance {
+                    position: (0.0, 0.0, 0.0).into(),
+                    rotation: Quaternion::zero(),
+                }
+            ]);
+
         Self {
+            target_indicator,
             asset_server,
             target_label,
             camera_label,
@@ -457,6 +473,13 @@ impl<'a> App<'a> {
 
         state.camera.update(&state.world);
         state.queue.write_buffer(&state.camera_buffer, 0, bytemuck::cast_slice(&[state.camera.uniform]));
+
+        state.target_indicator.set_instances(&[
+            Instance {
+                position: state.camera.transform.target.to_vec(),
+                rotation: Quaternion::zero(),
+            },
+        ], &state.device);
     }
 
     fn draw(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -480,40 +503,9 @@ impl<'a> App<'a> {
         state.renderer.set_text(state.dt_label,
             format!("DT: {:?}", state.delta_time.elapsed()));
 
-        let object = Object::new(&state.device,
-            CubeModel {
-                scale: 1.0,
-                diffuse_texture: state.asset_server
-                    .get_or_load("debug.png", &state.device, &state.queue)
-                    .unwrap(), 
-            }.to_model(&state.device),
-            &[
-                Instance {
-                    position: (2.0, 2.0, 0.0).into(),
-                    rotation: Quaternion::zero(),
-                },
-                Instance {
-                    position: (1.0, 1.0, 0.0).into(),
-                    rotation: Quaternion::zero(),
-                },
-                Instance {
-                    position: (3.0, 2.0, 0.0).into(),
-                    rotation: Quaternion::zero(),
-                },
-                Instance {
-                    position: (3.0, 2.0, 0.0).into(),
-                    rotation: Quaternion::from_angle_z(Rad(20.0)),
-                },
-            ]);
-
         let mut encoder = state.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Render Encoder"),
         });
-
-        let import_model = state.asset_server.get_or_load("./res/untitled.obj",
-            &state.device,
-            &state.queue
-        ).unwrap();
 
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -546,8 +538,7 @@ impl<'a> App<'a> {
             });
 
             render_pass.set_pipeline(&state.render_pipeline);
-            render_pass.draw_object(&object, &state.camera_bind_group);
-            render_pass.draw_model(&import_model, &state.camera_bind_group);
+            render_pass.draw_object(&state.target_indicator, &state.camera_bind_group);
         }
 
         {
