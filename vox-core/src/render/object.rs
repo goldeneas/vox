@@ -3,7 +3,7 @@ use std::sync::Arc;
 use bevy_ecs::component::Component;
 use wgpu::util::DeviceExt;
 
-use crate::{Instance, Model};
+use crate::{InstanceTransform, Model};
 
 #[derive(Component)]
 pub struct Object {
@@ -13,10 +13,10 @@ pub struct Object {
 }
 
 impl Object {
-    pub fn new(device: &wgpu::Device, model: Arc<Model>, instances: &[Instance]) -> Self {
+    pub fn new(device: &wgpu::Device, model: Arc<Model>, instances: &[InstanceTransform]) -> Self {
         let instance_data = instances
             .iter()
-            .map(Instance::to_raw)
+            .map(InstanceTransform::to_raw)
             .collect::<Vec<_>>();
 
         let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -34,10 +34,10 @@ impl Object {
         }
     }
 
-    pub fn set_instances(&mut self, instances: &[Instance], device: &wgpu::Device) {
+    pub fn set_instances(&mut self, instances: &[InstanceTransform], device: &wgpu::Device) {
         let instance_data = instances
             .iter()
-            .map(Instance::to_raw)
+            .map(InstanceTransform::to_raw)
             .collect::<Vec<_>>();
 
         let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {

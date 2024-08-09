@@ -12,10 +12,15 @@ use std::time::Instant;
 
 use assets::asset_server::AssetServer;
 use bevy_ecs::system::Query;
+use bevy_ecs::system::Res;
+use bevy_ecs::system::Resource;
 use bevy_ecs::world::World;
 use cgmath::Quaternion;
 use cgmath::Rad;
+use cgmath::Vector3;
 use components::PositionComponent;
+use components::RenderComponent;
+use components::RotationComponent;
 use glyphon::Resolution;
 use render::cube::CubeModel;
 use render::model::*;
@@ -28,6 +33,7 @@ use render::instance::*;
 
 use camera::{ Camera, CameraController, CameraTransform };
 use log::warn;
+use resources::device::DeviceRes;
 use resources::input::InputRes;
 use resources::input::KeyState;
 use resources::mouse::MouseRes;
@@ -60,7 +66,7 @@ struct AppState<'a> {
     camera_bind_group: wgpu::BindGroup,
         
     surface: wgpu::Surface<'a>,
-    device: wgpu::Device,
+    device: Arc<wgpu::Device>,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
@@ -253,9 +259,14 @@ impl<'a> AppState<'a> {
 
         surface.configure(&device, &config);
 
+        let device = Arc::new(device);
+
         let mut world = World::new();
         world.init_resource::<InputRes>();
         world.init_resource::<MouseRes>();
+        world.insert_resource(DeviceRes {
+            device: device.clone(),
+        });
 
         let mut renderer = LabelRenderer::new(&device, &queue);
 
@@ -301,7 +312,7 @@ impl<'a> AppState<'a> {
                     .get_or_load("debug.png", &device, &queue)
                     .unwrap(),
             }.to_model(&device), &[
-                Instance {
+                InstanceTransform {
                     position: (0.0, 0.0, 0.0).into(),
                     rotation: Quaternion::zero(),
                 }
@@ -318,7 +329,6 @@ impl<'a> AppState<'a> {
             camera_bind_group,
             camera_buffer,
             surface,
-            device,
             queue,
             config,
             size,
@@ -327,6 +337,7 @@ impl<'a> AppState<'a> {
             renderer,
             delta_time,
             accumulator,
+            device,
         }
     }
 }
@@ -477,7 +488,7 @@ impl<'a> App<'a> {
         state.queue.write_buffer(&state.camera_buffer, 0, bytemuck::cast_slice(&[state.camera.uniform]));
 
         state.target_indicator.set_instances(&[
-            Instance {
+            InstanceTransform {
                 position: state.camera.transform.target.to_vec(),
                 rotation: Quaternion::zero(),
             },
@@ -568,9 +579,32 @@ impl<'a> App<'a> {
         return Ok(());
     }
 
-    fn draw_objects(query: Query<(&PositionComponent)>) {
-        for position in &query {
+    fn render_entities(mut query: Query<(
+            &PositionComponent,
+            &mut RenderComponent,
+            Option<&RotationComponent>)>,
+            device_res: Res<DeviceRes>,
+    ) {
+        let device = &device_res.device;
 
+        for (position_component, mut render_component, rotation_opt) in &mut query {
+            let rotation = match rotation_opt {
+                Some(rotation) => rotation.quaternion,
+                None => Quaternion::zero(),
+            };
+
+            let position = Vector3 {
+                x: position_component.x,
+                y: position_component.y,
+                z: position_component.z,
+            };
+
+            render_component.set_instances(&[
+                InstanceTransform {
+                    position,
+                    rotation,
+                }
+            ], &device);
         }
     }
 

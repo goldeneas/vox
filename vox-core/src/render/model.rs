@@ -2,7 +2,7 @@ use std::{ops::Range, sync::Arc};
 
 use bytemuck::{Pod, Zeroable};
 
-use crate::{assets::{asset::Asset, asset_server::AssetServer}, Texture};
+use crate::{assets::{asset::Asset, asset_server::AssetServer}, components::RenderComponent, Texture};
 
 use super::{material::{Material, MaterialDescriptor}, mesh::{Mesh, MeshDescriptor}, object::Object};
 
@@ -52,7 +52,7 @@ pub trait DrawObject<'b> {
         object: &'b Object,
         camera_bind_group: &'b wgpu::BindGroup);
     fn draw_object_selective(&mut self,
-        object: &'b Object,
+        object: &'b RenderComponent,
         instances: Range<u32>,
         camera_bind_group: &'b wgpu::BindGroup);
 }
@@ -112,11 +112,15 @@ where 'b: 'a {
     }
 
     fn draw_object_selective(&mut self,
-        object: &'b Object,
+        object: &'b RenderComponent,
         instances: Range<u32>,
         camera_bind_group: &'b wgpu::BindGroup
     ) {
-        self.set_vertex_buffer(1, object.instance_buffer().slice(..));
+        self.set_vertex_buffer(1, object
+            .instance_buffer()
+            .unwrap()
+            .slice(..));
+
         self.draw_model_instanced(&object.model(), instances, camera_bind_group);
     }
 }
