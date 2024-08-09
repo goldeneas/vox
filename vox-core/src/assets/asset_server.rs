@@ -1,11 +1,11 @@
-use std::{any::{Any, TypeId}, collections::HashMap, hash::{DefaultHasher, Hash, Hasher}, rc::Rc};
+use std::{any::{Any, TypeId}, collections::HashMap, hash::{DefaultHasher, Hash, Hasher}, rc::Rc, sync::Arc};
 
 use crate::{util::get_extension, Model, Texture};
 
 use super::asset::Asset;
 
 pub struct AssetServer {
-    map: HashMap<(TypeId, u64), Rc<dyn Any>>,
+    map: HashMap<(TypeId, u64), Arc<dyn Any + Send + Sync>>,
 }
 
 impl AssetServer {
@@ -18,9 +18,9 @@ impl AssetServer {
     }
 
     pub fn insert<T>(&mut self, asset: T)
-        -> Option<Rc<(dyn Any + 'static)>>
+        -> Option<Arc<(dyn Any + Send + Sync + 'static)>>
     where
-        T: Asset + 'static,
+        T: Asset + Send + Sync + 'static,
     {
         let type_id = TypeId::of::<T>();
         let file_name = asset.file_name();
@@ -31,13 +31,13 @@ impl AssetServer {
             hasher.finish()
         };
 
-        self.map.insert((type_id, hash), Rc::new(asset))
+        self.map.insert((type_id, hash), Arc::new(asset))
     }
 
     pub fn get<T>(&mut self, file_name: &str)
-        -> Option<Rc<T>>
+        -> Option<Arc<T>>
     where
-        T: Asset + 'static,
+        T: Asset + Send + Sync + 'static,
     {
         let type_id = TypeId::of::<T>();
         let hash = {
@@ -47,17 +47,17 @@ impl AssetServer {
         };
 
         self.map.get(&(type_id, hash))
-            .and_then(|any| {
-                any.clone()
+            .and_then(|arc| {
+                arc.clone()
                     .downcast::<T>()
                     .ok()
             })
     }
 
     pub fn get_or_load<T>(&mut self, file_name: &str, device: &wgpu::Device, queue: &wgpu::Queue)
-        -> Option<Rc<T>>
+        -> Option<Arc<T>>
     where
-        T: Asset + 'static,
+        T: Asset + Send + Sync + 'static,
     {
         let type_id = TypeId::of::<T>();
         let hash = {

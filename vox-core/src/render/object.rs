@@ -1,17 +1,19 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
+use bevy_ecs::component::Component;
 use wgpu::util::DeviceExt;
 
 use crate::{Instance, Model};
 
+#[derive(Component)]
 pub struct Object {
-    model: Rc<Model>,
+    model: Arc<Model>,
     instance_buffer: wgpu::Buffer,
     num_instances: u32,
 }
 
 impl Object {
-    pub fn new(device: &wgpu::Device, model: Rc<Model>, instances: &[Instance]) -> Self {
+    pub fn new(device: &wgpu::Device, model: Arc<Model>, instances: &[Instance]) -> Self {
         let instance_data = instances
             .iter()
             .map(Instance::to_raw)
@@ -31,18 +33,6 @@ impl Object {
             num_instances,
         }
     }
-
-    //pub fn set_transform(&mut self, position: cgmath::Vector3<f32>, rotation: cgmath::Quaternion<f32>, device: &wgpu::Device) {
-    //    assert!(self.num_instances == 1,
-    //        "Tried setting a transform for an object with multiple instances! Did you mean to use set_instances?");
-
-    //    self.set_instances(&[
-    //        Instance {
-    //            position,
-    //            rotation,
-    //        }
-    //    ], device);
-    //}
 
     pub fn set_instances(&mut self, instances: &[Instance], device: &wgpu::Device) {
         let instance_data = instances

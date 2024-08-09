@@ -11,9 +11,11 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use assets::asset_server::AssetServer;
+use bevy_ecs::system::Query;
 use bevy_ecs::world::World;
 use cgmath::Quaternion;
 use cgmath::Rad;
+use components::PositionComponent;
 use glyphon::Resolution;
 use render::cube::CubeModel;
 use render::model::*;
@@ -51,7 +53,7 @@ const SIM_DT: f32 = 1.0/60.0;
 
 struct AppState<'a> {
     asset_server: AssetServer,
-    depth_texture: Rc<Texture>,
+    depth_texture: Arc<Texture>,
 
     camera: Camera,
     camera_buffer: wgpu::Buffer,
@@ -564,6 +566,12 @@ impl<'a> App<'a> {
         output.present();
 
         return Ok(());
+    }
+
+    fn draw_objects(query: Query<(&PositionComponent)>) {
+        for position in &query {
+
+        }
     }
 
     fn state_ref(&self) -> &AppState<'a> {

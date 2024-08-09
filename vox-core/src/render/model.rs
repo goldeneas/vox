@@ -1,4 +1,4 @@
-use std::{ops::Range, rc::Rc};
+use std::{ops::Range, sync::Arc};
 
 use bytemuck::{Pod, Zeroable};
 
@@ -28,7 +28,7 @@ pub struct Vertex {
 
 // TODO: maybe this rc is not needed in the trait
 pub trait IntoModel {
-    fn to_model(&self, device: &wgpu::Device) -> Rc<Model>;
+    fn to_model(&self, device: &wgpu::Device) -> Arc<Model>;
 }
 
 pub trait DrawObject<'b> {
@@ -152,7 +152,7 @@ impl Model {
     pub fn new(device: &wgpu::Device,
         vertices: Box<[Vertex]>,
         indices: Box<[u32]>,
-        diffuse_texture: Rc<Texture>,
+        diffuse_texture: Arc<Texture>,
         name: &str
     ) -> Self {
         let material = Material::new(device, MaterialDescriptor {

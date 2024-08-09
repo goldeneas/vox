@@ -1,15 +1,15 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::Texture;
 
 pub struct Material {
-    diffuse_texture: Rc<Texture>,
+    diffuse_texture: Arc<Texture>,
     bind_group: wgpu::BindGroup,
 }
 
 pub struct MaterialDescriptor {
     pub name: String,
-    pub diffuse_texture: Rc<Texture>,
+    pub diffuse_texture: Arc<Texture>,
 }
 
 impl Material {
@@ -60,7 +60,7 @@ impl Material {
         }
     }
 
-    pub fn diffuse_texture(&self) -> Rc<Texture> {
+    pub fn diffuse_texture(&self) -> Arc<Texture> {
         self.diffuse_texture.clone()
     }
 

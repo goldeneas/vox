@@ -1,14 +1,14 @@
-use std::rc::Rc;
+use std::{rc::Rc, sync::Arc};
 
 use crate::{IntoModel, Model, Vertex, Texture};
 
 pub struct CubeModel {
     pub scale: f32,
-    pub diffuse_texture: Rc<Texture>,
+    pub diffuse_texture: Arc<Texture>,
 }
 
 impl IntoModel for CubeModel {
-    fn to_model(&self, device: &wgpu::Device) -> Rc<Model> {
+    fn to_model(&self, device: &wgpu::Device) -> Arc<Model> {
         let model = Model::new(device,
             cube_vertices(self.scale),
             cube_indices(),
@@ -16,7 +16,7 @@ impl IntoModel for CubeModel {
             "Cube Model",
         );
 
-        Rc::new(model)
+        Arc::new(model)
     }
 }
 

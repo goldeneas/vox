@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{rc::Rc, sync::Arc};
 
 use image::GenericImageView;
 use crate::{assets::asset::Asset, util::load_binary};
@@ -107,7 +107,7 @@ impl Texture {
         device: &wgpu::Device,
         config: &wgpu::SurfaceConfiguration,
         name: &str
-    ) -> Rc<Texture> {
+    ) -> Arc<Texture> {
         let size = wgpu::Extent3d {
             width: config.width,
             height: config.height,
