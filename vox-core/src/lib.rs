@@ -20,6 +20,10 @@ use bevy_ecs::world::World;
 use cgmath::Quaternion;
 use cgmath::Rad;
 use cgmath::Vector3;
+use components::model::ModelComponent;
+use components::position::PositionComponent;
+use components::rotation::RotationComponent;
+use components::single_instance::SingleInstanceComponent;
 use glyphon::Resolution;
 use render::cube::CubeModel;
 use render::model::*;
@@ -577,16 +581,17 @@ impl<'a> App<'a> {
         return Ok(());
     }
 
-    fn render_entities(mut query: Query<(
+    fn draw_single_instance_models(mut query: Query<(
             &PositionComponent,
-            &mut DrawComponent,
+            &ModelComponent,
+            &mut SingleInstanceComponent,
             Option<&RotationComponent>)>,
-            mut render_event: EventWriter<RenderReady>,
             device_res: Res<DeviceRes>,
     ) {
         let device = &device_res.device;
 
-        for (position_component, mut render_component, rotation_opt) in &mut query {
+        for (position_component, model_component, mut instance_component, rotation_opt)
+        in &mut query {
             let rotation = match rotation_opt {
                 Some(rotation) => rotation.quaternion,
                 None => Quaternion::zero(),
@@ -598,15 +603,11 @@ impl<'a> App<'a> {
                 z: position_component.z,
             };
 
-            render_component.set_instances(&[
-                InstanceData {
-                    position,
-                    rotation,
-                }
-            ], &device);
+            instance_component.set_instance(&InstanceData {
+                position,
+                rotation
+            }, device);
         }
-
-        render_event.send(RenderReady::default());
     }
 
     fn state_ref(&self) -> &AppState<'a> {
