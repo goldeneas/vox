@@ -13,9 +13,12 @@ use std::time::Instant;
 use assets::asset_server::AssetServer;
 use bevy_ecs::event::EventReader;
 use bevy_ecs::event::EventWriter;
+use bevy_ecs::system::NonSendMut;
 use bevy_ecs::system::Query;
 use bevy_ecs::system::Res;
+use bevy_ecs::system::ResMut;
 use bevy_ecs::system::Resource;
+use bevy_ecs::world;
 use bevy_ecs::world::World;
 use cgmath::Quaternion;
 use cgmath::Rad;
@@ -35,7 +38,7 @@ use render::instance::*;
 
 use camera::{ Camera, CameraController, CameraTransform };
 use log::warn;
-use resources::device::DeviceRes;
+use resources::render_context::RenderContext;
 use resources::input::InputRes;
 use resources::input::KeyState;
 use resources::mouse::MouseRes;
@@ -59,6 +62,7 @@ use wasm_bindgen::prelude::*;
 
 const SIM_DT: f32 = 1.0/60.0;
 
+// TODO: maybe split this in contexts somehow?
 struct AppState<'a> {
     asset_server: AssetServer,
     depth_texture: Arc<Texture>,
@@ -67,7 +71,7 @@ struct AppState<'a> {
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
         
-    surface: wgpu::Surface<'a>,
+    surface: Arc<wgpu::Surface<'a>>,
     device: Arc<wgpu::Device>,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
@@ -261,14 +265,7 @@ impl<'a> AppState<'a> {
 
         surface.configure(&device, &config);
 
-        let device = Arc::new(device);
-
-        let mut world = World::new();
-        world.init_resource::<InputRes>();
-        world.init_resource::<MouseRes>();
-        world.insert_resource(DeviceRes {
-            device: device.clone(),
-        });
+        let depth_texture = Texture::create_depth_texture(&device, &config, "depth_texture");
 
         let mut renderer = LabelRenderer::new(&device, &queue);
 
@@ -299,13 +296,26 @@ impl<'a> AppState<'a> {
             ..Default::default()
         });
 
-        let delta_time = Instant::now();
+        let device = Arc::new(device);
+        let surface = Arc::new(surface);
 
+        let mut world = World::new();
+        world.init_resource::<InputRes>();
+        world.init_resource::<MouseRes>();
+        world.insert_resource(RenderContext {
+            renderer,
+            render_pipeline,
+            device: device.clone(),
+            surface: surface.clone(),
+            depth_texture: depth_texture.clone(),
+            encoder: None,
+            view: None,
+        });
+
+        let delta_time = Instant::now();
         let accumulator = 0.0;
 
         let mut asset_server = AssetServer::new();
-
-        let depth_texture = Texture::create_depth_texture(&device, &config, "depth_texture");
 
         let target_indicator = Object::new(&device,
             CubeModel {
@@ -499,8 +509,6 @@ impl<'a> App<'a> {
 
     fn draw(&mut self) -> Result<(), wgpu::SurfaceError> {
         let state = self.state_mut();
-        let output = state.surface.get_current_texture()?;
-        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         state.renderer.viewport.update(&state.queue, Resolution{
             width: state.config.width,
@@ -518,45 +526,20 @@ impl<'a> App<'a> {
         state.renderer.set_text(state.dt_label,
             format!("DT: {:?}", state.delta_time.elapsed()));
 
+        let output = state.surface.get_current_texture()?;
+        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
         let mut encoder = state.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Render Encoder"),
         });
 
-        {
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
-                // this is what @location(0) in the fragment shader targets
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.1,
-                            g: 0.2,
-                            b: 0.3,
-                            a: 1.0,
-                        }),
-
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &state.depth_texture.view(),
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.0),
-                        store: wgpu::StoreOp::Store,
-                    }),
-                    stencil_ops: None,
-                }),
-                occlusion_query_set: None,
-                timestamp_writes: None,
-            });
-
-            render_pass.set_pipeline(&state.render_pipeline);
-            render_pass.draw_entity(&state.target_indicator, &state.camera_bind_group);
-        }
+        let mut render_context = state.world.resource_mut::<RenderContext>();
+        render_context.encoder = Some(encoder);
+        render_context.view = Some(view);
 
         {
+            let encoder = render_context.encoder.as_mut().unwrap();
+            let view = render_context.view.as_ref().unwrap();
+
             let mut glyphon_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Glyphon Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -608,6 +591,28 @@ impl<'a> App<'a> {
                 rotation
             }, device);
         }
+    }
+
+    fn draw_glyphon_labels(render_context: NonSendMut<RenderContext>) {
+        let encoder = render_context.encoder.as_mut().unwrap();
+        let view = render_context.view.as_ref().unwrap();
+        
+        let mut glyphon_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("Glyphon Render Pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+
+        render_context.renderer.draw(&mut glyphon_pass);
     }
 
     fn state_ref(&self) -> &AppState<'a> {
