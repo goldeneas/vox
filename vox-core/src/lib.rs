@@ -39,7 +39,6 @@ use render::instance::*;
 
 use camera::{ Camera, CameraController, CameraTransform };
 use log::warn;
-use resources::render_context;
 use resources::render_context::RenderContext;
 use resources::input::InputRes;
 use resources::input::KeyState;
@@ -64,7 +63,7 @@ use wasm_bindgen::prelude::*;
 
 const SIM_DT: f32 = 1.0/60.0;
 
-struct AppState<'a> {
+struct AppState {
     depth_texture: Arc<Texture>,
 
     camera: Camera,
@@ -79,10 +78,9 @@ struct AppState<'a> {
     accumulator: f32,
 
     world: World,
-    render_context: Arc<RenderContext<'a>>,
 }
 
-impl<'a> AppState<'a> {
+impl AppState {
     async fn new(window: Arc<Window>) -> Self {
         let size = window.inner_size();
 
@@ -138,7 +136,10 @@ impl<'a> AppState<'a> {
 
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
 
-        let render_context = Arc::new(RenderContext {
+        let mut world = World::new();
+        world.init_resource::<InputRes>();
+        world.init_resource::<MouseRes>();
+        world.insert_resource(RenderContext {
             asset_server,
             renderer,
             queue,
@@ -150,14 +151,6 @@ impl<'a> AppState<'a> {
             encoder: None,
             view: None,
         });
-
-        let mut world = World::new();
-        world.init_resource::<InputRes>();
-        world.init_resource::<MouseRes>();
-        world.insert_resource(
-            Arc::into_inner(render_context)
-            .unwrap()
-        );
 
         let texture_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("texture_bind_group_layout"),
@@ -312,12 +305,12 @@ impl<'a> AppState<'a> {
 }
 
 #[derive(Default)]
-struct App<'a> {
+struct App {
     window: Option<Arc<Window>>,
-    state: Option<AppState<'a>>,
+    state: Option<AppState>,
 }
 
-impl<'a> ApplicationHandler for App<'a> {
+impl ApplicationHandler for App {
     fn window_event(
         &mut self,
         event_loop: &ActiveEventLoop,
@@ -394,7 +387,7 @@ impl<'a> ApplicationHandler for App<'a> {
     }
 }
 
-impl<'a> App<'a> {
+impl App {
     fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
             let mut ctx = self.state_mut().world
