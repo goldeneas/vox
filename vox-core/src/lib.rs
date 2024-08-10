@@ -13,6 +13,7 @@ use std::time::Instant;
 use assets::asset_server::AssetServer;
 use bevy_ecs::event::EventReader;
 use bevy_ecs::event::EventWriter;
+use bevy_ecs::system::NonSend;
 use bevy_ecs::system::NonSendMut;
 use bevy_ecs::system::Query;
 use bevy_ecs::system::Res;
@@ -38,6 +39,7 @@ use render::instance::*;
 
 use camera::{ Camera, CameraController, CameraTransform };
 use log::warn;
+use resources::render_context;
 use resources::render_context::RenderContext;
 use resources::input::InputRes;
 use resources::input::KeyState;
@@ -62,26 +64,14 @@ use wasm_bindgen::prelude::*;
 
 const SIM_DT: f32 = 1.0/60.0;
 
-// TODO: maybe split this in contexts somehow?
 struct AppState<'a> {
-    asset_server: AssetServer,
     depth_texture: Arc<Texture>,
 
     camera: Camera,
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
         
-    surface: Arc<wgpu::Surface<'a>>,
-    device: Arc<wgpu::Device>,
-    queue: wgpu::Queue,
-    config: wgpu::SurfaceConfiguration,
-    size: winit::dpi::PhysicalSize<u32>,
     render_pipeline: wgpu::RenderPipeline,
-
-    renderer: LabelRenderer<'a>,
-    target_label: LabelId,
-    camera_label: LabelId,
-    dt_label: LabelId,
 
     target_indicator: Object,
 
@@ -89,6 +79,7 @@ struct AppState<'a> {
     accumulator: f32,
 
     world: World,
+    render_context: Arc<RenderContext<'a>>,
 }
 
 impl<'a> AppState<'a> {
@@ -139,7 +130,34 @@ impl<'a> AppState<'a> {
             desired_maximum_frame_latency: 2,
         };
 
+        surface.configure(&device, &config);
+
+        let mut renderer = LabelRenderer::new(&device, &queue);
+        let mut asset_server = AssetServer::new();
+        let depth_texture = Texture::create_depth_texture(&device, &config, "depth_texture");
+
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
+
+        let render_context = Arc::new(RenderContext {
+            asset_server,
+            renderer,
+            queue,
+            config,
+            size,
+            device,
+            surface,
+            depth_texture,
+            encoder: None,
+            view: None,
+        });
+
+        let mut world = World::new();
+        world.init_resource::<InputRes>();
+        world.init_resource::<MouseRes>();
+        world.insert_resource(
+            Arc::into_inner(render_context)
+            .unwrap()
+        );
 
         let texture_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("texture_bind_group_layout"),
@@ -263,59 +281,8 @@ impl<'a> AppState<'a> {
             multiview: None
         });
 
-        surface.configure(&device, &config);
-
-        let depth_texture = Texture::create_depth_texture(&device, &config, "depth_texture");
-
-        let mut renderer = LabelRenderer::new(&device, &queue);
-
-        let camera_label = renderer.add_label(LabelDescriptor {
-            x: 0.0,
-            y: 42.0,
-            text: "".to_owned(),
-            width: 1920.0,
-            height: 1080.0,
-            ..Default::default()
-        });
-
-        let target_label = renderer.add_label(LabelDescriptor {
-            x: 0.0,
-            y: 84.0,
-            text: "".to_owned(),
-            width: 1920.0,
-            height: 1080.0,
-            ..Default::default()
-        });
-
-        let dt_label = renderer.add_label(LabelDescriptor {
-            x: 0.0,
-            y: 120.0,
-            text: "".to_owned(),
-            width: 1920.0,
-            height: 1080.0,
-            ..Default::default()
-        });
-
-        let device = Arc::new(device);
-        let surface = Arc::new(surface);
-
-        let mut world = World::new();
-        world.init_resource::<InputRes>();
-        world.init_resource::<MouseRes>();
-        world.insert_resource(RenderContext {
-            renderer,
-            render_pipeline,
-            device: device.clone(),
-            surface: surface.clone(),
-            depth_texture: depth_texture.clone(),
-            encoder: None,
-            view: None,
-        });
-
         let delta_time = Instant::now();
         let accumulator = 0.0;
-
-        let mut asset_server = AssetServer::new();
 
         let target_indicator = Object::new(&device,
             CubeModel {
@@ -332,24 +299,14 @@ impl<'a> AppState<'a> {
 
         Self {
             target_indicator,
-            asset_server,
-            target_label,
-            camera_label,
             depth_texture,
-            dt_label,
             camera,
             camera_bind_group,
             camera_buffer,
-            surface,
-            queue,
-            config,
-            size,
             render_pipeline,
             world,
-            renderer,
             delta_time,
             accumulator,
-            device,
         }
     }
 }
@@ -440,12 +397,15 @@ impl<'a> ApplicationHandler for App<'a> {
 impl<'a> App<'a> {
     fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
-            let state = self.state_mut();
-            state.size = new_size;
-            state.config.width = new_size.width;
-            state.config.height = new_size.height;
-            state.depth_texture = Texture::create_depth_texture(&state.device, &state.config, "depth_texture");
-            state.surface.configure(&state.device, &state.config);
+            let mut ctx = self.state_mut().world
+                .get_resource_mut::<RenderContext>()
+                .unwrap();
+
+            ctx.size = new_size;
+            ctx.config.width = new_size.width;
+            ctx.config.height = new_size.height;
+            ctx.depth_texture = Texture::create_depth_texture(&ctx.device, &ctx.config, "depth_texture");
+            ctx.surface.configure(&ctx.device, &ctx.config);
         }
     }
 
@@ -476,7 +436,8 @@ impl<'a> App<'a> {
         {
             let state = self.state_mut();
             state.accumulator += state.delta_time
-                .elapsed().as_secs_f32();
+                .elapsed()
+                .as_secs_f32();
             state.delta_time = Instant::now();
         }
 
@@ -487,7 +448,13 @@ impl<'a> App<'a> {
 
         match self.draw() {
             Ok(_) => {}
-            Err(wgpu::SurfaceError::Lost) => self.resize(self.state_ref().size),
+            Err(wgpu::SurfaceError::Lost) => {
+                let ctx = self.state_ref().world
+                    .get_resource_ref::<RenderContext>()
+                    .unwrap();
+
+                self.resize(ctx.size);
+            }
             Err(wgpu::SurfaceError::OutOfMemory) => event_loop.exit(),
             Err(e) => warn!("{:?}", e),
         }
@@ -496,49 +463,42 @@ impl<'a> App<'a> {
     fn update(&mut self) {
         let state = self.state_mut();
 
+        let ctx = self.state_ref().world
+            .get_resource_ref::<RenderContext>()
+            .unwrap();
+
         state.camera.update(&state.world);
-        state.queue.write_buffer(&state.camera_buffer, 0, bytemuck::cast_slice(&[state.camera.uniform]));
+        ctx.queue.write_buffer(&state.camera_buffer, 0, bytemuck::cast_slice(&[state.camera.uniform]));
 
         state.target_indicator.set_instances(&[
             InstanceData {
                 position: state.camera.transform.target.to_vec(),
                 rotation: Quaternion::zero(),
             },
-        ], &state.device);
+        ], &ctx.device);
     }
 
     fn draw(&mut self) -> Result<(), wgpu::SurfaceError> {
-        let state = self.state_mut();
+        let mut ctx = self.state_mut().world
+            .get_resource_mut::<RenderContext>()
+            .unwrap();
 
-        state.renderer.viewport.update(&state.queue, Resolution{
-            width: state.config.width,
-            height: state.config.height,
+        ctx.renderer.viewport.update(&ctx.queue, Resolution{
+            width: ctx.config.width,
+            height: ctx.config.height,
         });
 
-        state.renderer.prepare(&state.device, &state.queue);
+        ctx.renderer.prepare(&ctx.device, &ctx.queue);
 
-        state.renderer.set_text(state.camera_label,
-            format!("POS: {:?}", state.camera.transform.position));
-
-        state.renderer.set_text(state.target_label,
-            format!("TAR: {:?}", state.camera.transform.target));
-
-        state.renderer.set_text(state.dt_label,
-            format!("DT: {:?}", state.delta_time.elapsed()));
-
-        let output = state.surface.get_current_texture()?;
+        let output = ctx.surface.get_current_texture()?;
         let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder = state.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        let mut encoder = ctx.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Render Encoder"),
         });
 
-        let mut render_context = state.world.resource_mut::<RenderContext>();
-        render_context.encoder = Some(encoder);
-        render_context.view = Some(view);
-
         {
-            let encoder = render_context.encoder.as_mut().unwrap();
-            let view = render_context.view.as_ref().unwrap();
+            let encoder = ctx.encoder.as_mut().unwrap();
+            let view = ctx.view.as_ref().unwrap();
 
             let mut glyphon_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Glyphon Render Pass"),
@@ -555,10 +515,10 @@ impl<'a> App<'a> {
                 occlusion_query_set: None,
             });
 
-            state.renderer.draw(&mut glyphon_pass);
+            ctx.renderer.draw(&mut glyphon_pass);
         }
 
-        state.queue.submit(std::iter::once(encoder.finish()));
+        ctx.queue.submit(std::iter::once(encoder.finish()));
         output.present();
 
         return Ok(());
@@ -615,11 +575,11 @@ impl<'a> App<'a> {
         render_context.renderer.draw(&mut glyphon_pass);
     }
 
-    fn state_ref(&self) -> &AppState<'a> {
+    fn state_ref(&self) -> &AppState {
         self.state.as_ref().unwrap()
     }
 
-    fn state_mut(&mut self) -> &mut AppState<'a> {
+    fn state_mut(&mut self) -> &mut AppState {
         self.state.as_mut().unwrap()
     }
 }
