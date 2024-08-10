@@ -40,6 +40,7 @@ use render::instance::*;
 
 use camera::{ Camera, CameraController, CameraTransform };
 use log::warn;
+use resources::camera_context::CameraContext;
 use resources::render_context::RenderContext;
 use resources::input::InputRes;
 use resources::input::KeyState;
@@ -254,8 +255,7 @@ impl AppState {
         });
 
         world.insert_resource(RenderContext {
-            camera,
-            camera_buffer,
+            world: &world,
             asset_server,
             renderer,
             queue,
@@ -266,6 +266,11 @@ impl AppState {
             depth_texture,
             encoder: None,
             view: None,
+        });
+
+        world.insert_resource(CameraContext {
+            camera,
+            camera_buffer,
         });
 
         world.insert_resource(DefaultPass {
@@ -433,17 +438,13 @@ impl App {
     }
 
     fn update(&mut self) {
-        let state = self.state_ref();
-
-        let mut ctx_res = self.state_mut().world
-            .get_resource_mut::<RenderContext>()
+        let world = &mut self.state_mut().world;
+        let ctx = world.get_resource_mut::<RenderContext>()
             .unwrap();
-
-        let ctx = ctx_res
-            .as_mut();
-
-        ctx.camera.update(&state.world);
-        ctx.queue.write_buffer(&ctx.camera_buffer, 0, bytemuck::cast_slice(&[ctx.camera.uniform]));
+        
+        ctx.camera.update(&ctx.world);
+        ctx.queue.write_buffer(&ctx.camera_buffer,
+            0, bytemuck::cast_slice(&[ctx.camera.uniform]));
     }
 
     fn draw(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -454,7 +455,7 @@ impl App {
         let ctx = ctx_res
             .as_mut();
 
-        ctx.renderer.viewport.update(&ctx.queue, Resolution{
+        ctx.renderer.viewport.update(&ctx.queue, Resolution {
             width: ctx.config.width,
             height: ctx.config.height,
         });

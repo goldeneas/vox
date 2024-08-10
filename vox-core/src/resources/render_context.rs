@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use bevy_ecs::system::Resource;
+use bevy_ecs::{system::Resource, world::World};
 
 use crate::{assets::asset_server::AssetServer, camera::Camera, render::text::LabelRenderer, Texture};
 
@@ -18,6 +18,7 @@ pub struct RenderContext<'a> {
     pub asset_server: AssetServer,
     pub camera: Camera,
     pub camera_buffer: wgpu::Buffer,
+    pub world: &'a World
 }
 
 //impl<'a> RenderContext<'a> {
