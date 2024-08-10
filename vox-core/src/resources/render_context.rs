@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use bevy_ecs::system::Resource;
 
-use crate::{assets::asset_server::AssetServer, render::text::LabelRenderer, Texture};
+use crate::{assets::asset_server::AssetServer, camera::Camera, render::text::LabelRenderer, Texture};
 
 #[derive(Resource)]
 pub struct RenderContext<'a> {
@@ -16,6 +16,8 @@ pub struct RenderContext<'a> {
     pub view: Option<wgpu::TextureView>,
     pub renderer: LabelRenderer<'a>,
     pub asset_server: AssetServer,
+    pub camera: Camera,
+    pub camera_buffer: wgpu::Buffer,
 }
 
 //impl<'a> RenderContext<'a> {

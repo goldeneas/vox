@@ -31,6 +31,7 @@ use components::single_instance::SingleInstanceComponent;
 use glyphon::Resolution;
 use render::cube::CubeModel;
 use render::model::*;
+use render::pass::DefaultPass;
 use render::text::LabelDescriptor;
 use render::text::LabelId;
 use render::text::LabelRenderer;
@@ -64,16 +65,6 @@ use wasm_bindgen::prelude::*;
 const SIM_DT: f32 = 1.0/60.0;
 
 struct AppState {
-    depth_texture: Arc<Texture>,
-
-    camera: Camera,
-    camera_buffer: wgpu::Buffer,
-    camera_bind_group: wgpu::BindGroup,
-        
-    render_pipeline: wgpu::RenderPipeline,
-
-    target_indicator: Object,
-
     delta_time: Instant,
     accumulator: f32,
 
@@ -139,18 +130,6 @@ impl AppState {
         let mut world = World::new();
         world.init_resource::<InputRes>();
         world.init_resource::<MouseRes>();
-        world.insert_resource(RenderContext {
-            asset_server,
-            renderer,
-            queue,
-            config,
-            size,
-            device,
-            surface,
-            depth_texture,
-            encoder: None,
-            view: None,
-        });
 
         let texture_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("texture_bind_group_layout"),
@@ -274,29 +253,29 @@ impl AppState {
             multiview: None
         });
 
+        world.insert_resource(RenderContext {
+            camera,
+            camera_buffer,
+            asset_server,
+            renderer,
+            queue,
+            config,
+            size,
+            device,
+            surface,
+            depth_texture,
+            encoder: None,
+            view: None,
+        });
+
+        world.insert_resource(DefaultPass {
+            render_pipeline,
+        });
+
         let delta_time = Instant::now();
         let accumulator = 0.0;
 
-        let target_indicator = Object::new(&device,
-            CubeModel {
-                scale: 0.3,
-                diffuse_texture: asset_server
-                    .get_or_load("debug.png", &device, &queue)
-                    .unwrap(),
-            }.to_model(&device), &[
-                InstanceData {
-                    position: (0.0, 0.0, 0.0).into(),
-                    rotation: Quaternion::zero(),
-                }
-            ]);
-
         Self {
-            target_indicator,
-            depth_texture,
-            camera,
-            camera_bind_group,
-            camera_buffer,
-            render_pipeline,
             world,
             delta_time,
             accumulator,
@@ -454,27 +433,26 @@ impl App {
     }
 
     fn update(&mut self) {
-        let state = self.state_mut();
+        let state = self.state_ref();
 
-        let ctx = self.state_ref().world
-            .get_resource_ref::<RenderContext>()
+        let mut ctx_res = self.state_mut().world
+            .get_resource_mut::<RenderContext>()
             .unwrap();
 
-        state.camera.update(&state.world);
-        ctx.queue.write_buffer(&state.camera_buffer, 0, bytemuck::cast_slice(&[state.camera.uniform]));
+        let ctx = ctx_res
+            .as_mut();
 
-        state.target_indicator.set_instances(&[
-            InstanceData {
-                position: state.camera.transform.target.to_vec(),
-                rotation: Quaternion::zero(),
-            },
-        ], &ctx.device);
+        ctx.camera.update(&state.world);
+        ctx.queue.write_buffer(&ctx.camera_buffer, 0, bytemuck::cast_slice(&[ctx.camera.uniform]));
     }
 
     fn draw(&mut self) -> Result<(), wgpu::SurfaceError> {
-        let mut ctx = self.state_mut().world
+        let mut ctx_res = self.state_mut().world
             .get_resource_mut::<RenderContext>()
             .unwrap();
+
+        let ctx = ctx_res
+            .as_mut();
 
         ctx.renderer.viewport.update(&ctx.queue, Resolution{
             width: ctx.config.width,
