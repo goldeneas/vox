@@ -6,5 +6,5 @@ use crate::Model;
 
 #[derive(Component)]
 pub struct ModelComponent {
-    model: Arc<Model>,
+    pub model: Arc<Model>,
 }

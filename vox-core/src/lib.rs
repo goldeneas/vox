@@ -1,54 +1,40 @@
 mod render;
-mod camera;
 mod util;
 mod entity;
 mod components;
 mod resources;
 mod assets;
 
-use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Instant;
 
 use assets::asset_server::AssetServer;
-use bevy_ecs::event::EventReader;
-use bevy_ecs::event::EventWriter;
 use bevy_ecs::system::NonSend;
-use bevy_ecs::system::NonSendMut;
 use bevy_ecs::system::Query;
 use bevy_ecs::system::Res;
-use bevy_ecs::system::ResMut;
-use bevy_ecs::system::Resource;
-use bevy_ecs::world;
 use bevy_ecs::world::World;
+use cgmath::Matrix4;
 use cgmath::Quaternion;
-use cgmath::Rad;
-use cgmath::Vector3;
+use components::camerable::CamerableComponent;
 use components::model::ModelComponent;
 use components::position::PositionComponent;
 use components::rotation::RotationComponent;
 use components::single_instance::SingleInstanceComponent;
+use components::speed::SpeedComponent;
 use glyphon::Resolution;
-use render::cube::CubeModel;
 use render::model::*;
-use render::pass::DefaultPass;
-use render::text::LabelDescriptor;
-use render::text::LabelId;
 use render::text::LabelRenderer;
 use render::texture::*;
 use render::instance::*;
 
-use camera::{ Camera, CameraController, CameraTransform };
 use log::warn;
-use resources::camera_context::CameraContext;
+use resources::glyphon_pass::GlyphonPass;
+use resources::model_pass::ModelPass;
 use resources::render_context::RenderContext;
 use resources::input::InputRes;
 use resources::input::KeyState;
 use resources::mouse::MouseRes;
-use wgpu::core::device;
-use wgpu::core::device::queue;
-use wgpu::PipelineCompilationOptions;
-use wgpu::{util::DeviceExt, RenderPipelineDescriptor};
+use wgpu::CommandEncoderDescriptor;
 use winit::application::ApplicationHandler;
 use winit::event_loop::ActiveEventLoop;
 use winit::event_loop::ControlFlow;
@@ -64,6 +50,14 @@ use cgmath::prelude::*;
 use wasm_bindgen::prelude::*;
 
 const SIM_DT: f32 = 1.0/60.0;
+
+#[rustfmt::skip]
+const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, 0.5, 0.5,
+    0.0, 0.0, 0.0, 1.0,
+);
 
 struct AppState {
     delta_time: Instant,
@@ -103,6 +97,8 @@ impl AppState {
             label: None,
         }, None).await.unwrap();
 
+        let device = Arc::new(device);
+
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps.formats.iter()
             .find(|f| f.is_srgb())
@@ -122,159 +118,31 @@ impl AppState {
 
         surface.configure(&device, &config);
 
-        let mut renderer = LabelRenderer::new(&device, &queue);
-        let mut asset_server = AssetServer::new();
+        let renderer = LabelRenderer::new(&device, &queue);
+        let asset_server = AssetServer::new();
         let depth_texture = Texture::create_depth_texture(&device, &config, "depth_texture");
-
-        let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
 
         let mut world = World::new();
         world.init_resource::<InputRes>();
         world.init_resource::<MouseRes>();
 
-        let texture_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("texture_bind_group_layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        multisampled: false,
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                    },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-            ]
-        });
+        let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
 
-        let camera = Camera::new(CameraTransform {
-            position: (0.0, 1.0, 2.0).into(),
-            target: (0.0, 0.0, 0.0).into(),
-            aspect: config.width as f32 / config.height as f32,
-            fovy: 45.0,
-            znear: 0.1,
-            zfar: 100.0,
-            ..Default::default()
-        }, CameraController {
-            speed: 0.1,
-        });
-
-        let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Camera Buffer"),
-            contents: bytemuck::cast_slice(&[camera.uniform]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-
-        let camera_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("camera_bind_group_layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }
-            ],
-        });
-
-        let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("camera_bind_group"),
-            layout: &camera_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: camera_buffer.as_entire_binding(),
-                },
-            ],
-        });
-
-        let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[
-                &texture_bind_group_layout,
-                &camera_bind_group_layout,
-            ],
-            push_constant_ranges: &[],
-        });
-
-        let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
-            label: Some("Render Pipeline"),
-            layout: Some(&render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: "vs_main",
-                buffers: &[
-                    Vertex::desc(),
-                    InstanceRaw::desc(),
-                ],
-                compilation_options: PipelineCompilationOptions::default(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: "fs_main",
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-                compilation_options: PipelineCompilationOptions::default(),
-            }),
-            primitive : wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
-                polygon_mode: wgpu::PolygonMode::Fill,
-                unclipped_depth: false,
-                conservative: false,
-            },
-            depth_stencil: Some(wgpu::DepthStencilState {
-                format: Texture::DEPTH_TEXTURE_FORMAT,
-                depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::Less,
-                stencil: wgpu::StencilState::default(),
-                bias: wgpu::DepthBiasState::default(),
-            }),
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false
-            },
-            multiview: None
-        });
+        world.insert_resource(
+            ModelPass::new(&device,
+                &shader,
+                &config
+        ));
 
         world.insert_resource(RenderContext {
-            world: &world,
             asset_server,
             renderer,
             queue,
             config,
             size,
-            device,
+            device: device.clone(),
             surface,
             depth_texture,
-            encoder: None,
-            view: None,
-        });
-
-        world.insert_resource(CameraContext {
-            camera,
-            camera_buffer,
-        });
-
-        world.insert_resource(DefaultPass {
-            render_pipeline,
         });
 
         let delta_time = Instant::now();
@@ -442,9 +310,6 @@ impl App {
         let ctx = world.get_resource_mut::<RenderContext>()
             .unwrap();
         
-        ctx.camera.update(&ctx.world);
-        ctx.queue.write_buffer(&ctx.camera_buffer,
-            0, bytemuck::cast_slice(&[ctx.camera.uniform]));
     }
 
     fn draw(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -462,36 +327,11 @@ impl App {
 
         ctx.renderer.prepare(&ctx.device, &ctx.queue);
 
-        let output = ctx.surface.get_current_texture()?;
-        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder = ctx.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("Render Encoder"),
-        });
+        // CALL RENDER METHODS HERE
 
-        {
-            let encoder = ctx.encoder.as_mut().unwrap();
-            let view = ctx.view.as_ref().unwrap();
-
-            let mut glyphon_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Glyphon Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-
-            ctx.renderer.draw(&mut glyphon_pass);
-        }
-
-        ctx.queue.submit(std::iter::once(encoder.finish()));
-        output.present();
+        // TODO ALSO MOVE THIS!!!!
+        //ctx.queue.submit(std::iter::once(ctx.encoder.as_ref().unwrap().finish()));
+        //output.present();
 
         return Ok(());
     }
@@ -501,50 +341,129 @@ impl App {
             &ModelComponent,
             &mut SingleInstanceComponent,
             Option<&RotationComponent>)>,
-            device_res: Res<DeviceRes>,
+            ctx: NonSend<RenderContext>,
+            model_pass: Res<ModelPass>,
     ) {
-        let device = &device_res.device;
+        let output = ctx.surface.get_current_texture().unwrap();
+        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let mut encoder = ctx.device.create_command_encoder(&CommandEncoderDescriptor {
+            label: Some("Glyphon Label Encoder"),
+        });
 
-        for (position_component, model_component, mut instance_component, rotation_opt)
+        for (position_cmpnt, model_cmpnt, mut instance_cmpnt, rotation_opt)
         in &mut query {
             let rotation = match rotation_opt {
                 Some(rotation) => rotation.quaternion,
                 None => Quaternion::zero(),
             };
 
-            let position = Vector3 {
-                x: position_component.x,
-                y: position_component.y,
-                z: position_component.z,
-            };
+            let position = position_cmpnt.position
+                .to_vec();
 
-            instance_component.set_instance(&InstanceData {
+            instance_cmpnt.set_instance(&InstanceData {
                 position,
                 rotation
-            }, device);
+            }, &ctx.device);
+
+            let mut render_pass = model_pass.render_pass(&mut encoder,
+                &view,
+                &ctx.depth_texture.view()
+            ).unwrap();
+
+            render_pass.draw_model(&model_cmpnt.model,
+                &model_pass.camera_bind_group()
+            );
+        }
+
+        ctx.queue.submit(std::iter::once(&encoder.finish()));
+        output.present();
+    }
+
+    fn draw_glyphon_labels(ctx: NonSend<RenderContext>,
+        glyphon_pass: Res<GlyphonPass>) {
+        let output = ctx.surface.get_current_texture().unwrap();
+        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let mut encoder = ctx.device.create_command_encoder(&CommandEncoderDescriptor {
+            label: Some("Glyphon Label Encoder"),
+        });
+        
+        let mut pass = glyphon_pass.render_pass(&mut encoder,
+            &view,
+        ).unwrap();
+
+        ctx.renderer.draw(&mut pass);
+
+        ctx.queue.submit(std::iter::once(&encoder.finish()));
+        output.present();
+    }
+
+    fn draw_camera(query: Query<(
+        &PositionComponent,
+        &CamerableComponent)>,
+        ctx: NonSend<RenderContext>,
+        model_pass: Res<ModelPass>,
+    ) {
+        for (position_cmpnt, camerable_cmpnt) in &query {
+            let view = Matrix4::look_at_rh(
+                position_cmpnt.position,
+                camerable_cmpnt.target,
+                camerable_cmpnt.up
+            );
+            
+            let proj = cgmath::perspective(
+                cgmath::Deg(camerable_cmpnt.fovy),
+                camerable_cmpnt.aspect,
+                camerable_cmpnt.znear,
+                camerable_cmpnt.zfar
+            );
+            
+            let uniform: [[f32;4];4] = (OPENGL_TO_WGPU_MATRIX * proj * view)
+                .into();
+            
+            ctx.queue.write_buffer(&model_pass.camera_buffer(),
+                0, bytemuck::cast_slice(&uniform));
         }
     }
 
-    fn draw_glyphon_labels(render_context: NonSendMut<RenderContext>) {
-        let encoder = render_context.encoder.as_mut().unwrap();
-        let view = render_context.view.as_ref().unwrap();
-        
-        let mut glyphon_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("Glyphon Render Pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Load,
-                    store: wgpu::StoreOp::Store,
-                },
-            })],
-            depth_stencil_attachment: None,
-            timestamp_writes: None,
-            occlusion_query_set: None,
-        });
+    fn update_camera(mut query: Query<(
+        &mut PositionComponent,
+        &SpeedComponent,
+        &mut CamerableComponent)>,
+        input_res: Res<InputRes>,
+        mouse_res: Res<MouseRes>,
+    ) {
+        for (mut position_cmpnt, speed_cmpnt, mut camerable_cmpnt) in &mut query {
+            let forward = camerable_cmpnt.target - position_cmpnt.position;
+            let forward_norm = forward.normalize();
+            let forward_mag = forward.magnitude();
 
-        render_context.renderer.draw(&mut glyphon_pass);
+            if input_res.forward.is_pressed && forward_mag > speed_cmpnt.speed {
+                position_cmpnt.position += forward_norm * speed_cmpnt.speed;
+                //camera_transform.target += forward_norm * self.speed;
+            }
+
+            if input_res.backward.is_pressed {
+                position_cmpnt.position -= forward_norm * speed_cmpnt.speed;
+                //camera_transform.target -= forward_norm * self.speed;
+            }
+
+            let up_norm = camerable_cmpnt.up.normalize();
+            let right_norm = forward_norm.cross(up_norm);
+
+            if input_res.right.is_pressed {
+                position_cmpnt.position += right_norm * speed_cmpnt.speed; 
+                //camera_transform.target += right_norm * self.speed;
+            }
+
+            if input_res.left.is_pressed {
+                position_cmpnt.position -= right_norm * speed_cmpnt.speed;
+                //camera_transform.target -= right_norm * self.speed;
+            }
+
+            let yaw: f32 = (mouse_res.pos.0 * 0.01) as f32;
+            camerable_cmpnt.target.x = 2.23 * yaw.cos();
+            camerable_cmpnt.target.z = 2.23 * yaw.sin();
+        }
     }
 
     fn state_ref(&self) -> &AppState {

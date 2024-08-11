@@ -7,18 +7,13 @@ use crate::{assets::asset_server::AssetServer, camera::Camera, render::text::Lab
 #[derive(Resource)]
 pub struct RenderContext<'a> {
     pub depth_texture: Arc<Texture>,
-    pub device: wgpu::Device,
+    pub device: Arc<wgpu::Device>,
     pub surface: wgpu::Surface<'a>,
     pub config: wgpu::SurfaceConfiguration,
     pub queue: wgpu::Queue,
     pub size: winit::dpi::PhysicalSize<u32>,
-    pub encoder: Option<wgpu::CommandEncoder>,
-    pub view: Option<wgpu::TextureView>,
     pub renderer: LabelRenderer<'a>,
     pub asset_server: AssetServer,
-    pub camera: Camera,
-    pub camera_buffer: wgpu::Buffer,
-    pub world: &'a World
 }
 
 //impl<'a> RenderContext<'a> {
