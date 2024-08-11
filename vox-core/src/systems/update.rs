@@ -6,15 +6,13 @@ use crate::{components::{camerable::CamerableComponent, position::PositionCompon
 pub fn update_single_instance_models(mut query: Query<(
         &PositionComponent,
         &mut SingleInstanceComponent,
-        Option<&RotationComponent>)>,
+        &RotationComponent)>,
         ctx: Res<RenderContext<'static>>,
 ) {
-    for (position_cmpnt, mut instance_cmpnt, rotation_opt)
+    for (position_cmpnt, mut instance_cmpnt, rotation_cmpnt)
     in &mut query {
-        let rotation = match rotation_opt {
-            Some(rotation) => rotation.quaternion,
-            None => Quaternion::zero(),
-        };
+        let rotation = rotation_cmpnt
+            .quaternion;
 
         let position = position_cmpnt.position
             .to_vec();

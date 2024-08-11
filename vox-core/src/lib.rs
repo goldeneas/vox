@@ -257,7 +257,6 @@ impl App {
                     update_single_instance_models,
         ));
 
-
         state.draw_schedule
             .add_systems((
                     draw_camera,
