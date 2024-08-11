@@ -12,9 +12,6 @@ const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
     0.0, 0.0, 0.0, 1.0,
 );
 
-// TODO CREATE CAMERA UNIFORM TYPE FOR F32;4;4
-
-// PURPLE = NO ENTITIES IN SYSTEM
 pub fn draw_single_instance_models(query: Query<(
         &ModelComponent,
         &SingleInstanceComponent)>,

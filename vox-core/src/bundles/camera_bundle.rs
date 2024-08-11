@@ -17,7 +17,7 @@ impl Default for CameraBundle {
                 position: (0.0, 1.0, 2.0).into() 
             },
             speed: SpeedComponent {
-                speed: 1.0,
+                speed: 0.3,
             },
             camerable: CamerableComponent {
                 target: (0.0, 0.0, 0.0).into(),

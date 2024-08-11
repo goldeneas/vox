@@ -1,7 +1,9 @@
-use bevy_ecs::prelude::*;
-use cgmath::{Matrix4, SquareMatrix};
+use std::sync::Arc;
 
-use crate::components::{camerable::CamerableComponent, model::ModelComponent, position::PositionComponent, rotation::RotationComponent, single_instance::SingleInstanceComponent, speed::SpeedComponent};
+use bevy_ecs::prelude::*;
+use cgmath::{Quaternion, Zero};
+
+use crate::{components::{model::ModelComponent, position::PositionComponent, rotation::RotationComponent, single_instance::SingleInstanceComponent}, Model};
 
 #[derive(Bundle)]
 pub struct SingleEntity {
@@ -11,27 +13,19 @@ pub struct SingleEntity {
     rotation: RotationComponent,
 }
 
-impl Default for SingleEntity {
-    fn default() -> Self {
+impl SingleEntity {
+    pub fn new(model: Arc<Model>) -> Self {
         Self {
             position: PositionComponent {
-                position: (0.0, 1.0, 2.0).into() 
+                position: (0.0, 0.0, 0.0).into() 
             },
-            speed: SpeedComponent {
-                speed: 1.0,
+            model: ModelComponent {
+                model,
             },
-            camerable: CamerableComponent {
-                target: (0.0, 0.0, 0.0).into(),
-                up: cgmath::Vector3::unit_y(),
-                aspect: 1920.0 / 1080.0,
-                fovy: 45.0,
-                znear: 0.1,
-                zfar: 100.0,
-                yaw: 0.0,
-                pitch: 0.0,
-                last_mouse_pos: (0.0, 0.0),
-                view_proj: Matrix4::identity().into(),
-            }
+            rotation: RotationComponent {
+                quaternion: Quaternion::zero(),
+            },
+            instance: SingleInstanceComponent::default(),
         }
     }
 }

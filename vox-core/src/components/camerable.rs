@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use cgmath::{Point3, Vector3};
 
-// TODO: split these componets up
+pub type CameraUniform = [[f32;4];4];
 
 #[derive(Component)]
 pub struct CamerableComponent {
@@ -14,5 +14,5 @@ pub struct CamerableComponent {
     pub up: Vector3<f32>,
     pub yaw: f32,
     pub pitch: f32,
-    pub view_proj: [[f32; 4]; 4],
+    pub view_proj: CameraUniform,
 }

@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 use cgmath::{Matrix4, SquareMatrix};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions, RenderPipelineDescriptor, ShaderModuleDescriptor};
 
-use crate::{InstanceRaw, Texture, Vertex};
+use crate::{components::camerable::CameraUniform, InstanceRaw, Texture, Vertex};
 
 #[derive(Resource)]
 pub struct DefaultPipeline {
@@ -16,7 +16,7 @@ impl DefaultPipeline {
         shader: &wgpu::ShaderModule,
         config: &wgpu::SurfaceConfiguration,
     ) -> Self {
-        let camera_uniform: [[f32;4];4] = Matrix4::identity()
+        let camera_uniform: CameraUniform = Matrix4::identity()
             .into();
 
         let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {

@@ -12,8 +12,11 @@ use std::time::Instant;
 use assets::asset_server::AssetServer;
 use bevy_ecs::schedule::Schedule;
 use bevy_ecs::world::World;
+use bundles::camera_bundle::CameraBundle;
+use bundles::single_entity_bundle::SingleEntity;
 use glyphon::Resolution;
 use render::model::*;
+use render::text::LabelDescriptor;
 use render::text::LabelRenderer;
 use render::texture::*;
 use render::instance::*;
@@ -52,6 +55,7 @@ struct AppState {
     update_schedule: Schedule,
 
     world: World,
+    asset_server: AssetServer,
 }
 
 impl AppState {
@@ -123,7 +127,6 @@ impl AppState {
         ));
 
         world.insert_resource(RenderContext {
-            asset_server,
             renderer,
             queue,
             config,
@@ -140,6 +143,7 @@ impl AppState {
         let draw_schedule = Schedule::default();
 
         Self {
+            asset_server,
             world,
             delta_time,
             accumulator,
@@ -249,20 +253,42 @@ impl App {
     }
 
     fn run(&mut self) {
-        let state = self.state_mut();
+        let state_mut = self.state_mut();
 
-        state.update_schedule
+        state_mut.update_schedule
             .add_systems((
                     update_camera,
                     update_single_instance_models,
         ));
 
-        state.draw_schedule
+        state_mut.draw_schedule
             .add_systems((
                     draw_camera,
                     draw_glyphon_labels,
                     draw_single_instance_models,
         ));
+
+        let ctx = state_mut.world
+            .get_resource_ref::<RenderContext>()
+            .unwrap();
+
+        let model = state_mut.asset_server
+            .get_or_load::<Model>("res/untitled.obj", &ctx.device, &ctx.queue)
+            .unwrap();
+
+        state_mut.world
+            .spawn(SingleEntity::new(model));
+
+        state_mut.world
+            .spawn(CameraBundle::default());
+
+        let mut ctx = state_mut.world
+            .get_resource_mut::<RenderContext>()
+            .unwrap();
+
+        ctx.renderer.add_label(LabelDescriptor {
+            ..Default::default()
+        });
     }
 
     fn input(&mut self, keycode: &KeyCode, key_state: &ElementState) {
