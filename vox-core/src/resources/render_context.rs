@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use bevy_ecs::{system::Resource, world::World};
 
-use crate::{assets::asset_server::AssetServer, camera::Camera, render::text::LabelRenderer, Texture};
+use crate::{assets::asset_server::AssetServer, render::text::LabelRenderer, Texture};
 
 #[derive(Resource)]
 pub struct RenderContext<'a> {

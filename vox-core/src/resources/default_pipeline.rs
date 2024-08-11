@@ -1,4 +1,5 @@
 use bevy_ecs::prelude::*;
+use cgmath::{Matrix4, SquareMatrix};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions, RenderPipelineDescriptor, ShaderModuleDescriptor};
 
 use crate::{InstanceRaw, Texture, Vertex};
@@ -15,9 +16,12 @@ impl DefaultPipeline {
         shader: &wgpu::ShaderModule,
         config: &wgpu::SurfaceConfiguration,
     ) -> Self {
+        let camera_uniform: [[f32;4];4] = Matrix4::identity()
+            .into();
+
         let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Camera Buffer"),
-            contents: &[],
+            contents: bytemuck::cast_slice(&camera_uniform),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -177,7 +181,7 @@ impl DefaultPipeline {
         view: &'a wgpu::TextureView,
     ) -> Result<wgpu::RenderPass, wgpu::SurfaceError> 
     {
-        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Glyphon Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: &view,
@@ -191,8 +195,6 @@ impl DefaultPipeline {
             timestamp_writes: None,
             occlusion_query_set: None,
         });
-
-        render_pass.set_pipeline(&self.render_pipeline);
 
         Ok(render_pass)
     }

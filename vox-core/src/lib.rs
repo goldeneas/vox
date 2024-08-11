@@ -1,26 +1,17 @@
 mod render;
 mod util;
-mod entity;
+mod bundles;
 mod components;
 mod resources;
 mod assets;
+mod systems;
 
 use std::sync::Arc;
 use std::time::Instant;
 
 use assets::asset_server::AssetServer;
-use bevy_ecs::system::NonSend;
-use bevy_ecs::system::Query;
-use bevy_ecs::system::Res;
+use bevy_ecs::schedule::Schedule;
 use bevy_ecs::world::World;
-use cgmath::Matrix4;
-use cgmath::Quaternion;
-use components::camerable::CamerableComponent;
-use components::model::ModelComponent;
-use components::position::PositionComponent;
-use components::rotation::RotationComponent;
-use components::single_instance::SingleInstanceComponent;
-use components::speed::SpeedComponent;
 use glyphon::Resolution;
 use render::model::*;
 use render::text::LabelRenderer;
@@ -28,13 +19,16 @@ use render::texture::*;
 use render::instance::*;
 
 use log::warn;
-use resources::glyphon_pass::GlyphonPass;
-use resources::model_pass::ModelPass;
+use resources::default_pipeline::DefaultPipeline;
 use resources::render_context::RenderContext;
 use resources::input::InputRes;
 use resources::input::KeyState;
 use resources::mouse::MouseRes;
-use wgpu::CommandEncoderDescriptor;
+use systems::draw::draw_camera;
+use systems::draw::draw_glyphon_labels;
+use systems::draw::draw_single_instance_models;
+use systems::update::update_camera;
+use systems::update::update_single_instance_models;
 use winit::application::ApplicationHandler;
 use winit::event_loop::ActiveEventLoop;
 use winit::event_loop::ControlFlow;
@@ -44,24 +38,18 @@ use winit::window::WindowId;
 use winit::{
     event::*, event_loop::EventLoop, keyboard::{KeyCode, PhysicalKey}, window::Window
 };
-use cgmath::prelude::*;
 
 #[cfg(target_arch="wasm32")]
 use wasm_bindgen::prelude::*;
 
 const SIM_DT: f32 = 1.0/60.0;
 
-#[rustfmt::skip]
-const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
-    1.0, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0, 0.0,
-    0.0, 0.0, 0.5, 0.5,
-    0.0, 0.0, 0.0, 1.0,
-);
-
 struct AppState {
     delta_time: Instant,
     accumulator: f32,
+
+    draw_schedule: Schedule,
+    update_schedule: Schedule,
 
     world: World,
 }
@@ -129,7 +117,7 @@ impl AppState {
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
 
         world.insert_resource(
-            ModelPass::new(&device,
+            DefaultPipeline::new(&device,
                 &shader,
                 &config
         ));
@@ -148,10 +136,15 @@ impl AppState {
         let delta_time = Instant::now();
         let accumulator = 0.0;
 
+        let update_schedule = Schedule::default();
+        let draw_schedule = Schedule::default();
+
         Self {
             world,
             delta_time,
             accumulator,
+            update_schedule,
+            draw_schedule,
         }
     }
 }
@@ -231,6 +224,7 @@ impl ApplicationHandler for App {
         let state = wasm_bindgen_futures::spawn_local(AppState::new(window.clone()));
 
         self.state = Some(state);
+        self.run();
     }
 
     fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
@@ -252,6 +246,24 @@ impl App {
             ctx.depth_texture = Texture::create_depth_texture(&ctx.device, &ctx.config, "depth_texture");
             ctx.surface.configure(&ctx.device, &ctx.config);
         }
+    }
+
+    fn run(&mut self) {
+        let state = self.state_mut();
+
+        state.update_schedule
+            .add_systems((
+                    update_camera,
+                    update_single_instance_models,
+        ));
+
+
+        state.draw_schedule
+            .add_systems((
+                    draw_camera,
+                    draw_glyphon_labels,
+                    draw_single_instance_models,
+        ));
     }
 
     fn input(&mut self, keycode: &KeyCode, key_state: &ElementState) {
@@ -306,14 +318,17 @@ impl App {
     }
 
     fn update(&mut self) {
-        let world = &mut self.state_mut().world;
-        let ctx = world.get_resource_mut::<RenderContext>()
-            .unwrap();
-        
+        let state = &mut self.state_mut();
+        let world = &mut state.world;
+        let update_schedule = &mut state.update_schedule;
+
+        update_schedule.run(world);
     }
 
     fn draw(&mut self) -> Result<(), wgpu::SurfaceError> {
-        let mut ctx_res = self.state_mut().world
+        let state = &mut self.state_mut();
+
+        let mut ctx_res = state.world
             .get_resource_mut::<RenderContext>()
             .unwrap();
 
@@ -327,143 +342,12 @@ impl App {
 
         ctx.renderer.prepare(&ctx.device, &ctx.queue);
 
-        // CALL RENDER METHODS HERE
+        let world = &mut state.world;
+        let draw_schedule = &mut state.draw_schedule;
 
-        // TODO ALSO MOVE THIS!!!!
-        //ctx.queue.submit(std::iter::once(ctx.encoder.as_ref().unwrap().finish()));
-        //output.present();
+        draw_schedule.run(world);
 
         return Ok(());
-    }
-
-    fn draw_single_instance_models(mut query: Query<(
-            &PositionComponent,
-            &ModelComponent,
-            &mut SingleInstanceComponent,
-            Option<&RotationComponent>)>,
-            ctx: NonSend<RenderContext>,
-            model_pass: Res<ModelPass>,
-    ) {
-        let output = ctx.surface.get_current_texture().unwrap();
-        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder = ctx.device.create_command_encoder(&CommandEncoderDescriptor {
-            label: Some("Glyphon Label Encoder"),
-        });
-
-        for (position_cmpnt, model_cmpnt, mut instance_cmpnt, rotation_opt)
-        in &mut query {
-            let rotation = match rotation_opt {
-                Some(rotation) => rotation.quaternion,
-                None => Quaternion::zero(),
-            };
-
-            let position = position_cmpnt.position
-                .to_vec();
-
-            instance_cmpnt.set_instance(&InstanceData {
-                position,
-                rotation
-            }, &ctx.device);
-
-            let mut render_pass = model_pass.render_pass(&mut encoder,
-                &view,
-                &ctx.depth_texture.view()
-            ).unwrap();
-
-            render_pass.draw_model(&model_cmpnt.model,
-                &model_pass.camera_bind_group()
-            );
-        }
-
-        ctx.queue.submit(std::iter::once(&encoder.finish()));
-        output.present();
-    }
-
-    fn draw_glyphon_labels(ctx: NonSend<RenderContext>,
-        glyphon_pass: Res<GlyphonPass>) {
-        let output = ctx.surface.get_current_texture().unwrap();
-        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder = ctx.device.create_command_encoder(&CommandEncoderDescriptor {
-            label: Some("Glyphon Label Encoder"),
-        });
-        
-        let mut pass = glyphon_pass.render_pass(&mut encoder,
-            &view,
-        ).unwrap();
-
-        ctx.renderer.draw(&mut pass);
-
-        ctx.queue.submit(std::iter::once(&encoder.finish()));
-        output.present();
-    }
-
-    fn draw_camera(query: Query<(
-        &PositionComponent,
-        &CamerableComponent)>,
-        ctx: NonSend<RenderContext>,
-        model_pass: Res<ModelPass>,
-    ) {
-        for (position_cmpnt, camerable_cmpnt) in &query {
-            let view = Matrix4::look_at_rh(
-                position_cmpnt.position,
-                camerable_cmpnt.target,
-                camerable_cmpnt.up
-            );
-            
-            let proj = cgmath::perspective(
-                cgmath::Deg(camerable_cmpnt.fovy),
-                camerable_cmpnt.aspect,
-                camerable_cmpnt.znear,
-                camerable_cmpnt.zfar
-            );
-            
-            let uniform: [[f32;4];4] = (OPENGL_TO_WGPU_MATRIX * proj * view)
-                .into();
-            
-            ctx.queue.write_buffer(&model_pass.camera_buffer(),
-                0, bytemuck::cast_slice(&uniform));
-        }
-    }
-
-    fn update_camera(mut query: Query<(
-        &mut PositionComponent,
-        &SpeedComponent,
-        &mut CamerableComponent)>,
-        input_res: Res<InputRes>,
-        mouse_res: Res<MouseRes>,
-    ) {
-        for (mut position_cmpnt, speed_cmpnt, mut camerable_cmpnt) in &mut query {
-            let forward = camerable_cmpnt.target - position_cmpnt.position;
-            let forward_norm = forward.normalize();
-            let forward_mag = forward.magnitude();
-
-            if input_res.forward.is_pressed && forward_mag > speed_cmpnt.speed {
-                position_cmpnt.position += forward_norm * speed_cmpnt.speed;
-                //camera_transform.target += forward_norm * self.speed;
-            }
-
-            if input_res.backward.is_pressed {
-                position_cmpnt.position -= forward_norm * speed_cmpnt.speed;
-                //camera_transform.target -= forward_norm * self.speed;
-            }
-
-            let up_norm = camerable_cmpnt.up.normalize();
-            let right_norm = forward_norm.cross(up_norm);
-
-            if input_res.right.is_pressed {
-                position_cmpnt.position += right_norm * speed_cmpnt.speed; 
-                //camera_transform.target += right_norm * self.speed;
-            }
-
-            if input_res.left.is_pressed {
-                position_cmpnt.position -= right_norm * speed_cmpnt.speed;
-                //camera_transform.target -= right_norm * self.speed;
-            }
-
-            let yaw: f32 = (mouse_res.pos.0 * 0.01) as f32;
-            camerable_cmpnt.target.x = 2.23 * yaw.cos();
-            camerable_cmpnt.target.z = 2.23 * yaw.sin();
-        }
     }
 
     fn state_ref(&self) -> &AppState {

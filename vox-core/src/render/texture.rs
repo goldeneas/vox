@@ -149,7 +149,7 @@ impl Texture {
             name,
         };
 
-        Rc::new(texture)
+        Arc::new(texture)
     }
 
     pub fn view(&self) -> &wgpu::TextureView {

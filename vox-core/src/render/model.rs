@@ -2,9 +2,9 @@ use std::{ops::Range, sync::Arc};
 
 use bytemuck::{Pod, Zeroable};
 
-use crate::{assets::{asset::Asset, asset_server::AssetServer}, components::DrawComponent, Texture};
+use crate::{assets::{asset::Asset, asset_server::AssetServer}, components::{model::ModelComponent, multiple_instance::MultipleInstanceComponent, single_instance::SingleInstanceComponent}, Texture};
 
-use super::{material::{Material, MaterialDescriptor}, mesh::{Mesh, MeshDescriptor}, object::Object};
+use super::{material::{Material, MaterialDescriptor}, mesh::{Mesh, MeshDescriptor}};
 
 pub struct Model {
     meshes: Box<[Mesh]>,
@@ -49,11 +49,12 @@ pub trait DrawObject<'b> {
         instances: Range<u32>,
         camera_bind_group: &'b wgpu::BindGroup);
     fn draw_entity(&mut self,
-        object: &'b DrawComponent,
+        model_cmpnt: &'b ModelComponent,
+        instance_cmpnt: &'b SingleInstanceComponent,
         camera_bind_group: &'b wgpu::BindGroup);
-    fn draw_entity_selective(&mut self,
-        object: &'b DrawComponent,
-        instances: Range<u32>,
+    fn draw_entity_multiple(&mut self,
+        model_cmpnt: &'b ModelComponent,
+        instance_cmpnt: &'b MultipleInstanceComponent,
         camera_bind_group: &'b wgpu::BindGroup);
 }
 
@@ -105,23 +106,31 @@ where 'b: 'a {
     }
 
     fn draw_entity(&mut self,
-        object: &'b DrawComponent,
+        model_cmpnt: &'b ModelComponent,
+        instance_cmpnt: &'b SingleInstanceComponent,
         camera_bind_group: &'b wgpu::BindGroup
     ) {
-        self.draw_entity_selective(object, 0..object.num_instances(), camera_bind_group);
-    }
-
-    fn draw_entity_selective(&mut self,
-        object: &'b DrawComponent,
-        instances: Range<u32>,
-        camera_bind_group: &'b wgpu::BindGroup
-    ) {
-        self.set_vertex_buffer(1, object
+        self.set_vertex_buffer(1, instance_cmpnt
             .instance_buffer()
-            .unwrap()
             .slice(..));
 
-        self.draw_model_instanced(&object.model(), instances, camera_bind_group);
+        self.draw_model(&model_cmpnt.model,
+            camera_bind_group
+        );
+    }
+
+    fn draw_entity_multiple(&mut self,
+        model_cmpnt: &'b ModelComponent,
+        instance_cmpnt: &'b MultipleInstanceComponent,
+        camera_bind_group: &'b wgpu::BindGroup
+    ) {
+        self.set_vertex_buffer(1, instance_cmpnt
+            .instance_buffer()
+            .slice(..));
+
+        self.draw_model(&model_cmpnt.model,
+            camera_bind_group
+        );
     }
 }
 

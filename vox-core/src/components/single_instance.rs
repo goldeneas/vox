@@ -3,6 +3,8 @@ use wgpu::util::DeviceExt;
 
 use crate::InstanceData;
 
+use super::multiple_instance::MultipleInstanceComponent;
+
 #[derive(Component)]
 pub struct SingleInstanceComponent {
     instance_buffer: wgpu::Buffer,
