@@ -372,7 +372,7 @@ impl App {
 
         draw_schedule.run(world);
 
-        return Ok(());
+        Ok(())
     }
 
     fn state_ref(&self) -> &AppState {

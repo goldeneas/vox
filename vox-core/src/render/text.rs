@@ -112,7 +112,7 @@ impl<'a> LabelRenderer<'a> {
     }
 
     pub fn prepare(&mut self, device: &Device, queue: &Queue) {
-        let _ = self.renderer.prepare(device,
+        self.renderer.prepare(device,
             queue,
             &mut self.font_system,
             &mut self.text_atlas,
@@ -126,7 +126,7 @@ impl<'a> LabelRenderer<'a> {
 
     pub fn draw<'pass>(&'a self, render_pass: &mut RenderPass<'pass>)
     where 'a : 'pass {
-        let _ = self.renderer.render(&self.text_atlas, &self.viewport, render_pass)
+        self.renderer.render(&self.text_atlas, &self.viewport, render_pass)
             .expect("Could not draw GlyphonRenderer");
     }
 

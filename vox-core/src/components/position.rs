@@ -1,5 +1,5 @@
 use bevy_ecs::component::Component;
-use cgmath::{Point3, Vector3};
+use cgmath::Point3;
 
 #[derive(Component)]
 pub struct PositionComponent {

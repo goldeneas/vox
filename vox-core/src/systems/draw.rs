@@ -27,12 +27,12 @@ pub fn draw_single_instance_models(query: Query<(
     for (model_cmpnt, instance_cmpnt) in &query {
         let mut render_pass = pipeline.model_pass(&mut encoder,
             &view,
-            &ctx.depth_texture.view()
+            ctx.depth_texture.view()
         ).unwrap();
 
-        render_pass.draw_entity(&model_cmpnt,
-            &instance_cmpnt,
-            &pipeline.camera_bind_group()
+        render_pass.draw_entity(model_cmpnt,
+            instance_cmpnt,
+            pipeline.camera_bind_group()
         );
     }
 
@@ -83,7 +83,7 @@ pub fn draw_camera(query: Query<(
         let uniform: [[f32;4];4] = (OPENGL_TO_WGPU_MATRIX * proj * view)
             .into();
         
-        ctx.queue.write_buffer(&pipeline.camera_buffer(),
+        ctx.queue.write_buffer(pipeline.camera_buffer(),
             0, bytemuck::cast_slice(&uniform));
     }
 }

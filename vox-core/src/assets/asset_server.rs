@@ -1,4 +1,4 @@
-use std::{any::{Any, TypeId}, collections::HashMap, hash::{DefaultHasher, Hash, Hasher}, rc::Rc, sync::Arc};
+use std::{any::{Any, TypeId}, collections::HashMap, hash::{DefaultHasher, Hash, Hasher}, sync::Arc};
 
 use crate::{util::get_extension, Model, Texture};
 
@@ -69,13 +69,13 @@ impl AssetServer {
         match self.map.get(&(type_id, hash)) {
             Some(any) => any.clone().downcast().ok(),
             None => {
-                self.load::<T>(file_name, device, queue);
+                self.load(file_name, device, queue);
                 self.get(file_name)
             }
         }
     }
 
-    fn load<T>(&mut self, file_name: &str, device: &wgpu::Device, queue: &wgpu::Queue) {
+    fn load(&mut self, file_name: &str, device: &wgpu::Device, queue: &wgpu::Queue) {
         let extension = get_extension(file_name);
 
         match extension {

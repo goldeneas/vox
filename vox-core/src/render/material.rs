@@ -45,11 +45,11 @@ impl Material {
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&diffuse_texture.view()),
+                    resource: wgpu::BindingResource::TextureView(diffuse_texture.view()),
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler()),
+                    resource: wgpu::BindingResource::Sampler(diffuse_texture.sampler()),
                 },
             ]
         });

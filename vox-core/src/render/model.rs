@@ -79,7 +79,7 @@ where 'b: 'a {
     ) {
         self.set_vertex_buffer(0, mesh.vertex_buffer().slice(..));
         self.set_index_buffer(mesh.index_buffer().slice(..), wgpu::IndexFormat::Uint32);
-        self.set_bind_group(0, &material.bind_group(), &[]);
+        self.set_bind_group(0, material.bind_group(), &[]);
         self.set_bind_group(1, camera_bind_group, &[]);
         self.draw_indexed(0..mesh.num_indices(), 0, instances);
     }
@@ -212,7 +212,7 @@ impl Model {
                         })
                     }).collect::<Vec<_>>();
 
-                materials.try_into().unwrap()
+                materials.into()
             },
             Err(_) => {
                 let diffuse_texture = asset_server
@@ -251,10 +251,10 @@ impl Model {
                             normal: normals,
                         }
                     }).collect::<Vec<_>>()
-                .try_into().unwrap();
+                .into();
 
                 let indices: Box<[u32]> = m.mesh.indices
-                    .try_into().unwrap();
+                    .into();
 
                 Mesh::new(device, MeshDescriptor {
                     vertices,
@@ -262,7 +262,7 @@ impl Model {
                     name: file_name.to_owned(),
                 })
             }).collect::<Vec<_>>()
-        .try_into().unwrap();
+        .into();
 
         let name = file_name.to_string();
 

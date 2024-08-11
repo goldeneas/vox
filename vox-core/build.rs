@@ -10,7 +10,7 @@ fn get_output_path() -> PathBuf {
     let build_type = env::var("PROFILE").unwrap();
     let path = Path::new(&manifest_dir_string).join("target").join(build_type);
     println!("cargo:rustc-env=VOX_OUTPUT_DIR={}", path.to_str().unwrap());
-    return PathBuf::from(path);
+    path
 }
 
 fn main() -> Result<()> {

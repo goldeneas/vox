@@ -3,17 +3,9 @@ use wgpu::util::DeviceExt;
 
 use crate::InstanceData;
 
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct SingleInstanceComponent {
     instance_buffer: Option<wgpu::Buffer>,
-}
-
-impl Default for SingleInstanceComponent {
-    fn default() -> Self {
-        Self {
-            instance_buffer: None,
-        }
-    }
 }
 
 impl SingleInstanceComponent {

@@ -1,6 +1,6 @@
 use bevy_ecs::prelude::*;
 use cgmath::{Matrix4, SquareMatrix};
-use wgpu::{util::DeviceExt, PipelineCompilationOptions, RenderPipelineDescriptor, ShaderModuleDescriptor};
+use wgpu::{util::DeviceExt, PipelineCompilationOptions, RenderPipelineDescriptor};
 
 use crate::{components::camerable::CameraUniform, InstanceRaw, Texture, Vertex};
 
@@ -87,7 +87,7 @@ impl DefaultPipeline {
             label: Some("Render Pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &shader,
+                module: shader,
                 entry_point: "vs_main",
                 buffers: &[
                     Vertex::desc(),
@@ -96,7 +96,7 @@ impl DefaultPipeline {
                 compilation_options: PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
-                module: &shader,
+                module: shader,
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,
@@ -146,7 +146,7 @@ impl DefaultPipeline {
             label: Some("Render Pass"),
             // this is what @location(0) in the fragment shader targets
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &view,
+                view,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -184,7 +184,7 @@ impl DefaultPipeline {
         let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Glyphon Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &view,
+                view,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Load,

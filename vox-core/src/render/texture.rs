@@ -1,4 +1,4 @@
-use std::{rc::Rc, sync::Arc};
+use std::sync::Arc;
 
 use image::GenericImageView;
 use crate::{assets::asset::Asset, util::load_binary};
