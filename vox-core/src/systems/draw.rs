@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 use cgmath::Matrix4;
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{components::{camerable::CamerableComponent, model::ModelComponent, position::PositionComponent, single_instance::SingleInstanceComponent}, resources::{default_pipeline::DefaultPipeline, render_context::RenderContext}, DrawObject};
+use crate::{components::{camerable::CamerableComponent, model::ModelComponent, position::PositionComponent, single_instance::SingleInstanceComponent}, resources::{default_pipeline::DefaultPipeline, frame_context::FrameContext, render_context::RenderContext}, DrawObject};
 
 #[rustfmt::skip]
 const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
@@ -15,19 +15,19 @@ const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
 pub fn draw_single_instance_entities(query: Query<(
         &ModelComponent,
         &SingleInstanceComponent)>,
-        ctx: Res<RenderContext<'static>>,
+        render_ctx: Res<RenderContext>,
+        mut frame_ctx: ResMut<FrameContext>,
         pipeline: Res<DefaultPipeline>,
 ) {
-    let output = ctx.surface.get_current_texture().unwrap();
-    let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
-    let mut encoder = ctx.device.create_command_encoder(&CommandEncoderDescriptor {
+    let view = &frame_ctx.view;
+    let mut encoder = render_ctx.device.create_command_encoder(&CommandEncoderDescriptor {
         label: Some("Single Entity Encoder"),
     });
 
     for (model_cmpnt, instance_cmpnt) in &query {
         let mut render_pass = pipeline.model_pass(&mut encoder,
             &view,
-            ctx.depth_texture.view()
+            render_ctx.depth_texture.view()
         ).unwrap();
 
         render_pass.draw_entity(model_cmpnt,
@@ -36,15 +36,14 @@ pub fn draw_single_instance_entities(query: Query<(
         );
     }
 
-    ctx.queue.submit(std::iter::once(encoder.finish()));
-    output.present();
+    frame_ctx.add_encoder(encoder);
 }
 
-pub fn draw_glyphon_labels(ctx: Res<RenderContext<'static>>,
+pub fn draw_glyphon_labels(render_ctx: Res<RenderContext>,
+    mut frame_ctx: ResMut<FrameContext>,
     pipeline: Res<DefaultPipeline>) {
-    let output = ctx.surface.get_current_texture().unwrap();
-    let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
-    let mut encoder = ctx.device.create_command_encoder(&CommandEncoderDescriptor {
+    let view = &frame_ctx.view;
+    let mut encoder = render_ctx.device.create_command_encoder(&CommandEncoderDescriptor {
         label: Some("Glyphon Label Encoder"),
     });
 
@@ -53,17 +52,16 @@ pub fn draw_glyphon_labels(ctx: Res<RenderContext<'static>>,
             &view,
         ).unwrap();
 
-        ctx.renderer.draw(&mut pass);
+        render_ctx.renderer.draw(&mut pass);
     }
 
-    //ctx.queue.submit(std::iter::once(encoder.finish()));
-    //output.present();
+    frame_ctx.add_encoder(encoder);
 }
 
 pub fn draw_camera(query: Query<(
     &PositionComponent,
     &CamerableComponent)>,
-    ctx: Res<RenderContext<'static>>,
+    render_ctx: Res<RenderContext>,
     pipeline: Res<DefaultPipeline>,
 ) {
     for (position_cmpnt, camerable_cmpnt) in &query {
@@ -83,7 +81,7 @@ pub fn draw_camera(query: Query<(
         let uniform: [[f32;4];4] = (OPENGL_TO_WGPU_MATRIX * proj * view)
             .into();
         
-        ctx.queue.write_buffer(pipeline.camera_buffer(),
+        render_ctx.queue.write_buffer(pipeline.camera_buffer(),
             0, bytemuck::cast_slice(&uniform));
     }
 }

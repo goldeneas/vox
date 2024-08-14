@@ -7,7 +7,7 @@ pub fn update_single_instance_models(mut query: Query<(
         &PositionComponent,
         &mut SingleInstanceComponent,
         &RotationComponent)>,
-        ctx: Res<RenderContext<'static>>,
+        ctx: Res<RenderContext>,
 ) {
     for (position_cmpnt, mut instance_cmpnt, rotation_cmpnt)
     in &mut query {

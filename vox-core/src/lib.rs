@@ -23,6 +23,7 @@ use render::instance::*;
 
 use log::warn;
 use resources::default_pipeline::DefaultPipeline;
+use resources::frame_context::FrameContext;
 use resources::render_context::RenderContext;
 use resources::input::InputRes;
 use resources::input::KeyState;
@@ -32,6 +33,8 @@ use systems::draw::draw_glyphon_labels;
 use systems::draw::draw_single_instance_entities;
 use systems::update::update_camera;
 use systems::update::update_single_instance_models;
+use wgpu::core::command::RenderCommandError;
+use wgpu::CommandEncoderDescriptor;
 use winit::application::ApplicationHandler;
 use winit::event_loop::ActiveEventLoop;
 use winit::event_loop::ControlFlow;
@@ -89,8 +92,6 @@ impl AppState {
             label: None,
         }, None).await.unwrap();
 
-        let device = Arc::new(device);
-
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps.formats.iter()
             .find(|f| f.is_srgb())
@@ -128,10 +129,10 @@ impl AppState {
 
         world.insert_resource(RenderContext {
             renderer,
-            queue,
             config,
             size,
-            device: device.clone(),
+            device,
+            queue,
             surface,
             depth_texture,
         });
@@ -351,26 +352,71 @@ impl App {
     }
 
     fn draw(&mut self) -> Result<(), wgpu::SurfaceError> {
-        let state = &mut self.state_mut();
+        {
+            let state = &mut self.state_mut();
+            let world = &mut state.world;
+            let render_ctx = world
+                .resource::<RenderContext>();
 
-        let mut ctx_res = state.world
-            .get_resource_mut::<RenderContext>()
-            .unwrap();
+            let output = render_ctx.surface.get_current_texture().unwrap();
+            let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+            let draw_schedule = &state.draw_schedule;
+            let encoders = Vec::with_capacity(draw_schedule.systems_len());
 
-        let ctx = ctx_res
-            .as_mut();
+            world.insert_resource(FrameContext {
+                output,
+                view,
+                encoders,
+            });
+        }
 
-        ctx.renderer.viewport.update(&ctx.queue, Resolution {
-            width: ctx.config.width,
-            height: ctx.config.height,
-        });
+        {
+            let state = &mut self.state_mut();
+            let world = &mut state.world;
 
-        ctx.renderer.prepare(&ctx.device, &ctx.queue);
+            let mut ctx_res = world
+                .resource_mut::<RenderContext>();
 
-        let world = &mut state.world;
-        let draw_schedule = &mut state.draw_schedule;
+            let render_ctx = ctx_res
+                .as_mut();
 
-        draw_schedule.run(world);
+            render_ctx.renderer.viewport.update(&render_ctx.queue, Resolution {
+                width: render_ctx.config.width,
+                height: render_ctx.config.height,
+            });
+
+            render_ctx.renderer.prepare(&render_ctx.device, &render_ctx.queue);
+        }
+
+        {
+            let state = &mut self.state_mut();
+            let world = &mut state.world;
+            let draw_schedule = &mut state.draw_schedule;
+            draw_schedule.run(world);
+        }
+
+        {
+            let world = &mut self.state_mut()
+                .world;
+
+            let frame_ctx = world
+                .remove_resource::<FrameContext>()
+                .unwrap();
+
+            let render_ctx = world
+                .resource::<RenderContext>();
+
+            let buffers: Vec<wgpu::CommandBuffer> = frame_ctx
+                .encoders
+                .into_iter()
+                .map(|encoder| {
+                    encoder.finish()
+                })
+                .collect();
+
+            render_ctx.queue.submit(buffers);
+            frame_ctx.output.present();
+        }
 
         Ok(())
     }
