@@ -266,7 +266,7 @@ impl App {
         // newer systems draw on older ones
         state_mut.draw_schedule
             .add_systems((
-                    draw_camera,
+                    //draw_camera,
                     draw_single_instance_entities,
                     draw_glyphon_labels,
         ));
@@ -276,7 +276,7 @@ impl App {
             .unwrap();
 
         let model = state_mut.asset_server
-            .get_or_load::<Model>("res/untitled.obj", &render_ctx.device, &render_ctx.queue)
+            .get_or_load::<Model>("res/cube.obj", &render_ctx.device, &render_ctx.queue)
             .unwrap();
 
         state_mut.world
