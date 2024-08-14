@@ -1,5 +1,6 @@
 /vox-core/target/
-/target/
 /xtask/target/
-/target
-/target
+/target/
+/xtask/Cargo.lock
+/vox-core/Cargo.lock
+Cargo.lock
