@@ -29,7 +29,7 @@ use resources::input::KeyState;
 use resources::mouse::MouseRes;
 use systems::draw::draw_camera;
 use systems::draw::draw_glyphon_labels;
-use systems::draw::draw_single_instance_models;
+use systems::draw::draw_single_instance_entities;
 use systems::update::update_camera;
 use systems::update::update_single_instance_models;
 use winit::application::ApplicationHandler;
@@ -265,7 +265,7 @@ impl App {
             .add_systems((
                     draw_camera,
                     draw_glyphon_labels,
-                    draw_single_instance_models,
+                    draw_single_instance_entities,
         ));
 
         let ctx = state_mut.world

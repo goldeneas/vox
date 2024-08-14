@@ -12,7 +12,7 @@ const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
     0.0, 0.0, 0.0, 1.0,
 );
 
-pub fn draw_single_instance_models(query: Query<(
+pub fn draw_single_instance_entities(query: Query<(
         &ModelComponent,
         &SingleInstanceComponent)>,
         ctx: Res<RenderContext<'static>>,
@@ -21,7 +21,7 @@ pub fn draw_single_instance_models(query: Query<(
     let output = ctx.surface.get_current_texture().unwrap();
     let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
     let mut encoder = ctx.device.create_command_encoder(&CommandEncoderDescriptor {
-        label: Some("Glyphon Label Encoder"),
+        label: Some("Single Entity Encoder"),
     });
 
     for (model_cmpnt, instance_cmpnt) in &query {
@@ -56,8 +56,8 @@ pub fn draw_glyphon_labels(ctx: Res<RenderContext<'static>>,
         ctx.renderer.draw(&mut pass);
     }
 
-    ctx.queue.submit(std::iter::once(encoder.finish()));
-    output.present();
+    //ctx.queue.submit(std::iter::once(encoder.finish()));
+    //output.present();
 }
 
 pub fn draw_camera(query: Query<(
