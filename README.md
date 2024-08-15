@@ -13,5 +13,5 @@ I am working on this as a fun side project; any suggestions are very welcome!
 * Basic 2D noise world generation
 
 # License
-This work is marked with CC0 1.0
+This work is marked with CC0 1.0\
 No attribution required
