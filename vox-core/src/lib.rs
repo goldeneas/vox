@@ -65,7 +65,6 @@ impl AppState {
     async fn new(window: Arc<Window>) -> Self {
         let size = window.inner_size();
 
-        // wgpu instance used for surfaces and adapters
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             #[cfg(not(target_arch="wasm32"))]
             backends: wgpu::Backends::PRIMARY,
@@ -262,11 +261,9 @@ impl App {
                     update_single_instance_models,
         ));
 
-        // beware of system drawing order
-        // newer systems draw on older ones
         state_mut.draw_schedule
             .add_systems((
-                    //draw_camera,
+                    draw_camera,
                     draw_single_instance_entities,
                     draw_glyphon_labels,
         ));
