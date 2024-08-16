@@ -5,6 +5,7 @@ mod components;
 mod resources;
 mod assets;
 mod systems;
+mod ui;
 
 use std::sync::Arc;
 use std::time::Instant;
@@ -33,6 +34,7 @@ use systems::draw::draw_glyphon_labels;
 use systems::draw::draw_single_instance_entities;
 use systems::update::update_camera;
 use systems::update::update_single_instance_models;
+use ui::egui_renderer::EguiRenderer;
 use wgpu::core::command::RenderCommandError;
 use wgpu::CommandEncoderDescriptor;
 use winit::application::ApplicationHandler;
