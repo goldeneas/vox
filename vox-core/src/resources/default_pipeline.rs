@@ -137,12 +137,11 @@ impl DefaultPipeline {
         }
     }
 
-    pub fn model_pass<'a>(&'a self,
+    pub fn model_pass<'a>(&self,
         encoder: &'a mut wgpu::CommandEncoder,
-        view: &'a wgpu::TextureView,
-        depth_texture_view: &'a wgpu::TextureView,
-    ) -> Result<wgpu::RenderPass, wgpu::SurfaceError> 
-    {
+        view: &wgpu::TextureView,
+        depth_texture_view: &wgpu::TextureView,
+    ) -> wgpu::RenderPass<'a> {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Render Pass"),
             // this is what @location(0) in the fragment shader targets
@@ -174,14 +173,14 @@ impl DefaultPipeline {
 
         render_pass.set_pipeline(&self.render_pipeline);
 
-        Ok(render_pass)
+        render_pass
     }
 
-    pub fn glyphon_pass<'a>(&'a self,
+    // TODO: remove this as this doesn use the pipeline
+    pub fn glyphon_pass<'a>(&self,
         encoder: &'a mut wgpu::CommandEncoder,
-        view: &'a wgpu::TextureView,
-    ) -> Result<wgpu::RenderPass, wgpu::SurfaceError> 
-    {
+        view: &wgpu::TextureView,
+    ) -> wgpu::RenderPass<'a> {
         let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Glyphon Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -197,7 +196,7 @@ impl DefaultPipeline {
             occlusion_query_set: None,
         });
 
-        Ok(render_pass)
+        render_pass
     }
 
     pub fn camera_buffer(&self) -> &wgpu::Buffer {

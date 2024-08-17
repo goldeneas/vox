@@ -1,9 +1,8 @@
-use std::sync::Arc;
-
-use bevy_ecs::system::IntoSystem;
 use egui_wgpu::ScreenDescriptor;
 use egui_winit::winit::event::WindowEvent;
 use winit::window::Window;
+
+use crate::resources::render_context::RenderContext;
 
 pub struct EguiRenderer {
     state: egui_winit::State,
@@ -24,7 +23,7 @@ impl EguiRenderer {
         );
 
         let renderer = egui_wgpu::Renderer::new(device,
-            wgpu::TextureFormat::Bgra8Unorm,
+            wgpu::TextureFormat::Bgra8UnormSrgb,
             None,
             1,
             false
@@ -40,7 +39,17 @@ impl EguiRenderer {
         let _ = self.state.on_window_event(window, event);
     }
 
-    pub fn draw(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, encoder: &mut wgpu::CommandEncoder, window: &Window, ui_fn: impl FnOnce(&egui::Context), screen_descriptor: &ScreenDescriptor, view: &wgpu::TextureView) {
+    pub fn draw(&mut self,
+        render_ctx: &RenderContext,
+        encoder: &mut wgpu::CommandEncoder,
+        view: &wgpu::TextureView,
+        ui_fn: impl FnOnce(&egui::Context)
+    ) {
+        let device = &render_ctx.device;
+        let queue = &render_ctx.queue;
+        let config = &render_ctx.config;
+        let window = &render_ctx.window;
+
         let input = self.state.take_egui_input(window);
 
         let output = self.state
@@ -64,12 +73,17 @@ impl EguiRenderer {
                     .update_texture(device, queue, id, &image_delta);
             });
 
+        let screen_descriptor = ScreenDescriptor {
+            size_in_pixels: [config.width, config.height],
+            pixels_per_point: window.scale_factor() as f32,
+        };
+
         self.renderer
-            .update_buffers(device, queue, encoder, &tris, screen_descriptor);
+            .update_buffers(device, queue, encoder, &tris, &screen_descriptor);
 
         let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &view,
+                view,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Load,

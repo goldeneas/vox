@@ -3,7 +3,7 @@ use std::sync::Arc;
 use bevy_ecs::system::Resource;
 use winit::window::Window;
 
-use crate::{render::text::LabelRenderer, ui::egui_renderer::EguiRenderer, Texture};
+use crate::{ui::{egui_renderer::EguiRenderer, glyphon_renderer::GlyphonRenderer}, Texture};
 
 #[derive(Resource)]
 pub struct RenderContext {
@@ -15,5 +15,5 @@ pub struct RenderContext {
     pub queue: wgpu::Queue,
     pub size: winit::dpi::PhysicalSize<u32>,
     // TODO: remove this
-    pub renderer: LabelRenderer<'static>,
+    pub renderer: GlyphonRenderer<'static>,
 }

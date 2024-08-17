@@ -5,7 +5,7 @@ use wgpu::{Device, MultisampleState, Queue, RenderPass};
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub struct LabelId(u32);
 
-pub struct LabelRenderer<'a> {
+pub struct GlyphonRenderer<'a> {
     font_system: FontSystem,
     swash_cache: SwashCache,
     pub viewport: Viewport,
@@ -50,7 +50,7 @@ impl Default for LabelDescriptor<'_> {
 }
 
 impl<'a> Label<'a> {
-    fn new(renderer: &mut LabelRenderer, descriptor: LabelDescriptor<'a>, id: LabelId) -> Self {
+    fn new(renderer: &mut GlyphonRenderer, descriptor: LabelDescriptor<'a>, id: LabelId) -> Self {
         let mut buffer = Buffer::new(&mut renderer.font_system, descriptor.metrics);
         buffer.set_size(&mut renderer.font_system,
             Some(descriptor.width),
@@ -81,7 +81,7 @@ impl<'a> Label<'a> {
     }
 }
 
-impl<'a> LabelRenderer<'a> {
+impl<'a> GlyphonRenderer<'a> {
     pub fn new(device: &Device, queue: &Queue) -> Self {
         let font_system = FontSystem::new();
         let swash_cache = SwashCache::new();

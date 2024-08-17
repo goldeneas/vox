@@ -18,8 +18,8 @@ use bundles::camera_bundle::CameraBundle;
 use bundles::single_entity_bundle::SingleEntity;
 use glyphon::Resolution;
 use render::model::*;
-use render::text::LabelDescriptor;
-use render::text::LabelRenderer;
+use ui::glyphon_renderer::LabelDescriptor;
+use ui::glyphon_renderer::GlyphonRenderer;
 use render::texture::*;
 use render::instance::*;
 
@@ -32,6 +32,7 @@ use resources::input::InputRes;
 use resources::input::KeyState;
 use resources::mouse::MouseRes;
 use systems::draw::draw_camera;
+use systems::draw::draw_egui;
 use systems::draw::draw_glyphon_labels;
 use systems::draw::draw_single_instance_entities;
 use systems::update::update_camera;
@@ -114,7 +115,7 @@ impl AppState {
 
         surface.configure(&device, &config);
 
-        let renderer = LabelRenderer::new(&device, &queue);
+        let renderer = GlyphonRenderer::new(&device, &queue);
         let asset_server = AssetServer::new();
         let depth_texture = Texture::create_depth_texture(&device, &config, "depth_texture");
 
@@ -287,9 +288,10 @@ impl App {
 
         state_mut.draw_schedule
             .add_systems((
-                    draw_camera,
                     draw_single_instance_entities,
-                    draw_glyphon_labels,
+                    draw_camera,
+                    //draw_glyphon_labels,
+                    draw_egui,
         ));
 
         let render_ctx = state_mut.world
