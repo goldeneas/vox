@@ -117,7 +117,6 @@ impl AppState {
 
         surface.configure(&device, &config);
 
-        let renderer = GlyphonRenderer::new(&device, &queue);
         let asset_server = AssetServer::new();
         let depth_texture = Texture::create_depth_texture(&device, &config, "depth_texture");
 
@@ -126,6 +125,7 @@ impl AppState {
         world.init_resource::<MouseRes>();
 
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
+        let glyphon_renderer = GlyphonRenderer::new(&device, &queue);
         let egui_renderer = EguiRenderer::new(&device, window.as_ref());
 
         world.insert_resource(
@@ -136,7 +136,6 @@ impl AppState {
 
         world.insert_resource(RenderContext {
             window,
-            renderer,
             config,
             size,
             device,
@@ -147,6 +146,7 @@ impl AppState {
 
         world.insert_resource(GuiContext {
             egui_renderer,
+            glyphon_renderer,
         });
 
         let delta_time = Instant::now();
@@ -316,13 +316,13 @@ impl App {
         state_mut.world
             .spawn(CameraBundle::default());
 
-        let mut ctx = state_mut.world
-            .get_resource_mut::<RenderContext>()
-            .unwrap();
+        let mut gui_ctx = state_mut.world
+            .resource_mut::<GuiContext>();
 
-        ctx.renderer.add_label(LabelDescriptor {
-            ..Default::default()
-        });
+        gui_ctx.glyphon_renderer
+            .add_label(LabelDescriptor {
+                ..Default::default()
+            });
     }
 
     fn input(&mut self, keycode: &KeyCode, key_state: &ElementState) {
@@ -411,12 +411,15 @@ impl App {
             let render_ctx = render_res
                 .as_mut();
 
-            render_ctx.renderer.viewport.update(&render_ctx.queue, Resolution {
-                width: render_ctx.config.width,
-                height: render_ctx.config.height,
-            });
+            render_ctx.glyphon_renderer
+                .viewport
+                .update(&render_ctx.queue, Resolution {
+                    width: render_ctx.config.width,
+                    height: render_ctx.config.height,
+                });
 
-            render_ctx.renderer.prepare(&render_ctx.device, &render_ctx.queue);
+            render_ctx.glyphon_renderer
+                .prepare(&render_ctx.device, &render_ctx.queue);
         }
 
         {

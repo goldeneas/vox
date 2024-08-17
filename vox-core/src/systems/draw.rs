@@ -3,7 +3,7 @@ use cgmath::Matrix4;
 use egui::Align2;
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{components::{camerable::CamerableComponent, model::ModelComponent, position::PositionComponent, single_instance::SingleInstanceComponent}, resources::{default_pipeline::DefaultPipeline, frame_context::FrameContext, gui_context::GuiContext, render_context::RenderContext}, DrawObject};
+use crate::{components::{camerable::CamerableComponent, model::ModelComponent, position::PositionComponent, single_instance::SingleInstanceComponent}, resources::{default_pipeline::DefaultPipeline, frame_context::FrameContext, gui_context::GuiContext, render_context::RenderContext}, ui::glyphon_renderer, DrawObject};
 
 #[rustfmt::skip]
 const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
@@ -42,6 +42,7 @@ pub fn draw_single_instance_entities(query: Query<(
 
 pub fn draw_glyphon_labels(render_ctx: Res<RenderContext>,
     mut frame_ctx: ResMut<FrameContext>,
+    gui_context: Res<GuiContext>,
     pipeline: Res<DefaultPipeline>
 ) {
     let view = &frame_ctx.view;
@@ -53,7 +54,8 @@ pub fn draw_glyphon_labels(render_ctx: Res<RenderContext>,
         let mut pass = pipeline
             .glyphon_pass(&mut encoder, view);
 
-        render_ctx.renderer.draw(&mut pass);
+        gui_context.glyphon_renderer
+            .draw(&mut pass);
     }
 
     frame_ctx.add_encoder(encoder);
