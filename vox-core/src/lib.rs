@@ -12,6 +12,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use assets::asset_server::AssetServer;
+use bevy_ecs::schedule::IntoSystemConfigs;
 use bevy_ecs::schedule::Schedule;
 use bevy_ecs::world::World;
 use bundles::camera_bundle::CameraBundle;
@@ -58,6 +59,7 @@ struct AppState {
     delta_time: Instant,
     accumulator: f32,
 
+    ui_schedule: Schedule,
     draw_schedule: Schedule,
     update_schedule: Schedule,
 
@@ -150,6 +152,7 @@ impl AppState {
         let delta_time = Instant::now();
         let accumulator = 0.0;
 
+        let ui_schedule = Schedule::default();
         let update_schedule = Schedule::default();
         let draw_schedule = Schedule::default();
 
@@ -158,6 +161,7 @@ impl AppState {
             world,
             delta_time,
             accumulator,
+            ui_schedule,
             update_schedule,
             draw_schedule,
         }
@@ -284,15 +288,19 @@ impl App {
             .add_systems((
                     update_camera,
                     update_single_instance_models,
-        ));
+            ));
 
         state_mut.draw_schedule
             .add_systems((
                     draw_single_instance_entities,
                     draw_camera,
-                    //draw_glyphon_labels,
+            ));
+
+        state_mut.ui_schedule
+            .add_systems((
                     draw_egui,
-        ));
+                    draw_glyphon_labels,
+            ));
 
         let render_ctx = state_mut.world
             .get_resource_ref::<RenderContext>()
@@ -415,7 +423,10 @@ impl App {
             let state = &mut self.state_mut();
             let world = &mut state.world;
             let draw_schedule = &mut state.draw_schedule;
+            let ui_schedule = &mut state.ui_schedule;
+
             draw_schedule.run(world);
+            ui_schedule.run(world);
         }
 
         {
