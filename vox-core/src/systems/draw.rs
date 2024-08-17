@@ -41,7 +41,8 @@ pub fn draw_single_instance_entities(query: Query<(
 
 pub fn draw_glyphon_labels(render_ctx: Res<RenderContext>,
     mut frame_ctx: ResMut<FrameContext>,
-    pipeline: Res<DefaultPipeline>) {
+    pipeline: Res<DefaultPipeline>
+) {
     let view = &frame_ctx.view;
     let mut encoder = render_ctx.device.create_command_encoder(&CommandEncoderDescriptor {
         label: Some("Glyphon Label Encoder"),

@@ -3,6 +3,8 @@ use wgpu::{util::DeviceExt, PipelineCompilationOptions, RenderPipelineDescriptor
 
 use crate::{InstanceRaw, Texture, Vertex};
 
+// TODO check wgpu's 22.1 / 22.0 update logs for the removal of lifetimes
+
 #[derive(Resource)]
 pub struct DefaultPipeline {
     camera_buffer: wgpu::Buffer,
@@ -132,10 +134,10 @@ impl DefaultPipeline {
         }
     }
 
-    pub fn model_pass<'a>(&'a self,
-        encoder: &'a mut wgpu::CommandEncoder,
-        view: &'a wgpu::TextureView,
-        depth_texture_view: &'a wgpu::TextureView,
+    pub fn model_pass(&self,
+        encoder: &mut wgpu::CommandEncoder,
+        view: &wgpu::TextureView,
+        depth_texture_view: &wgpu::TextureView,
     ) -> Result<wgpu::RenderPass, wgpu::SurfaceError> 
     {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -172,9 +174,9 @@ impl DefaultPipeline {
         Ok(render_pass)
     }
 
-    pub fn glyphon_pass<'a>(&'a self,
-        encoder: &'a mut wgpu::CommandEncoder,
-        view: &'a wgpu::TextureView,
+    pub fn glyphon_pass(&self,
+        encoder: &mut wgpu::CommandEncoder,
+        view: &wgpu::TextureView,
     ) -> Result<wgpu::RenderPass, wgpu::SurfaceError> 
     {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

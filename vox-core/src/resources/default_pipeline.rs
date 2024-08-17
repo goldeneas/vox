@@ -126,7 +126,8 @@ impl DefaultPipeline {
                 mask: !0,
                 alpha_to_coverage_enabled: false
             },
-            multiview: None
+            multiview: None,
+            cache: None,
         });
 
         Self {

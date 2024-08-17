@@ -53,8 +53,8 @@ impl<'a> Label<'a> {
     fn new(renderer: &mut LabelRenderer, descriptor: LabelDescriptor<'a>, id: LabelId) -> Self {
         let mut buffer = Buffer::new(&mut renderer.font_system, descriptor.metrics);
         buffer.set_size(&mut renderer.font_system,
-            descriptor.width,
-            descriptor.height
+            Some(descriptor.width),
+            Some(descriptor.height)
         );
         buffer.set_text(&mut renderer.font_system,
             &descriptor.text, 

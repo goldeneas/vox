@@ -7,6 +7,7 @@ mod assets;
 mod systems;
 mod ui;
 
+use std::borrow::BorrowMut;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -25,6 +26,7 @@ use render::instance::*;
 use log::warn;
 use resources::default_pipeline::DefaultPipeline;
 use resources::frame_context::FrameContext;
+use resources::gui_context::GuiContext;
 use resources::render_context::RenderContext;
 use resources::input::InputRes;
 use resources::input::KeyState;
@@ -34,9 +36,8 @@ use systems::draw::draw_glyphon_labels;
 use systems::draw::draw_single_instance_entities;
 use systems::update::update_camera;
 use systems::update::update_single_instance_models;
+use ui::egui_renderer;
 use ui::egui_renderer::EguiRenderer;
-use wgpu::core::command::RenderCommandError;
-use wgpu::CommandEncoderDescriptor;
 use winit::application::ApplicationHandler;
 use winit::event_loop::ActiveEventLoop;
 use winit::event_loop::ControlFlow;
@@ -75,7 +76,7 @@ impl AppState {
             ..Default::default()
         });
 
-        let surface = instance.create_surface(window)
+        let surface = instance.create_surface(window.clone())
             .unwrap();
 
         let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
@@ -90,6 +91,7 @@ impl AppState {
             required_limits: wgpu::Limits::default(),
             #[cfg(target_arch="wasm32")]
             required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+            memory_hints: wgpu::MemoryHints::Performance,
             label: None,
         }, None).await.unwrap();
 
@@ -121,6 +123,7 @@ impl AppState {
         world.init_resource::<MouseRes>();
 
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
+        let egui_renderer = EguiRenderer::new(&device, window.as_ref());
 
         world.insert_resource(
             DefaultPipeline::new(&device,
@@ -129,6 +132,7 @@ impl AppState {
         ));
 
         world.insert_resource(RenderContext {
+            window,
             renderer,
             config,
             size,
@@ -136,6 +140,10 @@ impl AppState {
             queue,
             surface,
             depth_texture,
+        });
+
+        world.insert_resource(GuiContext {
+            egui_renderer,
         });
 
         let delta_time = Instant::now();
@@ -197,6 +205,20 @@ impl ApplicationHandler for App {
             } => self.input(&keycode, &key_state),
             _ => {}
         }
+
+        let world = self.state_mut()
+            .world
+            .borrow_mut();
+
+        let window = world
+            .resource_ref::<RenderContext>()
+            .window.clone();
+
+        let mut gui_ctx = world.
+            resource_mut::<GuiContext>();
+
+        gui_ctx.egui_renderer
+            .window_event(&window, &event);
     }
 
     fn device_event(
@@ -308,9 +330,8 @@ impl App {
     }
 
     fn mouse_moved(&mut self, delta: (f64, f64)) {
-        let state = self.state_mut();
-        let mouse_res = &mut state.world.get_resource_mut::<MouseRes>()
-            .unwrap();
+        let mut mouse_res = self.state_mut().world
+            .resource_mut::<MouseRes>();
 
         mouse_res.pos.0 += delta.0;
         mouse_res.pos.1 += delta.1;
@@ -334,8 +355,7 @@ impl App {
             Ok(_) => {}
             Err(wgpu::SurfaceError::Lost) => {
                 let ctx = self.state_ref().world
-                    .get_resource_ref::<RenderContext>()
-                    .unwrap();
+                    .resource_ref::<RenderContext>();
 
                 self.resize(ctx.size);
             }
@@ -375,10 +395,10 @@ impl App {
             let state = &mut self.state_mut();
             let world = &mut state.world;
 
-            let mut ctx_res = world
+            let mut render_res = world
                 .resource_mut::<RenderContext>();
 
-            let render_ctx = ctx_res
+            let render_ctx = render_res
                 .as_mut();
 
             render_ctx.renderer.viewport.update(&render_ctx.queue, Resolution {

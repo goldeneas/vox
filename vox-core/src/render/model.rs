@@ -31,39 +31,38 @@ pub trait IntoModel {
     fn to_model(&self, device: &wgpu::Device) -> Arc<Model>;
 }
 
-pub trait DrawObject<'b> {
+pub trait DrawObject {
     fn draw_mesh(&mut self,
-        mesh: &'b Mesh,
-        material: &'b Material,
-        camera_bind_group: &'b wgpu::BindGroup);
+        mesh: &Mesh,
+        material: &Material,
+        camera_bind_group: &wgpu::BindGroup);
     fn draw_mesh_instanced(&mut self,
-        mesh: &'b Mesh,
-        material: &'b Material,
+        mesh: &Mesh,
+        material: &Material,
         instances: Range<u32>,
-        camera_bind_group: &'b wgpu::BindGroup);
+        camera_bind_group: &wgpu::BindGroup);
     fn draw_model(&mut self,
-        model: &'b Model,
-        camera_bind_group: &'b wgpu::BindGroup);
+        model: &Model,
+        camera_bind_group: &wgpu::BindGroup);
     fn draw_model_instanced(&mut self,
-        model: &'b Model,
+        model: &Model,
         instances: Range<u32>,
-        camera_bind_group: &'b wgpu::BindGroup);
+        camera_bind_group: &wgpu::BindGroup);
     fn draw_entity(&mut self,
-        model_cmpnt: &'b ModelComponent,
-        instance_cmpnt: &'b SingleInstanceComponent,
-        camera_bind_group: &'b wgpu::BindGroup);
+        model_cmpnt: &ModelComponent,
+        instance_cmpnt: &SingleInstanceComponent,
+        camera_bind_group: &wgpu::BindGroup);
     fn draw_entity_multiple(&mut self,
-        model_cmpnt: &'b ModelComponent,
-        instance_cmpnt: &'b MultipleInstanceComponent,
-        camera_bind_group: &'b wgpu::BindGroup);
+        model_cmpnt: &ModelComponent,
+        instance_cmpnt: &MultipleInstanceComponent,
+        camera_bind_group: &wgpu::BindGroup);
 }
 
-impl<'a, 'b> DrawObject<'b> for wgpu::RenderPass<'a>
-where 'b: 'a {
+impl DrawObject for wgpu::RenderPass<'_> {
     fn draw_mesh(&mut self,
-        mesh: &'b Mesh,
-        material: &'b Material,
-        camera_bind_group: &'b wgpu::BindGroup
+        mesh: &Mesh,
+        material: &Material,
+        camera_bind_group: &wgpu::BindGroup
     ) {
         self.draw_mesh_instanced(mesh, material, 0..1, camera_bind_group);
     }
@@ -72,10 +71,10 @@ where 'b: 'a {
     // since it might have been set before when calling an instanced version
     // of the drawing
     fn draw_mesh_instanced(&mut self,
-        mesh: &'b Mesh,
-        material: &'b Material,
+        mesh: &Mesh,
+        material: &Material,
         instances: Range<u32>,
-        camera_bind_group: &'b wgpu::BindGroup
+        camera_bind_group: &wgpu::BindGroup
     ) {
         self.set_vertex_buffer(0, mesh.vertex_buffer().slice(..));
         self.set_index_buffer(mesh.index_buffer().slice(..), wgpu::IndexFormat::Uint32);
@@ -85,8 +84,8 @@ where 'b: 'a {
     }
 
     fn draw_model(&mut self,
-        model: &'b Model,
-        camera_bind_group: &'b wgpu::BindGroup
+        model: &Model,
+        camera_bind_group: &wgpu::BindGroup
     ) {
         for mesh in model.meshes.as_ref() {
             let material = &model.materials[mesh.material_id()];
@@ -95,9 +94,9 @@ where 'b: 'a {
     }
 
     fn draw_model_instanced(&mut self,
-        model: &'b Model,
+        model: &Model,
         instances: Range<u32>,
-        camera_bind_group: &'b wgpu::BindGroup
+        camera_bind_group: &wgpu::BindGroup
     ) {
         for mesh in model.meshes.as_ref() {
             let material = &model.materials[mesh.material_id()];
@@ -106,9 +105,9 @@ where 'b: 'a {
     }
 
     fn draw_entity(&mut self,
-        model_cmpnt: &'b ModelComponent,
-        instance_cmpnt: &'b SingleInstanceComponent,
-        camera_bind_group: &'b wgpu::BindGroup
+        model_cmpnt: &ModelComponent,
+        instance_cmpnt: &SingleInstanceComponent,
+        camera_bind_group: &wgpu::BindGroup
     ) {
         self.set_vertex_buffer(1, instance_cmpnt
             .instance_buffer()
@@ -120,9 +119,9 @@ where 'b: 'a {
     }
 
     fn draw_entity_multiple(&mut self,
-        model_cmpnt: &'b ModelComponent,
-        instance_cmpnt: &'b MultipleInstanceComponent,
-        camera_bind_group: &'b wgpu::BindGroup
+        model_cmpnt: &ModelComponent,
+        instance_cmpnt: &MultipleInstanceComponent,
+        camera_bind_group: &wgpu::BindGroup
     ) {
         self.set_vertex_buffer(1, instance_cmpnt
             .instance_buffer()
