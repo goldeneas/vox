@@ -81,7 +81,7 @@ impl EguiRenderer {
         self.renderer
             .update_buffers(device, queue, encoder, &tris, &screen_descriptor);
 
-        let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view,
                 resolve_target: None,
@@ -96,7 +96,7 @@ impl EguiRenderer {
             occlusion_query_set: None,
         });
 
-        self.renderer.render(&mut rpass, &tris, &screen_descriptor);
+        self.renderer.render(&mut render_pass, &tris, &screen_descriptor);
 
         output.textures_delta.free
             .iter()

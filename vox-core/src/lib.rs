@@ -303,8 +303,7 @@ impl App {
             ));
 
         let render_ctx = state_mut.world
-            .get_resource_ref::<RenderContext>()
-            .unwrap();
+            .resource_ref::<RenderContext>();
 
         let model = state_mut.asset_server
             .get_or_load::<Model>("res/cube.obj", &render_ctx.device, &render_ctx.queue)
@@ -404,31 +403,10 @@ impl App {
         {
             let state = &mut self.state_mut();
             let world = &mut state.world;
-
-            let mut render_res = world
-                .resource_mut::<RenderContext>();
-
-            let render_ctx = render_res
-                .as_mut();
-
-            render_ctx.glyphon_renderer
-                .viewport
-                .update(&render_ctx.queue, Resolution {
-                    width: render_ctx.config.width,
-                    height: render_ctx.config.height,
-                });
-
-            render_ctx.glyphon_renderer
-                .prepare(&render_ctx.device, &render_ctx.queue);
-        }
-
-        {
-            let state = &mut self.state_mut();
-            let world = &mut state.world;
-            let draw_schedule = &mut state.draw_schedule;
+            let render_schedule = &mut state.draw_schedule;
             let ui_schedule = &mut state.ui_schedule;
 
-            draw_schedule.run(world);
+            render_schedule.run(world);
             ui_schedule.run(world);
         }
 

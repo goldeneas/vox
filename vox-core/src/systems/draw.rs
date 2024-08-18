@@ -1,6 +1,7 @@
 use bevy_ecs::prelude::*;
 use cgmath::Matrix4;
 use egui::Align2;
+use glyphon::Resolution;
 use wgpu::CommandEncoderDescriptor;
 
 use crate::{components::{camerable::CamerableComponent, model::ModelComponent, position::PositionComponent, single_instance::SingleInstanceComponent}, resources::{default_pipeline::DefaultPipeline, frame_context::FrameContext, gui_context::GuiContext, render_context::RenderContext}, ui::glyphon_renderer, DrawObject};
@@ -42,13 +43,23 @@ pub fn draw_single_instance_entities(query: Query<(
 
 pub fn draw_glyphon_labels(render_ctx: Res<RenderContext>,
     mut frame_ctx: ResMut<FrameContext>,
-    gui_context: Res<GuiContext>,
+    mut gui_context: ResMut<GuiContext>,
     pipeline: Res<DefaultPipeline>
 ) {
     let view = &frame_ctx.view;
     let mut encoder = render_ctx.device.create_command_encoder(&CommandEncoderDescriptor {
         label: Some("Glyphon Label Encoder"),
     });
+
+    gui_context.glyphon_renderer
+        .viewport
+        .update(&render_ctx.queue, Resolution {
+            width: render_ctx.config.width,
+            height: render_ctx.config.height,
+        });
+
+    gui_context.glyphon_renderer
+        .prepare(&render_ctx.device, &render_ctx.queue);
 
     {
         let mut pass = pipeline
