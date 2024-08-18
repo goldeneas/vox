@@ -6,6 +6,7 @@ mod resources;
 mod assets;
 mod systems;
 mod ui;
+mod screens;
 
 use std::borrow::BorrowMut;
 use std::sync::Arc;
@@ -19,6 +20,10 @@ use bundles::camera_bundle::CameraBundle;
 use bundles::single_entity_bundle::SingleEntity;
 use glyphon::Resolution;
 use render::model::*;
+use resources::screen_context::ScreenContext;
+use screens::screen::GameScreen;
+use screens::screen::MenuScreen;
+use systems::update::update_camera;
 use ui::glyphon_renderer::LabelDescriptor;
 use ui::glyphon_renderer::GlyphonRenderer;
 use render::texture::*;
@@ -32,11 +37,9 @@ use resources::render_context::RenderContext;
 use resources::input::InputRes;
 use resources::input::KeyState;
 use resources::mouse::MouseRes;
-use systems::draw::draw_camera;
-use systems::draw::draw_egui;
+use systems::draw::draw_cameras;
 use systems::draw::draw_glyphon_labels;
 use systems::draw::draw_single_instance_entities;
-use systems::update::update_camera;
 use systems::update::update_single_instance_models;
 use ui::egui_renderer;
 use ui::egui_renderer::EguiRenderer;
@@ -58,10 +61,6 @@ const SIM_DT: f32 = 1.0/60.0;
 struct AppState {
     delta_time: Instant,
     accumulator: f32,
-
-    ui_schedule: Schedule,
-    draw_schedule: Schedule,
-    update_schedule: Schedule,
 
     world: World,
     asset_server: AssetServer,
@@ -128,6 +127,10 @@ impl AppState {
         let glyphon_renderer = GlyphonRenderer::new(&device, &queue);
         let egui_renderer = EguiRenderer::new(&device, window.as_ref());
 
+        let ui_schedule = Schedule::default();
+        let update_schedule = Schedule::default();
+        let draw_schedule = Schedule::default();
+
         world.insert_resource(
             DefaultPipeline::new(&device,
                 &shader,
@@ -149,21 +152,20 @@ impl AppState {
             glyphon_renderer,
         });
 
+        world.insert_resource(ScreenContext {
+            ui_schedule,
+            update_schedule,
+            draw_schedule,
+        });
+
         let delta_time = Instant::now();
         let accumulator = 0.0;
-
-        let ui_schedule = Schedule::default();
-        let update_schedule = Schedule::default();
-        let draw_schedule = Schedule::default();
 
         Self {
             asset_server,
             world,
             delta_time,
             accumulator,
-            ui_schedule,
-            update_schedule,
-            draw_schedule,
         }
     }
 }
@@ -284,6 +286,9 @@ impl App {
     fn run(&mut self) {
         let state_mut = self.state_mut();
 
+        let mut menu = MenuScreen::default();
+        menu.start(state_mut);
+
         state_mut.update_schedule
             .add_systems((
                     update_camera,
@@ -293,12 +298,11 @@ impl App {
         state_mut.draw_schedule
             .add_systems((
                     draw_single_instance_entities,
-                    draw_camera,
+                    draw_cameras,
             ));
 
         state_mut.ui_schedule
             .add_systems((
-                    draw_egui,
                     draw_glyphon_labels,
             ));
 
@@ -376,8 +380,9 @@ impl App {
     fn update(&mut self) {
         let state = &mut self.state_mut();
         let world = &mut state.world;
-        let update_schedule = &mut state.update_schedule;
-
+        let update_schedule = &mut world
+            .resource_mut::<ScreenContext>()
+            .update_schedule;
         update_schedule.run(world);
     }
 
@@ -403,10 +408,10 @@ impl App {
         {
             let state = &mut self.state_mut();
             let world = &mut state.world;
-            let render_schedule = &mut state.draw_schedule;
+            let draw_schedule = &mut state.draw_schedule;
             let ui_schedule = &mut state.ui_schedule;
 
-            render_schedule.run(world);
+            draw_schedule.run(world);
             ui_schedule.run(world);
         }
 
