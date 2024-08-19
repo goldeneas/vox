@@ -13,23 +13,14 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use assets::asset_server::AssetServer;
-use bevy_ecs::schedule::IntoSystemConfigs;
-use bevy_ecs::schedule::Schedule;
 use bevy_ecs::world::World;
-use bundles::camera_bundle::CameraBundle;
-use bundles::single_entity_bundle::SingleEntity;
-use glyphon::Resolution;
 use render::model::*;
 use resources::screen_context::ScreenContext;
-use screens::screen::GameScreen;
-use screens::screen::MenuScreen;
-use systems::update::update_camera;
-use ui::glyphon_renderer::LabelDescriptor;
+use screens::screen_server::ScreenServer;
 use ui::glyphon_renderer::GlyphonRenderer;
 use render::texture::*;
 use render::instance::*;
 
-use log::warn;
 use resources::default_pipeline::DefaultPipeline;
 use resources::frame_context::FrameContext;
 use resources::gui_context::GuiContext;
@@ -37,11 +28,6 @@ use resources::render_context::RenderContext;
 use resources::input::InputRes;
 use resources::input::KeyState;
 use resources::mouse::MouseRes;
-use systems::draw::draw_cameras;
-use systems::draw::draw_glyphon_labels;
-use systems::draw::draw_single_instance_entities;
-use systems::update::update_single_instance_models;
-use ui::egui_renderer;
 use ui::egui_renderer::EguiRenderer;
 use winit::application::ApplicationHandler;
 use winit::event_loop::ActiveEventLoop;
@@ -63,6 +49,7 @@ struct AppState {
     accumulator: f32,
 
     world: World,
+    screen_server: ScreenServer,
     asset_server: AssetServer,
 }
 
@@ -127,6 +114,8 @@ impl AppState {
         let glyphon_renderer = GlyphonRenderer::new(&device, &queue);
         let egui_renderer = EguiRenderer::new(&device, window.as_ref());
 
+        let screen_server = ScreenServer::new();
+
         world.insert_resource(
             DefaultPipeline::new(&device,
                 &shader,
@@ -148,12 +137,11 @@ impl AppState {
             glyphon_renderer,
         });
 
-        world.insert_resource(ScreenContext::Menu);
-
         let delta_time = Instant::now();
         let accumulator = 0.0;
 
         Self {
+            screen_server,
             asset_server,
             world,
             delta_time,
@@ -192,7 +180,7 @@ impl ApplicationHandler for App {
                 self.resize(physical_size);
             },
             WindowEvent::RedrawRequested => {
-                self.redraw_requested(event_loop);
+                self.redraw_requested();
             },
             WindowEvent::KeyboardInput {
                 event: KeyEvent {
@@ -281,11 +269,6 @@ impl App {
 
         let screen_ctx = world
             .resource_ref::<ScreenContext>();
-
-        match *screen_ctx {
-            ScreenContext::Menu => {},
-            ScreenContext::Gameplay => {},
-        };
     }
 
     fn input(&mut self, keycode: &KeyCode, key_state: &ElementState) {
@@ -310,7 +293,7 @@ impl App {
         mouse_res.pos.1 += delta.1;
     }
 
-    fn redraw_requested(&mut self, event_loop: &ActiveEventLoop) {
+    fn redraw_requested(&mut self) {
         {
             let state = self.state_mut();
             state.accumulator += state.delta_time
@@ -324,29 +307,18 @@ impl App {
             self.state_mut().accumulator -= SIM_DT;
         }
 
-        match self.draw() {
-            Ok(_) => {}
-            Err(wgpu::SurfaceError::Lost) => {
-                let ctx = self.state_ref().world
-                    .resource_ref::<RenderContext>();
-
-                self.resize(ctx.size);
-            }
-            Err(wgpu::SurfaceError::OutOfMemory) => event_loop.exit(),
-            Err(e) => warn!("{:?}", e),
-        }
+        self.draw();
     }
 
     fn update(&mut self) {
-        let state = &mut self.state_mut();
-        let world = &mut state.world;
-        let update_schedule = &mut world
-            .resource_mut::<ScreenContext>()
-            .update_schedule;
-        update_schedule.run(world);
+        let state_mut = &mut self.state_mut();
+        let world = &mut state_mut.world;
+        let screen_server = &mut state_mut.screen_server;
+
+        screen_server.update(world);
     }
 
-    fn draw(&mut self) -> Result<(), wgpu::SurfaceError> {
+    fn draw(&mut self) {
         {
             let state = &mut self.state_mut();
             let world = &mut state.world;
@@ -358,13 +330,11 @@ impl App {
         }
 
         {
-            let state = &mut self.state_mut();
-            let world = &mut state.world;
-            let draw_schedule = &mut state.draw_schedule;
-            let ui_schedule = &mut state.ui_schedule;
+            let state_mut = &mut self.state_mut();
+            let world = &mut state_mut.world;
+            let screen_server = &mut state_mut.screen_server;
 
-            draw_schedule.run(world);
-            ui_schedule.run(world);
+            screen_server.draw(world);
         }
 
         {
@@ -389,8 +359,6 @@ impl App {
             render_ctx.queue.submit(buffers);
             frame_ctx.output.present();
         }
-
-        Ok(())
     }
 
     fn state_ref(&self) -> &AppState {
