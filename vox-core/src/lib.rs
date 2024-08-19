@@ -127,10 +127,6 @@ impl AppState {
         let glyphon_renderer = GlyphonRenderer::new(&device, &queue);
         let egui_renderer = EguiRenderer::new(&device, window.as_ref());
 
-        let ui_schedule = Schedule::default();
-        let update_schedule = Schedule::default();
-        let draw_schedule = Schedule::default();
-
         world.insert_resource(
             DefaultPipeline::new(&device,
                 &shader,
@@ -152,11 +148,7 @@ impl AppState {
             glyphon_renderer,
         });
 
-        world.insert_resource(ScreenContext {
-            ui_schedule,
-            update_schedule,
-            draw_schedule,
-        });
+        world.insert_resource(ScreenContext::Menu);
 
         let delta_time = Instant::now();
         let accumulator = 0.0;
@@ -285,47 +277,15 @@ impl App {
 
     fn run(&mut self) {
         let state_mut = self.state_mut();
+        let world = &mut state_mut.world;
 
-        let mut menu = MenuScreen::default();
-        menu.start(state_mut);
+        let screen_ctx = world
+            .resource_ref::<ScreenContext>();
 
-        state_mut.update_schedule
-            .add_systems((
-                    update_camera,
-                    update_single_instance_models,
-            ));
-
-        state_mut.draw_schedule
-            .add_systems((
-                    draw_single_instance_entities,
-                    draw_cameras,
-            ));
-
-        state_mut.ui_schedule
-            .add_systems((
-                    draw_glyphon_labels,
-            ));
-
-        let render_ctx = state_mut.world
-            .resource_ref::<RenderContext>();
-
-        let model = state_mut.asset_server
-            .get_or_load::<Model>("res/cube.obj", &render_ctx.device, &render_ctx.queue)
-            .unwrap();
-
-        state_mut.world
-            .spawn(SingleEntity::new(model));
-
-        state_mut.world
-            .spawn(CameraBundle::default());
-
-        let mut gui_ctx = state_mut.world
-            .resource_mut::<GuiContext>();
-
-        gui_ctx.glyphon_renderer
-            .add_label(LabelDescriptor {
-                ..Default::default()
-            });
+        match *screen_ctx {
+            ScreenContext::Menu => {},
+            ScreenContext::Gameplay => {},
+        };
     }
 
     fn input(&mut self, keycode: &KeyCode, key_state: &ElementState) {
@@ -393,16 +353,8 @@ impl App {
             let render_ctx = world
                 .resource::<RenderContext>();
 
-            let output = render_ctx.surface.get_current_texture().unwrap();
-            let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
-            let draw_schedule = &state.draw_schedule;
-            let encoders = Vec::with_capacity(draw_schedule.systems_len());
-
-            world.insert_resource(FrameContext {
-                output,
-                view,
-                encoders,
-            });
+            let frame_ctx = FrameContext::new(&render_ctx, None);
+            world.insert_resource(frame_ctx);
         }
 
         {
