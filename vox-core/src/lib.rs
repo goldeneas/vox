@@ -6,7 +6,6 @@ mod resources;
 mod systems;
 mod ui;
 mod screens;
-mod update_resource;
 mod asset;
 
 use std::borrow::Borrow;
@@ -14,11 +13,15 @@ use std::borrow::BorrowMut;
 use std::sync::Arc;
 use std::time::Instant;
 
+use bevy_ecs::world::Mut;
 use bevy_ecs::world::World;
+use bundles::single_entity_bundle::SingleEntity;
 use render::model::*;
 use resources::asset_server::AssetServer;
+use resources::game_state::GameState;
 use resources::screen_server;
 use resources::screen_server::ScreenServer;
+use screens::screen::GameScreen;
 use screens::screen::MenuScreen;
 use ui::glyphon_renderer::GlyphonRenderer;
 use render::texture::*;
@@ -32,7 +35,6 @@ use resources::input::InputRes;
 use resources::input::KeyState;
 use resources::mouse::MouseRes;
 use ui::egui_renderer::EguiRenderer;
-use update_resource::UpdateResource;
 use winit::application::ApplicationHandler;
 use winit::event_loop::ActiveEventLoop;
 use winit::event_loop::ControlFlow;
@@ -53,6 +55,7 @@ struct AppState {
     accumulator: f32,
 
     world: World,
+    screen_server: ScreenServer,
 }
 
 impl AppState {
@@ -110,8 +113,8 @@ impl AppState {
         let mut world = World::new();
         world.init_resource::<InputRes>();
         world.init_resource::<MouseRes>();
+        world.init_resource::<GameState>();
         world.init_resource::<AssetServer>();
-        world.init_resource::<ScreenServer>();
 
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
         let glyphon_renderer = GlyphonRenderer::new(&device, &queue);
@@ -141,10 +144,13 @@ impl AppState {
         let delta_time = Instant::now();
         let accumulator = 0.0;
 
+        let screen_server = ScreenServer::default();
+
         Self {
             world,
             delta_time,
             accumulator,
+            screen_server,
         }
     }
 }
@@ -265,10 +271,13 @@ impl App {
     fn run(&mut self) {
         let state_mut = self.state_mut();
         let screen = MenuScreen::default();
+        let game = GameScreen::default();
 
-        state_mut.world.update_screen_server(|world, screen_server| {
-            screen_server.set_screen(&screen);
-        });
+        state_mut.screen_server
+            .register_screen(&screen, &GameState::Menu);
+
+        state_mut.screen_server
+            .register_screen(&game, &GameState::Game);
     }
 
     fn input(&mut self, keycode: &KeyCode, key_state: &ElementState) {
@@ -312,15 +321,20 @@ impl App {
 
     fn update(&mut self) {
         let state_mut = &mut self.state_mut();
-        state_mut.world.update_screen_server(|world, screen_server| {
-            screen_server.update(world);
-        });
+        let world = &mut state_mut.world;
+
+        let state = world
+            .resource_ref::<GameState>()
+            .clone();
+
+        state_mut.screen_server
+            .update(world, &state);
     }
 
     fn draw(&mut self) {
         {
-            let state = &mut self.state_mut();
-            let world = &mut state.world;
+            let state_mut = &mut self.state_mut();
+            let world = &mut state_mut.world;
             let render_ctx = world
                 .resource::<RenderContext>();
 
@@ -330,9 +344,13 @@ impl App {
 
         {
             let state_mut = &mut self.state_mut();
-            state_mut.world.update_screen_server(|world, screen_server| {
-                screen_server.draw(world);
-            });
+            let world = &mut state_mut.world;
+            let state = world
+                .resource_ref::<GameState>()
+                .clone();
+
+            state_mut.screen_server
+                .draw(world, &state);
         }
 
         {

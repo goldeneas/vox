@@ -2,10 +2,10 @@ use bevy_ecs::{schedule::{IntoSystemConfigs, SystemConfigs}, system::{IntoSystem
 use egui::Align2;
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{resources::{frame_context::FrameContext, gui_context::GuiContext, render_context::RenderContext, screen_server::ScreenServer}, systems::{self, draw::draw_single_instance_entities}};
+use crate::{resources::{frame_context::FrameContext, game_state::GameState, gui_context::GuiContext, render_context::RenderContext, screen_server::ScreenServer}, systems::{self, draw::draw_single_instance_entities}};
 
 pub trait Screen {
-    fn start(&self);
+    fn start_systems(&self) -> Option<SystemConfigs>;
     fn ui_systems(&self) -> Option<SystemConfigs>;
     fn draw_systems(&self) -> Option<SystemConfigs>;
     fn update_systems(&self) -> Option<SystemConfigs>;
@@ -22,12 +22,12 @@ pub trait Screen {
 pub struct GameScreen {}
 
 impl Screen for GameScreen {
-    fn start(&self) {
-    
+    fn start_systems(&self) -> Option<SystemConfigs> {
+        None
     }
 
     fn ui_systems(&self) -> Option<SystemConfigs> {
-        self.to_systems(draw_single_instance_entities)
+        self.to_systems(draw_menu)
     }
 
     fn draw_systems(&self) -> Option<SystemConfigs> {
@@ -43,8 +43,8 @@ impl Screen for GameScreen {
 pub struct MenuScreen {}
 
 impl Screen for MenuScreen {
-    fn start(&self) {
-    
+    fn start_systems(&self) -> Option<SystemConfigs> {
+        None
     }
 
     fn ui_systems(&self) -> Option<SystemConfigs> {
@@ -63,7 +63,7 @@ impl Screen for MenuScreen {
 fn draw_menu(render_ctx: Res<RenderContext>,
     mut frame_ctx: ResMut<FrameContext>,
     mut gui_ctx: ResMut<GuiContext>,
-    mut screen_server: ResMut<ScreenServer>,
+    mut state: ResMut<GameState>,
 ) {
     let view = &frame_ctx.view;
     let mut encoder = render_ctx.device.create_command_encoder(&CommandEncoderDescriptor {
@@ -85,8 +85,7 @@ fn draw_menu(render_ctx: Res<RenderContext>,
                     .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
                     .show(context, |ui| {
                         if ui.add(egui::Button::new("Click me")).clicked() {
-                            let screen = MenuScreen::default();
-                            screen_server.set_screen(&screen);
+                            state.set(GameState::Game);
                         }
 
                         ui.label("Slider");

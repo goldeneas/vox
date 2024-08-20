@@ -6,3 +6,4 @@ pub mod frame_context;
 pub mod gui_context;
 pub mod asset_server;
 pub mod screen_server;
+pub mod game_state;

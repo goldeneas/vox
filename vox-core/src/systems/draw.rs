@@ -1,10 +1,12 @@
+use std::{thread::sleep, time::Duration};
+
 use bevy_ecs::prelude::*;
 use cgmath::Matrix4;
 use egui::Align2;
 use glyphon::Resolution;
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{components::{camerable::CamerableComponent, model::ModelComponent, position::PositionComponent, single_instance::SingleInstanceComponent}, resources::{default_pipeline::DefaultPipeline, frame_context::FrameContext, gui_context::GuiContext, render_context::RenderContext}, ui::glyphon_renderer, DrawObject};
+use crate::{bundles::single_entity_bundle::SingleEntity, components::{camerable::CamerableComponent, model::ModelComponent, position::PositionComponent, single_instance::SingleInstanceComponent}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, gui_context::GuiContext, render_context::RenderContext}, ui::glyphon_renderer, DrawObject, Model};
 
 #[rustfmt::skip]
 const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
@@ -56,6 +58,8 @@ pub fn draw_single_instance_entities(query: Query<(
         render_ctx: Res<RenderContext>,
         mut frame_ctx: ResMut<FrameContext>,
         pipeline: Res<DefaultPipeline>,
+        mut asset_server: ResMut<AssetServer>,
+        mut commands: Commands,
 ) {
     let view = &frame_ctx.view;
     let mut encoder = render_ctx.device.create_command_encoder(&CommandEncoderDescriptor {
@@ -75,6 +79,8 @@ pub fn draw_single_instance_entities(query: Query<(
     }
 
     frame_ctx.add_encoder(encoder);
+
+    sleep(Duration::from_secs(1));
 }
 
 pub fn draw_glyphon_labels(render_ctx: Res<RenderContext>,

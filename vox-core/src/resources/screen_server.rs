@@ -1,7 +1,14 @@
-use bevy_ecs::{schedule::{IntoSystemConfigs, Schedule, SystemConfigs}, system::Resource, world::World};
+use std::{any::{Any, TypeId}, collections::HashMap, default};
+
+use bevy_ecs::{schedule::{IntoSystemConfigs, Schedule, SystemConfig, SystemConfigs}, system::Resource, world::World};
+
 use crate::screens::screen::Screen;
 
-pub enum ScheduleType {
+use super::game_state::GameState;
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+enum AtCycle {
+    Start,
     Ui,
     Draw,
     Update,
@@ -9,53 +16,70 @@ pub enum ScheduleType {
 
 #[derive(Resource, Default)]
 pub struct ScreenServer {
-    ui_schedule: Schedule,
-    draw_schedule: Schedule,
-    update_schedule: Schedule,
+    map: HashMap<GameState, HashMap<AtCycle, Schedule>>,
 }
 
 // TODO: update code please too much maintenance maybe
 impl ScreenServer {
-    pub fn draw(&mut self, world: &mut World) {
-        self.draw_schedule
-            .run(world);
+    pub fn draw(&mut self, world: &mut World, state: &GameState) {
+        self.map.get_mut(state)
+            .unwrap()
+            .get_mut(&AtCycle::Draw)
+            .map(|schedule| {
+                schedule.run(world);
+            });
 
-        self.ui_schedule
-            .run(world);
+        self.map.get_mut(&state)
+            .unwrap()
+            .get_mut(&AtCycle::Ui)
+            .map(|schedule| {
+                schedule.run(world);
+            });
     }
 
-    pub fn update(&mut self, world: &mut World) {
-        self.update_schedule
-            .run(world);
+    pub fn update(&mut self, world: &mut World, state: &GameState) {
+        self.map.get_mut(state)
+            .unwrap()
+            .get_mut(&AtCycle::Update)
+            .map(|schedule| {
+                schedule.run(world);
+            });
     }
 
-    pub fn set_screen(&mut self, screen: &impl Screen) {
-        self.reset_schedules();
-
-        screen.start();
-        self.add_systems(ScheduleType::Update, screen.update_systems());
-        self.add_systems(ScheduleType::Ui, screen.ui_systems());
-        self.add_systems(ScheduleType::Draw, screen.draw_systems());
+    pub fn register_screen(&mut self, screen: &impl Screen, state: &GameState) {
+        self.add_systems(state, AtCycle::Start, screen.start_systems());
+        self.add_systems(state, AtCycle::Ui, screen.ui_systems());
+        self.add_systems(state, AtCycle::Draw, screen.draw_systems());
+        self.add_systems(state, AtCycle::Update, screen.update_systems());
     }
 
-    pub fn reset_schedules(&mut self) {
-        self.draw_schedule = Schedule::default();
-        self.ui_schedule = Schedule::default();
-        self.update_schedule = Schedule::default();
-    }
-
-    pub fn add_systems(&mut self, schedule_type: ScheduleType, systems: Option<SystemConfigs>) {
+    // TODO dayum pretty bad but I guess it doesnt happen that often to care
+    fn add_systems(&mut self,
+        state: &GameState,
+        cycle: AtCycle,
+        systems: Option<SystemConfigs>,
+    ) {
         if let None = systems {
             return;
         }
 
         let systems = systems.unwrap();
-        let schedule = match schedule_type {
-            ScheduleType::Ui => &mut self.ui_schedule,
-            ScheduleType::Draw => &mut self.draw_schedule,
-            ScheduleType::Update => &mut self.update_schedule,
-        };
-
-        schedule.add_systems(systems);
+        match self.map.get_mut(state) {
+            Some(state_map) => {
+                match state_map.get_mut(&cycle) {
+                    Some(schedule) => {
+                        schedule.add_systems(systems);
+                    },
+                    None => {
+                        state_map.insert(cycle, Schedule::default());
+                        self.add_systems(state, cycle, Some(systems));
+                    },
+                };
+            },
+            None => {
+                self.map.insert(*state, HashMap::new());
+                self.add_systems(state, cycle, Some(systems));
+            },
+        }
     }
 }
