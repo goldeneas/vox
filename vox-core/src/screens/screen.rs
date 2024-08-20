@@ -2,9 +2,7 @@ use bevy_ecs::{schedule::{IntoSystemConfigs, SystemConfigs}, system::{IntoSystem
 use egui::Align2;
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{resources::{frame_context::FrameContext, gui_context::GuiContext, render_context::RenderContext}, systems};
-
-use super::screen_server::{self, ScreenServer};
+use crate::{resources::{frame_context::FrameContext, gui_context::GuiContext, render_context::RenderContext, screen_server::ScreenServer}, systems::{self, draw::draw_single_instance_entities}};
 
 pub trait Screen {
     fn start(&self);
@@ -16,6 +14,28 @@ pub trait Screen {
         systems: impl IntoSystemConfigs<M>, 
     ) -> Option<SystemConfigs> {
         Some(systems.into_configs())
+    }
+}
+
+
+#[derive(Default)]
+pub struct GameScreen {}
+
+impl Screen for GameScreen {
+    fn start(&self) {
+    
+    }
+
+    fn ui_systems(&self) -> Option<SystemConfigs> {
+        self.to_systems(draw_single_instance_entities)
+    }
+
+    fn draw_systems(&self) -> Option<SystemConfigs> {
+        None
+    }
+
+    fn update_systems(&self) -> Option<SystemConfigs> {
+        None
     }
 }
 
@@ -43,6 +63,7 @@ impl Screen for MenuScreen {
 fn draw_menu(render_ctx: Res<RenderContext>,
     mut frame_ctx: ResMut<FrameContext>,
     mut gui_ctx: ResMut<GuiContext>,
+    mut screen_server: ResMut<ScreenServer>,
 ) {
     let view = &frame_ctx.view;
     let mut encoder = render_ctx.device.create_command_encoder(&CommandEncoderDescriptor {
@@ -64,7 +85,8 @@ fn draw_menu(render_ctx: Res<RenderContext>,
                     .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
                     .show(context, |ui| {
                         if ui.add(egui::Button::new("Click me")).clicked() {
-                            
+                            let screen = MenuScreen::default();
+                            screen_server.set_screen(&screen);
                         }
 
                         ui.label("Slider");

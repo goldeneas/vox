@@ -1,6 +1,5 @@
-use bevy_ecs::{schedule::{IntoSystemConfigs, Schedule, SystemConfigs}, world::World};
-
-use super::screen::Screen;
+use bevy_ecs::{schedule::{IntoSystemConfigs, Schedule, SystemConfigs}, system::Resource, world::World};
+use crate::screens::screen::Screen;
 
 pub enum ScheduleType {
     Ui,
@@ -8,7 +7,7 @@ pub enum ScheduleType {
     Update,
 }
 
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct ScreenServer {
     ui_schedule: Schedule,
     draw_schedule: Schedule,

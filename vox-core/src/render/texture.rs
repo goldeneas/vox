@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use image::GenericImageView;
-use crate::{assets::asset::Asset, util::load_binary};
+use crate::{asset::Asset, util::load_binary};
 
 pub struct Texture {
     texture: wgpu::Texture,

@@ -1,10 +1,10 @@
 use std::{any::{Any, TypeId}, collections::HashMap, hash::{DefaultHasher, Hash, Hasher}, sync::Arc};
 
-use crate::{util::get_extension, Model, Texture};
+use bevy_ecs::system::Resource;
 
-use super::asset::Asset;
+use crate::{asset::Asset, util::get_extension, Model, Texture};
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub struct AssetServer {
     map: HashMap<(TypeId, u64), Arc<dyn Any + Send + Sync>>,
 }

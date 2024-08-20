@@ -2,7 +2,7 @@ use std::{ops::Range, sync::Arc};
 
 use bytemuck::{Pod, Zeroable};
 
-use crate::{assets::{asset::Asset, asset_server::AssetServer}, components::{model::ModelComponent, multiple_instance::MultipleInstanceComponent, single_instance::SingleInstanceComponent}, Texture};
+use crate::{asset::Asset, components::{model::ModelComponent, multiple_instance::MultipleInstanceComponent, single_instance::SingleInstanceComponent}, resources::asset_server::AssetServer, Texture};
 
 use super::{material::{Material, MaterialDescriptor}, mesh::{Mesh, MeshDescriptor}};
 

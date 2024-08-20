@@ -3,20 +3,23 @@ mod util;
 mod bundles;
 mod components;
 mod resources;
-mod assets;
 mod systems;
 mod ui;
 mod screens;
+mod update_resource;
+mod asset;
 
+use std::borrow::Borrow;
 use std::borrow::BorrowMut;
 use std::sync::Arc;
 use std::time::Instant;
 
-use assets::asset_server::AssetServer;
 use bevy_ecs::world::World;
 use render::model::*;
+use resources::asset_server::AssetServer;
+use resources::screen_server;
+use resources::screen_server::ScreenServer;
 use screens::screen::MenuScreen;
-use screens::screen_server::ScreenServer;
 use ui::glyphon_renderer::GlyphonRenderer;
 use render::texture::*;
 use render::instance::*;
@@ -29,6 +32,7 @@ use resources::input::InputRes;
 use resources::input::KeyState;
 use resources::mouse::MouseRes;
 use ui::egui_renderer::EguiRenderer;
+use update_resource::UpdateResource;
 use winit::application::ApplicationHandler;
 use winit::event_loop::ActiveEventLoop;
 use winit::event_loop::ControlFlow;
@@ -49,8 +53,6 @@ struct AppState {
     accumulator: f32,
 
     world: World,
-    asset_server: AssetServer,
-    screen_server: ScreenServer,
 }
 
 impl AppState {
@@ -108,13 +110,12 @@ impl AppState {
         let mut world = World::new();
         world.init_resource::<InputRes>();
         world.init_resource::<MouseRes>();
+        world.init_resource::<AssetServer>();
+        world.init_resource::<ScreenServer>();
 
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
         let glyphon_renderer = GlyphonRenderer::new(&device, &queue);
         let egui_renderer = EguiRenderer::new(&device, window.as_ref());
-
-        let asset_server = AssetServer::default();
-        let screen_server = ScreenServer::default();
 
         world.insert_resource(
             DefaultPipeline::new(&device,
@@ -144,8 +145,6 @@ impl AppState {
             world,
             delta_time,
             accumulator,
-            asset_server,
-            screen_server,
         }
     }
 }
@@ -225,10 +224,10 @@ impl ApplicationHandler for App {
         }
 
         let window = Arc::new(event_loop.create_window(WindowAttributes::default()).unwrap());
-        window.set_cursor_grab(CursorGrabMode::Locked)
-            .or_else(|_e| window.set_cursor_grab(CursorGrabMode::Confined))
-            .unwrap();
-        window.set_cursor_visible(false);
+        //window.set_cursor_grab(CursorGrabMode::Locked)
+        //    .or_else(|_e| window.set_cursor_grab(CursorGrabMode::Confined))
+        //    .unwrap();
+        //window.set_cursor_visible(false);
 
         self.window = Some(window.clone());
 
@@ -267,8 +266,9 @@ impl App {
         let state_mut = self.state_mut();
         let screen = MenuScreen::default();
 
-        state_mut.screen_server
-            .set_screen(&screen);
+        state_mut.world.update_screen_server(|world, screen_server| {
+            screen_server.set_screen(&screen);
+        });
     }
 
     fn input(&mut self, keycode: &KeyCode, key_state: &ElementState) {
@@ -312,10 +312,9 @@ impl App {
 
     fn update(&mut self) {
         let state_mut = &mut self.state_mut();
-        let world = &mut state_mut.world;
-        let screen_server = &mut state_mut.screen_server;
-
-        screen_server.update(world);
+        state_mut.world.update_screen_server(|world, screen_server| {
+            screen_server.update(world);
+        });
     }
 
     fn draw(&mut self) {
@@ -331,10 +330,9 @@ impl App {
 
         {
             let state_mut = &mut self.state_mut();
-            let world = &mut state_mut.world;
-            let screen_server = &mut state_mut.screen_server;
-
-            screen_server.draw(world);
+            state_mut.world.update_screen_server(|world, screen_server| {
+                screen_server.draw(world);
+            });
         }
 
         {
