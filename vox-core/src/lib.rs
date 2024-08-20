@@ -3,28 +3,22 @@ mod util;
 mod bundles;
 mod components;
 mod resources;
-mod systems;
 mod ui;
 mod screens;
 mod asset;
 
-use std::borrow::Borrow;
 use std::borrow::BorrowMut;
 use std::sync::Arc;
 use std::time::Instant;
 
 use bevy_ecs::system::RunSystemOnce;
-use bevy_ecs::world::Mut;
 use bevy_ecs::world::World;
-use bundles::single_entity_bundle::SingleEntity;
 use render::model::*;
 use resources::asset_server::AssetServer;
 use resources::game_state::GameState;
-use resources::screen_server;
 use resources::screen_server::ScreenServer;
-use screens::screen::GameScreen;
-use screens::screen::MenuScreen;
-use systems::draw::spawn_entities;
+use screens::game::GameScreen;
+use screens::menu::MenuScreen;
 use ui::glyphon_renderer::GlyphonRenderer;
 use render::texture::*;
 use render::instance::*;
@@ -40,7 +34,6 @@ use ui::egui_renderer::EguiRenderer;
 use winit::application::ApplicationHandler;
 use winit::event_loop::ActiveEventLoop;
 use winit::event_loop::ControlFlow;
-use winit::window::CursorGrabMode;
 use winit::window::WindowAttributes;
 use winit::window::WindowId;
 use winit::{
@@ -280,9 +273,6 @@ impl App {
 
         state_mut.screen_server
             .register_screen(&game, &GameState::Game);
-
-        let world = &mut state_mut.world;
-        world.run_system_once(spawn_entities);
     }
 
     fn input(&mut self, keycode: &KeyCode, key_state: &ElementState) {

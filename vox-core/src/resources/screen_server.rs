@@ -1,7 +1,6 @@
-use std::{any::{Any, TypeId}, collections::HashMap, default};
+use std::collections::HashMap;
 
-use bevy_ecs::{schedule::{IntoSystemConfigs, Schedule, SystemConfig, SystemConfigs}, system::Resource, world::World};
-
+use bevy_ecs::{schedule::{Schedule, SystemConfigs}, system::Resource, world::World};
 use crate::screens::screen::Screen;
 
 use super::game_state::GameState;
@@ -22,64 +21,70 @@ pub struct ScreenServer {
 // TODO: update code please too much maintenance maybe
 impl ScreenServer {
     pub fn draw(&mut self, world: &mut World, state: &GameState) {
-        self.map.get_mut(state)
-            .unwrap()
-            .get_mut(&AtCycle::Draw)
-            .map(|schedule| {
-                schedule.run(world);
-            });
-
-        self.map.get_mut(&state)
-            .unwrap()
-            .get_mut(&AtCycle::Ui)
-            .map(|schedule| {
-                schedule.run(world);
-            });
+        self.run_schedule(world, state, &AtCycle::Draw);
+        self.run_schedule(world, state, &AtCycle::Ui);
     }
 
     pub fn update(&mut self, world: &mut World, state: &GameState) {
-        self.map.get_mut(state)
-            .unwrap()
-            .get_mut(&AtCycle::Update)
-            .map(|schedule| {
-                schedule.run(world);
-            });
+        self.run_schedule(world, state, &AtCycle::Update);
     }
 
     pub fn register_screen(&mut self, screen: &impl Screen, state: &GameState) {
-        self.add_systems(state, AtCycle::Start, screen.start_systems());
-        self.add_systems(state, AtCycle::Ui, screen.ui_systems());
-        self.add_systems(state, AtCycle::Draw, screen.draw_systems());
-        self.add_systems(state, AtCycle::Update, screen.update_systems());
+        self.add_systems(state, &AtCycle::Start, screen.start_systems());
+        self.add_systems(state, &AtCycle::Ui, screen.ui_systems());
+        self.add_systems(state, &AtCycle::Draw, screen.draw_systems());
+        self.add_systems(state, &AtCycle::Update, screen.update_systems());
     }
 
-    // TODO dayum pretty bad but I guess it doesnt happen that often to care
     fn add_systems(&mut self,
         state: &GameState,
-        cycle: AtCycle,
+        cycle: &AtCycle,
         systems: Option<SystemConfigs>,
     ) {
         if let None = systems {
             return;
         }
 
+        // dayum pretty bad but I guess it doesnt happen that often to care
         let systems = systems.unwrap();
         match self.map.get_mut(state) {
             Some(state_map) => {
-                match state_map.get_mut(&cycle) {
+                match state_map.get_mut(cycle) {
                     Some(schedule) => {
                         schedule.add_systems(systems);
                     },
                     None => {
-                        state_map.insert(cycle, Schedule::default());
+                        state_map.insert(*cycle, Schedule::default());
                         self.add_systems(state, cycle, Some(systems));
                     },
                 };
             },
             None => {
-                self.map.insert(*state, HashMap::new());
+                let mut state_map = HashMap::new();
+                state_map.insert(*cycle, Schedule::default());
+
+                self.map.insert(*state, state_map);
                 self.add_systems(state, cycle, Some(systems));
             },
         }
+    }
+
+    fn get_state_map(&mut self,
+        state: &GameState
+    ) -> &mut HashMap<AtCycle, Schedule> {
+        self.map.get_mut(state)
+            .unwrap()
+    }
+
+    fn run_schedule(&mut self,
+        world: &mut World,
+        state: &GameState,
+        cycle: &AtCycle
+    ) {
+        self.get_state_map(state)
+            .get_mut(cycle)
+            .map(|schedule| {
+                schedule.run(world);
+            });
     }
 }
