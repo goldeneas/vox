@@ -16,40 +16,16 @@ const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
     0.0, 0.0, 0.0, 1.0,
 );
 
-fn draw_menu(render_ctx: Res<RenderContext>,
-    mut frame_ctx: ResMut<FrameContext>,
-    mut gui_ctx: ResMut<GuiContext>,
+pub fn spawn_entities(mut asset_server: ResMut<AssetServer>,
+        mut commands: Commands,
+        render_ctx: Res<RenderContext>,
 ) {
-    let view = &frame_ctx.view;
-    let mut encoder = render_ctx.device.create_command_encoder(&CommandEncoderDescriptor {
-        label: Some("Egui Encoder"),
-    });
+    let model = asset_server.get_or_load::<Model>("res/untitled.obj",
+        &render_ctx.device,
+        &render_ctx.queue
+    ).unwrap();
 
-    gui_ctx.egui_renderer
-        .draw(&render_ctx,
-            &mut encoder,
-            view,
-            |context| {
-                egui::Window::new("Main Menu")
-                    .default_open(true)
-                    .max_width(1000.0)
-                    .max_height(800.0)
-                    .default_width(800.0)
-                    .resizable(false)
-                    .collapsible(false)
-                    .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
-                    .show(context, |ui| {
-                        if ui.add(egui::Button::new("Click me")).clicked() {
-                            
-                        }
-
-                        ui.label("Slider");
-                        //ui.add(egui::Slider::new(&mut 0, 0..=120).text("age"));
-                        ui.end_row();
-                    });
-            });
-
-    frame_ctx.add_encoder(encoder);
+    commands.spawn(SingleEntity::new(model));
 }
 
 pub fn draw_single_instance_entities(query: Query<(
@@ -58,8 +34,6 @@ pub fn draw_single_instance_entities(query: Query<(
         render_ctx: Res<RenderContext>,
         mut frame_ctx: ResMut<FrameContext>,
         pipeline: Res<DefaultPipeline>,
-        mut asset_server: ResMut<AssetServer>,
-        mut commands: Commands,
 ) {
     let view = &frame_ctx.view;
     let mut encoder = render_ctx.device.create_command_encoder(&CommandEncoderDescriptor {
@@ -79,8 +53,6 @@ pub fn draw_single_instance_entities(query: Query<(
     }
 
     frame_ctx.add_encoder(encoder);
-
-    sleep(Duration::from_secs(1));
 }
 
 pub fn draw_glyphon_labels(render_ctx: Res<RenderContext>,

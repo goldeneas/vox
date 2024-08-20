@@ -2,7 +2,7 @@ use bevy_ecs::{schedule::{IntoSystemConfigs, SystemConfigs}, system::{IntoSystem
 use egui::Align2;
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{resources::{frame_context::FrameContext, game_state::GameState, gui_context::GuiContext, render_context::RenderContext, screen_server::ScreenServer}, systems::{self, draw::draw_single_instance_entities}};
+use crate::{resources::{frame_context::FrameContext, game_state::GameState, gui_context::GuiContext, render_context::RenderContext, screen_server::ScreenServer}, systems::{self, draw::draw_single_instance_entities, update::update_single_instance_entities}};
 
 pub trait Screen {
     fn start_systems(&self) -> Option<SystemConfigs>;
@@ -27,7 +27,8 @@ impl Screen for GameScreen {
     }
 
     fn ui_systems(&self) -> Option<SystemConfigs> {
-        self.to_systems(draw_menu)
+        self.to_systems((update_single_instance_entities,
+            draw_single_instance_entities.after(update_single_instance_entities)))
     }
 
     fn draw_systems(&self) -> Option<SystemConfigs> {

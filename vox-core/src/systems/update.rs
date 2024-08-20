@@ -3,7 +3,7 @@ use cgmath::{EuclideanSpace, InnerSpace};
 
 use crate::{components::{camerable::CamerableComponent, position::PositionComponent, rotation::RotationComponent, single_instance::SingleInstanceComponent, speed::SpeedComponent}, resources::{input::InputRes, mouse::MouseRes, render_context::RenderContext}, InstanceData};
 
-pub fn update_single_instance_models(mut query: Query<(
+pub fn update_single_instance_entities(mut query: Query<(
         &PositionComponent,
         &mut SingleInstanceComponent,
         &RotationComponent)>,
