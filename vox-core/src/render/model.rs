@@ -111,6 +111,7 @@ impl DrawObject for wgpu::RenderPass<'_> {
     ) {
         self.set_vertex_buffer(1, instance_cmpnt
             .instance_buffer()
+            .unwrap()
             .slice(..));
 
         self.draw_model(&model_cmpnt.model,

@@ -3,7 +3,7 @@ use cgmath::{EuclideanSpace, InnerSpace, Matrix4};
 use glyphon::Resolution;
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{bundles::single_entity_bundle::SingleEntity, components::{camerable::CamerableComponent, model::ModelComponent, position::PositionComponent, rotation::RotationComponent, single_instance::SingleInstanceComponent, speed::SpeedComponent}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, gui_context::GuiContext, input::InputRes, mouse::MouseRes, render_context::RenderContext}, DrawObject, InstanceData, Model};
+use crate::{bundles::{camera_bundle::CameraBundle, single_entity_bundle::SingleEntity}, components::{camerable::CamerableComponent, model::ModelComponent, position::PositionComponent, rotation::RotationComponent, single_instance::SingleInstanceComponent, speed::SpeedComponent}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, gui_context::GuiContext, input::InputRes, mouse::MouseRes, render_context::RenderContext}, DrawObject, InstanceData, Model};
 
 use super::screen::Screen;
 
@@ -12,7 +12,7 @@ pub struct GameScreen {}
 
 impl Screen for GameScreen {
     fn start_systems(&self) -> Option<SystemConfigs> {
-        None
+        self.to_systems((spawn_entities, spawn_camera))
     }
 
     fn ui_systems(&self) -> Option<SystemConfigs> {
@@ -110,6 +110,10 @@ pub fn spawn_entities(mut asset_server: ResMut<AssetServer>,
     commands.spawn(SingleEntity::new(model));
 }
 
+pub fn spawn_camera(mut commands: Commands) {
+    commands.spawn(CameraBundle::default());
+}
+
 pub fn draw_single_instance_entities(query: Query<(
         &ModelComponent,
         &SingleInstanceComponent)>,
@@ -123,6 +127,10 @@ pub fn draw_single_instance_entities(query: Query<(
     });
 
     for (model_cmpnt, instance_cmpnt) in &query {
+        if instance_cmpnt.instance_buffer().is_none() {
+            continue;
+        }
+
         let mut render_pass = pipeline
             .model_pass(&mut encoder, view,
                 render_ctx.depth_texture.view()

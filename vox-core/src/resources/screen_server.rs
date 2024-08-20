@@ -15,17 +15,27 @@ enum AtCycle {
 
 #[derive(Resource, Default)]
 pub struct ScreenServer {
+    last_state: Option<GameState>,
     map: HashMap<GameState, HashMap<AtCycle, Schedule>>,
 }
 
 // TODO: update code please too much maintenance maybe
 impl ScreenServer {
     pub fn draw(&mut self, world: &mut World, state: &GameState) {
+        if self.should_run_start_systems(state) {
+            self.set_last_state(state);
+            self.run_schedule(world, state, &AtCycle::Start);
+        }
+
         self.run_schedule(world, state, &AtCycle::Draw);
         self.run_schedule(world, state, &AtCycle::Ui);
     }
 
     pub fn update(&mut self, world: &mut World, state: &GameState) {
+        if self.should_run_start_systems(state) {
+            self.run_schedule(world, state, &AtCycle::Start);
+        }
+
         self.run_schedule(world, state, &AtCycle::Update);
     }
 
@@ -86,5 +96,16 @@ impl ScreenServer {
             .map(|schedule| {
                 schedule.run(world);
             });
+    }
+
+    fn set_last_state(&mut self, state: &GameState) {
+        self.last_state = Some(*state);
+    }
+
+    fn should_run_start_systems(&self, state: &GameState) -> bool {
+        match self.last_state {
+            Some(last_state) => last_state != *state,
+            None => true
+        }
     }
 }

@@ -21,9 +21,8 @@ impl SingleInstanceComponent {
         self.instance_buffer = Some(instance_buffer);
     }
 
-    pub fn instance_buffer(&self) -> &wgpu::Buffer {
+    pub fn instance_buffer(&self) -> Option<&wgpu::Buffer> {
         self.instance_buffer
             .as_ref()
-            .unwrap()
     }
 }
