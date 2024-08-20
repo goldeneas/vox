@@ -49,8 +49,8 @@ struct AppState {
     accumulator: f32,
 
     world: World,
-    screen_server: ScreenServer,
     asset_server: AssetServer,
+    screen_server: ScreenServer,
 }
 
 impl AppState {
@@ -113,8 +113,8 @@ impl AppState {
         let glyphon_renderer = GlyphonRenderer::new(&device, &queue);
         let egui_renderer = EguiRenderer::new(&device, window.as_ref());
 
-        let asset_server = AssetServer::new();
-        let screen_server = ScreenServer::new();
+        let asset_server = AssetServer::default();
+        let screen_server = ScreenServer::default();
 
         world.insert_resource(
             DefaultPipeline::new(&device,
@@ -141,11 +141,11 @@ impl AppState {
         let accumulator = 0.0;
 
         Self {
-            screen_server,
-            asset_server,
             world,
             delta_time,
             accumulator,
+            asset_server,
+            screen_server,
         }
     }
 }

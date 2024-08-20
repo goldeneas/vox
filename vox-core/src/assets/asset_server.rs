@@ -4,19 +4,12 @@ use crate::{util::get_extension, Model, Texture};
 
 use super::asset::Asset;
 
+#[derive(Default)]
 pub struct AssetServer {
     map: HashMap<(TypeId, u64), Arc<dyn Any + Send + Sync>>,
 }
 
 impl AssetServer {
-    pub fn new() -> Self {
-        let map = HashMap::new();
-
-        Self {
-            map
-        }
-    }
-
     pub fn insert<T>(&mut self, asset: T)
         -> Option<Arc<(dyn Any + Send + Sync + 'static)>>
     where
