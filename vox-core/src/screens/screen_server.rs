@@ -1,5 +1,4 @@
-use bevy_ecs::{schedule::{IntoSystemConfigs, Schedule}, world::World};
-use egui::ahash::{HashMap, HashMapExt};
+use bevy_ecs::{schedule::{IntoSystemConfigs, Schedule, SystemConfigs}, world::World};
 
 use super::screen::Screen;
 
@@ -10,7 +9,6 @@ pub enum ScheduleType {
 }
 
 pub struct ScreenServer {
-    systems: HashMap<ScheduleType, Vec<Schedule>>,
     ui_schedule: Schedule,
     draw_schedule: Schedule,
     update_schedule: Schedule,
@@ -23,13 +21,10 @@ impl ScreenServer {
         let draw_schedule = Schedule::default();
         let update_schedule = Schedule::default();
 
-        let systems = HashMap::new();
-        
         Self {
             ui_schedule,
             draw_schedule,
             update_schedule,
-            systems,
         }
     }
 
@@ -46,22 +41,27 @@ impl ScreenServer {
             .run(world);
     }
 
-    pub fn set_screen<M>(&mut self, screen: &impl Screen) {
-        self.reset_systems();
+    pub fn set_screen(&mut self, screen: &impl Screen) {
+        self.reset_schedules();
 
         screen.start();
-        self.add_system::<M>(ScheduleType::Update, screen.update_systems());
-        self.add_system::<M>(ScheduleType::Ui, screen.ui_systems());
-        self.add_system::<M>(ScheduleType::Draw, screen.draw_systems());
+        self.add_system(ScheduleType::Update, screen.update_systems());
+        self.add_system(ScheduleType::Ui, screen.ui_systems());
+        self.add_system(ScheduleType::Draw, screen.draw_systems());
     }
 
-    pub fn reset_systems(&mut self) {
+    pub fn reset_schedules(&mut self) {
         self.draw_schedule = Schedule::default();
         self.ui_schedule = Schedule::default();
         self.update_schedule = Schedule::default();
     }
 
-    pub fn add_system<M>(&mut self, schedule_type: ScheduleType, systems: impl IntoSystemConfigs<M>) {
+    pub fn add_system(&mut self, schedule_type: ScheduleType, systems: Option<SystemConfigs>) {
+        if let None = systems {
+            return;
+        }
+
+        let systems = systems.unwrap();
         let schedule = match schedule_type {
             ScheduleType::Ui => &mut self.ui_schedule,
             ScheduleType::Draw => &mut self.draw_schedule,

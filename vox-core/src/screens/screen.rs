@@ -1,32 +1,40 @@
-use bevy_ecs::{schedule::IntoSystemConfigs, system::{Res, ResMut}};
+use bevy_ecs::{schedule::{IntoSystemConfigs, SystemConfigs}, system::{Res, ResMut}};
 use egui::Align2;
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{resources::{frame_context::FrameContext, gui_context::GuiContext, render_context::RenderContext}, systems::draw::draw_cameras};
+use crate::resources::{frame_context::FrameContext, gui_context::GuiContext, render_context::RenderContext};
 
 pub trait Screen {
     fn start(&self);
-    fn ui_systems<M>(&self) -> impl IntoSystemConfigs<M>;
-    fn draw_systems<M>(&self) -> impl IntoSystemConfigs<M>;
-    fn update_systems<M>(&self) -> impl IntoSystemConfigs<M>;
+    fn ui_systems(&self) -> Option<SystemConfigs>;
+    fn draw_systems(&self) -> Option<SystemConfigs>;
+    fn update_systems(&self) -> Option<SystemConfigs>;
+
+    fn to_systems<M>(&self,
+        systems: impl IntoSystemConfigs<M>
+    ) -> Option<SystemConfigs> {
+        Some(systems.into_configs())
+    }
 }
 
+#[derive(Default)]
 pub struct MenuScreen {}
+
 impl Screen for MenuScreen {
     fn start(&self) {
     
     }
 
-    fn ui_systems<M>(&self) -> impl IntoSystemConfigs<M> {
-        
+    fn ui_systems(&self) -> Option<SystemConfigs> {
+        self.to_systems(draw_menu)
     }
 
-    fn draw_systems<M>(&self) -> impl IntoSystemConfigs<M> {
-        todo!()
+    fn draw_systems(&self) -> Option<SystemConfigs> {
+        None
     }
 
-    fn update_systems<M>(&self) -> impl IntoSystemConfigs<M> {
-        todo!()
+    fn update_systems(&self) -> Option<SystemConfigs> {
+        None
     }
 }
 

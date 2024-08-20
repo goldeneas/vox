@@ -15,7 +15,7 @@ use std::time::Instant;
 use assets::asset_server::AssetServer;
 use bevy_ecs::world::World;
 use render::model::*;
-use resources::screen_context::ScreenContext;
+use screens::screen::MenuScreen;
 use screens::screen_server::ScreenServer;
 use ui::glyphon_renderer::GlyphonRenderer;
 use render::texture::*;
@@ -265,10 +265,10 @@ impl App {
 
     fn run(&mut self) {
         let state_mut = self.state_mut();
-        let world = &mut state_mut.world;
+        let screen = MenuScreen::default();
 
-        let screen_ctx = world
-            .resource_ref::<ScreenContext>();
+        state_mut.screen_server
+            .set_screen(&screen);
     }
 
     fn input(&mut self, keycode: &KeyCode, key_state: &ElementState) {
