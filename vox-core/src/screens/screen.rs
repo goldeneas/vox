@@ -28,13 +28,19 @@ impl Screen for MenuScreen {
     }
 
     fn ui_systems(&self, screen_server: &ScreenServer) -> Option<SystemConfigs> {
-        self.to_systems(
-            move |render_ctx: Res<RenderContext>,
-            mut frame_ctx: ResMut<FrameContext>,
-            mut gui_ctx: ResMut<GuiContext>|
-        {
-            draw_menu
-        })
+        screen_server.take_schedules(|mut schedules| {
+            schedules.ui_schedule
+                .add_systems(move
+                    |render_ctx: Res<RenderContext>,
+                    mut frame_ctx: ResMut<FrameContext>,
+                    mut gui_ctx: ResMut<GuiContext>| {
+                        draw_menu(render_ctx, frame_ctx, gui_ctx, screen_server);
+                    });
+
+            schedules
+        });
+
+        None
     }
 
     fn draw_systems(&self) -> Option<SystemConfigs> {

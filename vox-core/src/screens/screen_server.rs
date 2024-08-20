@@ -11,10 +11,10 @@ pub enum ScheduleType {
 }
 
 #[derive(Default)]
-struct ScreenSchedules {
-    ui_schedule: Schedule,
-    draw_schedule: Schedule,
-    update_schedule: Schedule,
+pub struct ScreenSchedules {
+    pub ui_schedule: Schedule,
+    pub draw_schedule: Schedule,
+    pub update_schedule: Schedule,
 }
 
 #[derive(Default)]
@@ -70,7 +70,7 @@ impl ScreenServer {
         });
     }
 
-    fn take_schedules(&self, func: impl FnOnce(ScreenSchedules) -> ScreenSchedules) {
+    pub fn take_schedules(&self, func: impl FnOnce(ScreenSchedules) -> ScreenSchedules) {
         let mut schedules = self.schedules.take();
         schedules = func(schedules);
         self.schedules.replace(schedules);
