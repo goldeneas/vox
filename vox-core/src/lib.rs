@@ -103,7 +103,6 @@ impl AppState {
 
         surface.configure(&device, &config);
 
-        let asset_server = AssetServer::new();
         let depth_texture = Texture::create_depth_texture(&device, &config, "depth_texture");
 
         let mut world = World::new();
@@ -114,6 +113,7 @@ impl AppState {
         let glyphon_renderer = GlyphonRenderer::new(&device, &queue);
         let egui_renderer = EguiRenderer::new(&device, window.as_ref());
 
+        let asset_server = AssetServer::new();
         let screen_server = ScreenServer::new();
 
         world.insert_resource(
@@ -233,10 +233,10 @@ impl ApplicationHandler for App {
         self.window = Some(window.clone());
 
         #[cfg(not(target_arch = "wasm32"))]
-        let state = pollster::block_on(AppState::new(window.clone()));
+        let state = pollster::block_on(AppState::new(window));
 
         #[cfg(target_arch = "wasm32")]
-        let state = wasm_bindgen_futures::spawn_local(AppState::new(window.clone()));
+        let state = wasm_bindgen_futures::spawn_local(AppState::new(window));
 
         self.state = Some(state);
         self.run();

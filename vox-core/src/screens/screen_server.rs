@@ -8,6 +8,7 @@ pub enum ScheduleType {
     Update,
 }
 
+#[derive(Default)]
 pub struct ScreenServer {
     ui_schedule: Schedule,
     draw_schedule: Schedule,
@@ -16,18 +17,6 @@ pub struct ScreenServer {
 
 // TODO: update code please too much maintenance maybe
 impl ScreenServer {
-    pub fn new() -> Self {
-        let ui_schedule = Schedule::default();
-        let draw_schedule = Schedule::default();
-        let update_schedule = Schedule::default();
-
-        Self {
-            ui_schedule,
-            draw_schedule,
-            update_schedule,
-        }
-    }
-
     pub fn draw(&mut self, world: &mut World) {
         self.draw_schedule
             .run(world);
