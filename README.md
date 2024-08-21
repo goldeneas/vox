@@ -6,6 +6,7 @@ I am working on this as a fun side project; any suggestions are very welcome!
 * Rendering backed provided by wgpu, which is crossplatform by design
 * Complete integration with Bevy's ECS for fast, multithreaded systems
 * Complete integration with Glyphon and Egui for immediate UIs
+* State machine integrated with Bevy's systems
 
 ## Planned
 * Criterion integration
