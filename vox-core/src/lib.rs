@@ -157,8 +157,7 @@ impl AppState {
 pub struct App {
     window: Option<Arc<Window>>,
     state: Option<AppState>,
-    screens: Vec<Box<dyn Screen>>,
-    is_benchmark: bool,
+    screen_queue: Option<Vec<Box<dyn Screen>>>,
 }
 
 impl ApplicationHandler for App {
@@ -240,7 +239,10 @@ impl ApplicationHandler for App {
 
         #[cfg(not(target_arch = "wasm32"))]
         let mut state = pollster::block_on(AppState::new(window));
-        state.screen_server.register_screens(&self.screens);
+
+        if let Some(screens) = self.screen_queue.take() {
+            state.screen_server.register_screens(screens);
+        }
 
         #[cfg(target_arch = "wasm32")]
         let state = wasm_bindgen_futures::spawn_local(AppState::new(window));
@@ -277,13 +279,13 @@ impl App {
         let bench = BenchScreen::default();
 
         state_mut.screen_server
-            .register_screen(&menu);
+            .register_screen(menu);
 
         state_mut.screen_server
-            .register_screen(&game);
+            .register_screen(game);
 
         state_mut.screen_server
-            .register_screen(&bench);
+            .register_screen(bench);
     }
 
     fn input(&mut self, keycode: &KeyCode, key_state: &ElementState) {
@@ -392,7 +394,16 @@ impl App {
     }
 
     pub fn add_screen(&mut self, screen: impl Screen + 'static) {
-        self.screens.push(Box::new(screen));
+        let screen = Box::new(screen);
+
+        match &mut self.screen_queue {
+            Some(vector) => vector.push(screen),
+            None => {
+                let mut vector: Vec<Box<dyn Screen>> = Vec::new();
+                vector.push(screen);
+                self.screen_queue = Some(vector);
+            }
+        }
     }
 }
 

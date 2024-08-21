@@ -21,8 +21,12 @@ const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
 pub struct GameScreen {}
 
 impl Screen for GameScreen {
+    fn on_start(&mut self) {
+        println!("ziopera?");
+    }
+
     fn start_systems(&self) -> Option<SystemConfigs> {
-        self.to_systems((spawn_entities, spawn_camera, spawn_labels))
+        self.to_systems((spawn_entities, spawn_camera))
     }
 
     fn draw_systems(&self) -> Option<SystemConfigs> {
@@ -114,11 +118,6 @@ pub fn spawn_entities(mut asset_server: ResMut<AssetServer>,
     ).unwrap();
 
     commands.spawn(SingleEntity::new(model));
-}
-
-pub fn spawn_labels(mut gui: ResMut<GuiContext>) {
-    gui.glyphon_renderer
-        .add_label(LabelDescriptor::default());
 }
 
 pub fn spawn_camera(mut commands: Commands) {
