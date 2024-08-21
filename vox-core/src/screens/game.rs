@@ -1,22 +1,28 @@
+use std::{thread::sleep, time::{Duration, Instant}};
+
 use bevy_ecs::{schedule::SystemConfigs, system::{Commands, Query, Res, ResMut}};
 use cgmath::{EuclideanSpace, InnerSpace, Matrix4};
 use glyphon::Resolution;
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{bundles::{camera_bundle::CameraBundle, single_entity_bundle::SingleEntity}, components::{camerable::CamerableComponent, model::ModelComponent, position::PositionComponent, rotation::RotationComponent, single_instance::SingleInstanceComponent, speed::SpeedComponent}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, gui_context::GuiContext, input::InputRes, mouse::MouseRes, render_context::RenderContext}, DrawObject, InstanceData, Model};
+use crate::{bundles::{camera_bundle::CameraBundle, single_entity_bundle::SingleEntity}, components::{camerable::CamerableComponent, model::ModelComponent, position::PositionComponent, rotation::RotationComponent, single_instance::SingleInstanceComponent, speed::SpeedComponent}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, gui_context::GuiContext, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::LabelDescriptor, DrawObject, InstanceData, Model};
 
 use super::screen::Screen;
+
+#[rustfmt::skip]
+const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, 0.5, 0.5,
+    0.0, 0.0, 0.0, 1.0,
+);
 
 #[derive(Default)]
 pub struct GameScreen {}
 
 impl Screen for GameScreen {
     fn start_systems(&self) -> Option<SystemConfigs> {
-        self.to_systems((spawn_entities, spawn_camera))
-    }
-
-    fn ui_systems(&self) -> Option<SystemConfigs> {
-        None
+        self.to_systems((spawn_entities, spawn_camera, spawn_labels))
     }
 
     fn draw_systems(&self) -> Option<SystemConfigs> {
@@ -25,6 +31,14 @@ impl Screen for GameScreen {
 
     fn update_systems(&self) -> Option<SystemConfigs> {
         self.to_systems((update_single_instance_entities, update_camera))
+    }
+
+    fn ui_systems(&self) -> Option<SystemConfigs> {
+        self.to_systems(draw_glyphon_labels)
+    }
+
+    fn game_state(&self) -> &GameState {
+        &GameState::Game
     }
 }
 
@@ -90,24 +104,21 @@ pub fn update_camera(mut query: Query<(
     }
 }
 
-#[rustfmt::skip]
-const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
-    1.0, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0, 0.0,
-    0.0, 0.0, 0.5, 0.5,
-    0.0, 0.0, 0.0, 1.0,
-);
-
 pub fn spawn_entities(mut asset_server: ResMut<AssetServer>,
         mut commands: Commands,
         render_ctx: Res<RenderContext>,
 ) {
-    let model = asset_server.get_or_load::<Model>("res/untitled.obj",
+    let model = asset_server.get_or_load::<Model>("res/cube.obj",
         &render_ctx.device,
         &render_ctx.queue
     ).unwrap();
 
     commands.spawn(SingleEntity::new(model));
+}
+
+pub fn spawn_labels(mut gui: ResMut<GuiContext>) {
+    gui.glyphon_renderer
+        .add_label(LabelDescriptor::default());
 }
 
 pub fn spawn_camera(mut commands: Commands) {

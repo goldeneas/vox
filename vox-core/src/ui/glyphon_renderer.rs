@@ -121,13 +121,13 @@ impl<'a> GlyphonRenderer<'a> {
                 .map(Label::get_area)
                 .collect::<Vec<TextArea>>(),
             &mut self.swash_cache
-        ).expect("Could not prepare GlyphonRenderer");
+        ).unwrap();
     }
 
     pub fn draw<'pass>(&'a self, render_pass: &mut RenderPass<'pass>)
     where 'a : 'pass {
         self.renderer.render(&self.text_atlas, &self.viewport, render_pass)
-            .expect("Could not draw GlyphonRenderer");
+            .unwrap();
     }
 
     pub fn add_label(&mut self, descriptor: LabelDescriptor<'a>) -> LabelId {

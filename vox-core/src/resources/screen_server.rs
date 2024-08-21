@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{borrow::Borrow, collections::HashMap};
 
 use bevy_ecs::{schedule::{Schedule, SystemConfigs}, system::Resource, world::World};
 use crate::screens::screen::Screen;
@@ -16,10 +16,9 @@ enum AtCycle {
 #[derive(Resource, Default)]
 pub struct ScreenServer {
     last_state: Option<GameState>,
-    map: HashMap<GameState, HashMap<AtCycle, Schedule>>,
+    registered_schedules: HashMap<GameState, HashMap<AtCycle, Schedule>>,
 }
 
-// TODO: update code please too much maintenance maybe
 impl ScreenServer {
     pub fn draw(&mut self, world: &mut World, state: &GameState) {
         if self.should_run_start_systems(state) {
@@ -33,13 +32,25 @@ impl ScreenServer {
 
     pub fn update(&mut self, world: &mut World, state: &GameState) {
         if self.should_run_start_systems(state) {
+            self.set_last_state(state);
             self.run_schedule(world, state, &AtCycle::Start);
         }
 
         self.run_schedule(world, state, &AtCycle::Update);
     }
 
-    pub fn register_screen(&mut self, screen: &impl Screen, state: &GameState) {
+    pub fn register_screens(&mut self,
+        vector: &Vec<Box<dyn Screen>>
+    ) {
+        vector
+            .iter()
+            .for_each(|screen| {
+                self.register_screen(screen.borrow());
+            });
+    }
+
+    pub fn register_screen(&mut self, screen: &dyn Screen) {
+        let state = screen.game_state();
         self.add_systems(state, &AtCycle::Start, screen.start_systems());
         self.add_systems(state, &AtCycle::Ui, screen.ui_systems());
         self.add_systems(state, &AtCycle::Draw, screen.draw_systems());
@@ -57,7 +68,7 @@ impl ScreenServer {
 
         // dayum pretty bad but I guess it doesnt happen that often to care
         let systems = systems.unwrap();
-        match self.map.get_mut(state) {
+        match self.registered_schedules.get_mut(state) {
             Some(state_map) => {
                 match state_map.get_mut(cycle) {
                     Some(schedule) => {
@@ -73,7 +84,7 @@ impl ScreenServer {
                 let mut state_map = HashMap::new();
                 state_map.insert(*cycle, Schedule::default());
 
-                self.map.insert(*state, state_map);
+                self.registered_schedules.insert(*state, state_map);
                 self.add_systems(state, cycle, Some(systems));
             },
         }
@@ -82,8 +93,9 @@ impl ScreenServer {
     fn get_state_map(&mut self,
         state: &GameState
     ) -> &mut HashMap<AtCycle, Schedule> {
-        self.map.get_mut(state)
-            .unwrap()
+        self.registered_schedules
+            .get_mut(state)
+            .expect("Could not get state map! Did you register all your screens?")
     }
 
     fn run_schedule(&mut self,

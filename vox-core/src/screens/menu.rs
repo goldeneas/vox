@@ -1,5 +1,7 @@
-use bevy_ecs::{schedule::SystemConfigs, system::{Res, ResMut}};
-use egui::Align2;
+use std::process::exit;
+
+use bevy_ecs::{schedule::{IntoSystemConfigs, SystemConfigs}, system::{Res, ResMut}};
+use egui::{Align2, Button};
 use wgpu::CommandEncoderDescriptor;
 
 use crate::resources::{frame_context::FrameContext, game_state::GameState, gui_context::GuiContext, render_context::RenderContext};
@@ -10,20 +12,12 @@ use super::screen::Screen;
 pub struct MenuScreen {}
 
 impl Screen for MenuScreen {
-    fn start_systems(&self) -> Option<SystemConfigs> {
-        None
-    }
-
     fn ui_systems(&self) -> Option<SystemConfigs> {
         self.to_systems(draw_menu)
     }
 
-    fn draw_systems(&self) -> Option<SystemConfigs> {
-        None
-    }
-
-    fn update_systems(&self) -> Option<SystemConfigs> {
-        None
+    fn game_state(&self) -> &GameState {
+        &GameState::Menu
     }
 }
 
@@ -44,20 +38,25 @@ fn draw_menu(render_ctx: Res<RenderContext>,
             |context| {
                 egui::Window::new("Main Menu")
                     .default_open(true)
-                    .max_width(1000.0)
-                    .max_height(800.0)
-                    .default_width(800.0)
+                    .default_size([200.0, 85.0])
                     .resizable(false)
                     .collapsible(false)
                     .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
                     .show(context, |ui| {
-                        if ui.add(egui::Button::new("Click me")).clicked() {
+                        if ui.add_sized([200.0, 30.0], Button::new("Play")).clicked() {
                             state.set(GameState::Game);
                         }
 
-                        ui.label("Slider");
-                        //ui.add(egui::Slider::new(&mut 0, 0..=120).text("age"));
+                        if ui.add_sized([200.0, 30.0], Button::new("Bench")).clicked() {
+                            state.set(GameState::Benchmark);
+                        }
+
+                        if ui.add_sized([200.0, 30.0], Button::new("Quit")).clicked() {
+                            exit(0);
+                        }
+
                         ui.end_row();
+                        ui.allocate_space(ui.available_size());
                     });
             });
 

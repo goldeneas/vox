@@ -1,13 +1,14 @@
-mod render;
-mod util;
-mod bundles;
-mod components;
-mod resources;
-mod ui;
-mod screens;
-mod asset;
+pub mod render;
+pub mod util;
+pub mod bundles;
+pub mod components;
+pub mod resources;
+pub mod ui;
+pub mod screens;
+pub mod asset;
 
 use std::borrow::BorrowMut;
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -17,8 +18,10 @@ use render::model::*;
 use resources::asset_server::AssetServer;
 use resources::game_state::GameState;
 use resources::screen_server::ScreenServer;
+use screens::bench::BenchScreen;
 use screens::game::GameScreen;
 use screens::menu::MenuScreen;
+use screens::screen::Screen;
 use ui::glyphon_renderer::GlyphonRenderer;
 use render::texture::*;
 use render::instance::*;
@@ -151,9 +154,11 @@ impl AppState {
 }
 
 #[derive(Default)]
-struct App {
+pub struct App {
     window: Option<Arc<Window>>,
     state: Option<AppState>,
+    screens: Vec<Box<dyn Screen>>,
+    is_benchmark: bool,
 }
 
 impl ApplicationHandler for App {
@@ -212,7 +217,8 @@ impl ApplicationHandler for App {
         &mut self,
         _event_loop: &ActiveEventLoop,
         _device_id: DeviceId,
-        event: DeviceEvent) {
+        event: DeviceEvent
+    ) {
         match event {
             DeviceEvent::MouseMotion { delta } => self.mouse_moved(delta),
             _ => {}
@@ -233,13 +239,14 @@ impl ApplicationHandler for App {
         self.window = Some(window.clone());
 
         #[cfg(not(target_arch = "wasm32"))]
-        let state = pollster::block_on(AppState::new(window));
+        let mut state = pollster::block_on(AppState::new(window));
+        state.screen_server.register_screens(&self.screens);
 
         #[cfg(target_arch = "wasm32")]
         let state = wasm_bindgen_futures::spawn_local(AppState::new(window));
 
         self.state = Some(state);
-        self.run();
+        self.start();
     }
 
     fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
@@ -263,16 +270,20 @@ impl App {
         }
     }
 
-    fn run(&mut self) {
+    fn start(&mut self) {
         let state_mut = self.state_mut();
-        let screen = MenuScreen::default();
+        let menu = MenuScreen::default();
         let game = GameScreen::default();
+        let bench = BenchScreen::default();
 
         state_mut.screen_server
-            .register_screen(&screen, &GameState::Menu);
+            .register_screen(&menu);
 
         state_mut.screen_server
-            .register_screen(&game, &GameState::Game);
+            .register_screen(&game);
+
+        state_mut.screen_server
+            .register_screen(&bench);
     }
 
     fn input(&mut self, keycode: &KeyCode, key_state: &ElementState) {
@@ -378,6 +389,10 @@ impl App {
 
     fn state_mut(&mut self) -> &mut AppState {
         self.state.as_mut().unwrap()
+    }
+
+    pub fn add_screen(&mut self, screen: impl Screen + 'static) {
+        self.screens.push(Box::new(screen));
     }
 }
 
