@@ -6,34 +6,34 @@ pub mod resources;
 pub mod ui;
 pub mod screens;
 pub mod asset;
+pub mod world_ext;
 
 use std::borrow::BorrowMut;
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 
-use bevy_ecs::system::RunSystemOnce;
+use bevy_ecs::world::Mut;
 use bevy_ecs::world::World;
 use render::model::*;
 use resources::asset_server::AssetServer;
 use resources::game_state::GameState;
+use resources::render_context;
 use resources::screen_server::ScreenServer;
-use screens::bench::BenchScreen;
 use screens::game::GameScreen;
 use screens::menu::MenuScreen;
 use screens::screen::Screen;
-use ui::glyphon_renderer::GlyphonRenderer;
 use render::texture::*;
 use render::instance::*;
 
 use resources::default_pipeline::DefaultPipeline;
 use resources::frame_context::FrameContext;
-use resources::gui_context::GuiContext;
 use resources::render_context::RenderContext;
 use resources::input::InputRes;
 use resources::input::KeyState;
 use resources::mouse::MouseRes;
+use ui::egui_renderer;
 use ui::egui_renderer::EguiRenderer;
+use ui::glyphon_renderer::GlyphonRenderer;
 use winit::application::ApplicationHandler;
 use winit::event_loop::ActiveEventLoop;
 use winit::event_loop::ControlFlow;
@@ -45,6 +45,7 @@ use winit::{
 
 #[cfg(target_arch="wasm32")]
 use wasm_bindgen::prelude::*;
+use world_ext::WorldExt;
 
 const SIM_DT: f32 = 1.0/60.0;
 
@@ -116,7 +117,10 @@ impl AppState {
 
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
         let glyphon_renderer = GlyphonRenderer::new(&device, &queue);
-        let egui_renderer = EguiRenderer::new(&device, window.as_ref());
+        let egui_renderer = EguiRenderer::new(&device, &window);
+        
+        world.insert_resource(egui_renderer);
+        world.insert_resource(glyphon_renderer);
 
         world.insert_resource(
             DefaultPipeline::new(&device,
@@ -132,11 +136,6 @@ impl AppState {
             queue,
             surface,
             depth_texture,
-        });
-
-        world.insert_resource(GuiContext {
-            egui_renderer,
-            glyphon_renderer,
         });
 
         let delta_time = Instant::now();
@@ -201,14 +200,10 @@ impl ApplicationHandler for App {
             .world
             .borrow_mut();
 
-        let window = world
-            .resource_ref::<RenderContext>()
+        let window = world.render_context()
             .window.clone();
 
-        let mut gui_ctx = world.
-            resource_mut::<GuiContext>();
-
-        gui_ctx.egui_renderer
+        world.egui_renderer_mut()
             .window_event(&window, &event);
     }
 
@@ -261,8 +256,7 @@ impl App {
     fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
             let mut ctx = self.state_mut().world
-                .get_resource_mut::<RenderContext>()
-                .unwrap();
+                .render_context_mut();
 
             ctx.size = new_size;
             ctx.config.width = new_size.width;
@@ -276,16 +270,12 @@ impl App {
         let state_mut = self.state_mut();
         let menu = MenuScreen::default();
         let game = GameScreen::default();
-        let bench = BenchScreen::default();
 
         state_mut.screen_server
             .register_screen(menu);
 
         state_mut.screen_server
             .register_screen(game);
-
-        state_mut.screen_server
-            .register_screen(bench);
     }
 
     fn input(&mut self, keycode: &KeyCode, key_state: &ElementState) {
@@ -339,50 +329,42 @@ impl App {
             .update(world, &state);
     }
 
+    // TODO: make this code easier to read
     fn draw(&mut self) {
-        {
-            let state_mut = &mut self.state_mut();
-            let world = &mut state_mut.world;
-            let render_ctx = world
-                .resource::<RenderContext>();
+        let state_mut = &mut self.state_mut();
+        let world = &mut state_mut.world;
+        let render_ctx = world.render_context();
 
-            let frame_ctx = FrameContext::new(&render_ctx, None);
-            world.insert_resource(frame_ctx);
-        }
+        let frame_ctx = FrameContext::new(&render_ctx, None);
+        world.insert_resource(frame_ctx);
 
-        {
-            let state_mut = &mut self.state_mut();
-            let world = &mut state_mut.world;
-            let state = world
-                .resource_ref::<GameState>()
-                .clone();
+        let state = world
+            .resource::<GameState>()
+            .clone();
 
-            state_mut.screen_server
-                .draw(world, &state);
-        }
+        state_mut.screen_server
+            .draw(world, &state);
 
-        {
-            let world = &mut self.state_mut()
-                .world;
+        let mut frame_ctx = world
+            .remove_resource::<FrameContext>()
+            .unwrap();
 
-            let frame_ctx = world
-                .remove_resource::<FrameContext>()
-                .unwrap();
+        world.resource_scope(|world: &mut World, render_ctx: Mut<RenderContext>| {
+            world.glyphon_renderer_mut()
+                .draw(&render_ctx, &mut frame_ctx);
+        });
 
-            let render_ctx = world
-                .resource::<RenderContext>();
+        let render_ctx = world.render_context();
+        let buffers: Vec<wgpu::CommandBuffer> = frame_ctx
+            .encoders
+            .into_iter()
+            .map(|encoder| {
+                encoder.finish()
+            })
+            .collect();
 
-            let buffers: Vec<wgpu::CommandBuffer> = frame_ctx
-                .encoders
-                .into_iter()
-                .map(|encoder| {
-                    encoder.finish()
-                })
-                .collect();
-
-            render_ctx.queue.submit(buffers);
-            frame_ctx.output.present();
-        }
+        render_ctx.queue.submit(buffers);
+        frame_ctx.output.present();
     }
 
     fn state_ref(&self) -> &AppState {

@@ -21,6 +21,8 @@ impl Screen for MenuScreen {
     }
 }
 
+// TODO: it's currently too hard to create a menu or something
+// make this and glyphon easier, maybe dont use an ecs?
 fn draw_menu(render_ctx: Res<RenderContext>,
     mut frame_ctx: ResMut<FrameContext>,
     mut gui_ctx: ResMut<GuiContext>,
@@ -45,10 +47,6 @@ fn draw_menu(render_ctx: Res<RenderContext>,
                     .show(context, |ui| {
                         if ui.add_sized([200.0, 30.0], Button::new("Play")).clicked() {
                             state.set(GameState::Game);
-                        }
-
-                        if ui.add_sized([200.0, 30.0], Button::new("Bench")).clicked() {
-                            state.set(GameState::Benchmark);
                         }
 
                         if ui.add_sized([200.0, 30.0], Button::new("Quit")).clicked() {

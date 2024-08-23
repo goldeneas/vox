@@ -5,7 +5,6 @@ pub enum GameState {
     #[default]
     Menu,
     Game,
-    Benchmark,
 }
 
 impl GameState {

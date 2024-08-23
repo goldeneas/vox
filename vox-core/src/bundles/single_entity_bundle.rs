@@ -7,10 +7,10 @@ use crate::{components::{model::ModelComponent, position::PositionComponent, rot
 
 #[derive(Bundle)]
 pub struct SingleEntity {
-    position: PositionComponent,
-    model: ModelComponent,
-    instance: SingleInstanceComponent,
-    rotation: RotationComponent,
+    pub position: PositionComponent,
+    pub model: ModelComponent,
+    pub instance: SingleInstanceComponent,
+    pub rotation: RotationComponent,
 }
 
 impl SingleEntity {

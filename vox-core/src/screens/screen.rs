@@ -1,15 +1,16 @@
-use bevy_ecs::schedule::{IntoSystemConfigs, SystemConfigs};
+use bevy_ecs::{schedule::{IntoSystemConfigs, SystemConfigs}, world::World};
 
 use crate::resources::game_state::GameState;
 
+#[allow(unused_variables)]
 pub trait Screen
 where Self: Send + Sync + 'static {
     fn game_state(&self) -> &GameState;
 
-    fn on_start(&mut self) {}
-    fn on_ui(&mut self) {}
-    fn on_draw(&mut self) {}
-    fn on_update(&mut self) {}
+    fn start(&mut self, world: &mut World) {}
+    fn ui(&mut self, world: &mut World) {}
+    fn draw(&mut self, world: &mut World) {}
+    fn update(&mut self, world: &mut World) {}
 
     fn start_systems(&self) -> Option<SystemConfigs> { None }
     fn ui_systems(&self) -> Option<SystemConfigs> { None }

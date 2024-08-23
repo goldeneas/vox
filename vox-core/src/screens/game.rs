@@ -1,11 +1,11 @@
-use std::{thread::sleep, time::{Duration, Instant}};
+use std::time::Instant;
 
-use bevy_ecs::{schedule::SystemConfigs, system::{Commands, Query, Res, ResMut}};
+use bevy_ecs::{schedule::SystemConfigs, system::{Commands, Query, Res, ResMut}, world::World};
 use cgmath::{EuclideanSpace, InnerSpace, Matrix4};
 use glyphon::Resolution;
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{bundles::{camera_bundle::CameraBundle, single_entity_bundle::SingleEntity}, components::{camerable::CamerableComponent, model::ModelComponent, position::PositionComponent, rotation::RotationComponent, single_instance::SingleInstanceComponent, speed::SpeedComponent}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, gui_context::GuiContext, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::LabelDescriptor, DrawObject, InstanceData, Model};
+use crate::{bundles::{camera_bundle::CameraBundle, single_entity_bundle::SingleEntity}, components::{camerable::CamerableComponent, model::ModelComponent, position::PositionComponent, rotation::RotationComponent, single_instance::SingleInstanceComponent, speed::SpeedComponent}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, world_ext::WorldExt, DrawObject, InstanceData, Model};
 
 use super::screen::Screen;
 
@@ -18,11 +18,31 @@ const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
 );
 
 #[derive(Default)]
-pub struct GameScreen {}
+pub struct GameScreen {
+    label_id: Option<LabelId>,
+    elapsed: Option<Instant>,
+    frame_counter: u16,
+}
 
 impl Screen for GameScreen {
-    fn on_start(&mut self) {
-        println!("ziopera?");
+    fn start(&mut self, world: &mut World) {
+        let mut glyphon_renderer = world.glyphon_renderer_mut();
+
+        self.label_id = Some(glyphon_renderer.add_label(LabelDescriptor::default()));
+        self.elapsed = Some(Instant::now());
+    }
+
+    fn update(&mut self, world: &mut World) {
+        self.frame_counter += 1;
+
+        let mut glyphon_renderer = world.glyphon_renderer_mut();
+
+        if self.frame_counter >= 100 {
+            let string = format!("UPDATE DT: {:?}", self.elapsed.unwrap().elapsed());
+            glyphon_renderer.set_text(self.label_id.unwrap(), string);
+            self.frame_counter = 0;
+        }
+        self.elapsed = Some(Instant::now());
     }
 
     fn start_systems(&self) -> Option<SystemConfigs> {
@@ -117,7 +137,14 @@ pub fn spawn_entities(mut asset_server: ResMut<AssetServer>,
         &render_ctx.queue
     ).unwrap();
 
+    let mut e = SingleEntity::new(model.clone());
+    e.position = PositionComponent {
+        position: (10.0, 0.0, 1.0).into(),
+    };
+
+    // FIXME: instance buffer is not being set accordingly before rendering
     commands.spawn(SingleEntity::new(model));
+    commands.spawn(e);
 }
 
 pub fn spawn_camera(mut commands: Commands) {
@@ -150,37 +177,6 @@ pub fn draw_single_instance_entities(query: Query<(
             instance_cmpnt,
             pipeline.camera_bind_group()
         );
-    }
-
-    frame_ctx.add_encoder(encoder);
-}
-
-pub fn draw_glyphon_labels(render_ctx: Res<RenderContext>,
-    mut frame_ctx: ResMut<FrameContext>,
-    mut gui_context: ResMut<GuiContext>,
-    pipeline: Res<DefaultPipeline>
-) {
-    let view = &frame_ctx.view;
-    let mut encoder = render_ctx.device.create_command_encoder(&CommandEncoderDescriptor {
-        label: Some("Glyphon Label Encoder"),
-    });
-
-    gui_context.glyphon_renderer
-        .viewport
-        .update(&render_ctx.queue, Resolution {
-            width: render_ctx.config.width,
-            height: render_ctx.config.height,
-        });
-
-    gui_context.glyphon_renderer
-        .prepare(&render_ctx.device, &render_ctx.queue);
-
-    {
-        let mut pass = pipeline
-            .glyphon_pass(&mut encoder, view);
-
-        gui_context.glyphon_renderer
-            .draw(&mut pass);
     }
 
     frame_ctx.add_encoder(encoder);

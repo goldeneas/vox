@@ -176,29 +176,6 @@ impl DefaultPipeline {
         render_pass
     }
 
-    // TODO: remove this as this doesn use the pipeline
-    pub fn glyphon_pass<'a>(&self,
-        encoder: &'a mut wgpu::CommandEncoder,
-        view: &wgpu::TextureView,
-    ) -> wgpu::RenderPass<'a> {
-        let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("Glyphon Render Pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Load,
-                    store: wgpu::StoreOp::Store,
-                },
-            })],
-            depth_stencil_attachment: None,
-            timestamp_writes: None,
-            occlusion_query_set: None,
-        });
-
-        render_pass
-    }
-
     pub fn camera_buffer(&self) -> &wgpu::Buffer {
         &self.camera_buffer
     }

@@ -24,25 +24,25 @@ impl ScreenServer {
     pub fn draw(&mut self, world: &mut World, state: &GameState) {
         if self.should_run_start_systems(state) {
             self.set_last_state(state);
-            self.emit_event(&AtCycle::Start);
+            self.emit_event(world, &AtCycle::Start);
             self.run_schedule(world, state, &AtCycle::Start);
         }
 
-        self.emit_event(&AtCycle::Draw);
+        self.emit_event(world, &AtCycle::Draw);
         self.run_schedule(world, state, &AtCycle::Draw);
 
-        self.emit_event(&AtCycle::Ui);
+        self.emit_event(world, &AtCycle::Ui);
         self.run_schedule(world, state, &AtCycle::Ui);
     }
 
     pub fn update(&mut self, world: &mut World, state: &GameState) {
         if self.should_run_start_systems(state) {
             self.set_last_state(state);
-            self.emit_event(&AtCycle::Start);
+            self.emit_event(world, &AtCycle::Start);
             self.run_schedule(world, state, &AtCycle::Start);
         }
 
-        self.emit_event(&AtCycle::Update);
+        self.emit_event(world, &AtCycle::Update);
         self.run_schedule(world, state, &AtCycle::Update);
     }
 
@@ -107,7 +107,7 @@ impl ScreenServer {
         }
     }
 
-    fn emit_event(&mut self, cycle: &AtCycle) {
+    fn emit_event(&mut self, world: &mut World, cycle: &AtCycle) {
         self.registered_screens
             .iter_mut()
             .for_each(|screen| {
@@ -116,10 +116,10 @@ impl ScreenServer {
                 }
 
                 match cycle {
-                    &AtCycle::Start => screen.on_start(),
-                    &AtCycle::Update => screen.on_update(),
-                    &AtCycle::Ui => screen.on_ui(),
-                    &AtCycle::Draw => screen.on_draw(),
+                    &AtCycle::Start => screen.start(world),
+                    &AtCycle::Update => screen.update(world),
+                    &AtCycle::Ui => screen.ui(world),
+                    &AtCycle::Draw => screen.draw(world),
                 }
             });
     }

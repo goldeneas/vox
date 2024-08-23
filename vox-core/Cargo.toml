@@ -21,6 +21,7 @@ glyphon = { git = "https://github.com/grovesNL/glyphon" }
 egui = { git = "https://github.com/emilk/egui" }
 egui-wgpu = { git = "https://github.com/emilk/egui" }
 egui-winit = { git = "https://github.com/emilk/egui" }
+rand = "0.8.5"
 
 # wasm dependencies
 console_error_panic_hook = "0.1.6"

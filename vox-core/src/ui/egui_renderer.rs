@@ -1,9 +1,11 @@
+use bevy_ecs::system::Resource;
 use egui_wgpu::ScreenDescriptor;
 use egui_winit::winit::event::WindowEvent;
 use winit::window::Window;
 
 use crate::resources::render_context::RenderContext;
 
+#[derive(Resource)]
 pub struct EguiRenderer {
     state: egui_winit::State,
     renderer: egui_wgpu::Renderer,
