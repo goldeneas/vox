@@ -1,14 +1,16 @@
 use bevy_ecs::system::Resource;
 use egui_wgpu::ScreenDescriptor;
 use egui_winit::winit::event::WindowEvent;
+use wgpu::CommandEncoderDescriptor;
 use winit::window::Window;
 
-use crate::resources::render_context::RenderContext;
+use crate::resources::{frame_context::FrameContext, render_context::RenderContext};
 
 #[derive(Resource)]
 pub struct EguiRenderer {
     state: egui_winit::State,
     renderer: egui_wgpu::Renderer,
+    window_funcs: Vec<Box<dyn FnOnce(&egui::Context) + Send + Sync>>,
 }
 
 impl EguiRenderer {
@@ -31,9 +33,12 @@ impl EguiRenderer {
             false
         );
 
+        let windows = Vec::new();
+
         Self {
             state,
             renderer,
+            window_funcs: windows,
         }
     }
 
@@ -41,23 +46,34 @@ impl EguiRenderer {
         let _ = self.state.on_window_event(window, event);
     }
 
-    pub fn draw(&mut self,
+    pub fn add_window(&mut self,
+        func: impl FnOnce(&egui::Context) + Send + Sync + 'static
+    ) {
+        let func = Box::new(func);
+        self.window_funcs.push(func);
+    }
+
+    pub fn draw_window(&mut self,
         render_ctx: &RenderContext,
-        encoder: &mut wgpu::CommandEncoder,
-        view: &wgpu::TextureView,
-        ui_fn: impl FnOnce(&egui::Context)
+        frame_ctx: &mut FrameContext,
+        func: &Box<dyn FnOnce(&egui::Context) + Send + Sync + 'static>,
     ) {
         let device = &render_ctx.device;
         let queue = &render_ctx.queue;
         let config = &render_ctx.config;
         let window = &render_ctx.window;
 
+        let view = &frame_ctx.view;
+        let mut encoder = render_ctx.device.create_command_encoder(&CommandEncoderDescriptor {
+            label: Some("Egui Encoder"),
+        });
+
         let input = self.state.take_egui_input(window);
 
         let output = self.state
             .egui_ctx()
             .run(input, |ui| {
-                ui_fn(ui);
+                func(ui);
             });
 
         self.state.handle_platform_output(window, output.platform_output);
@@ -81,7 +97,7 @@ impl EguiRenderer {
         };
 
         self.renderer
-            .update_buffers(device, queue, encoder, &tris, &screen_descriptor);
+            .update_buffers(device, queue, &mut encoder, &tris, &screen_descriptor);
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -106,5 +122,16 @@ impl EguiRenderer {
                 self.renderer
                     .free_texture(id);
             });
+    }
+
+    pub fn draw(&mut self,
+        render_ctx: &RenderContext,
+        frame_ctx: &mut FrameContext,
+    ) {
+        self.window_funcs
+            .iter()
+            .for_each(|func| {
+                self.draw_window(render_ctx, frame_ctx, func);
+            })
     }
 }
