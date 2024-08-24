@@ -38,7 +38,6 @@ impl WorldExt for World {
     }
 
     fn game_state(&self) -> GameState {
-        self.resource::<GameState>()
-            .clone()
+        *self.resource::<GameState>() 
     }
 }

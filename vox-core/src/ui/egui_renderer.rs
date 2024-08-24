@@ -7,11 +7,13 @@ use winit::window::Window;
 
 use crate::resources::{frame_context::FrameContext, game_state::GameState, render_context::RenderContext};
 
+type ScreenCallback = dyn Fn(&Context, &mut GameState) + Send + Sync;
+
 #[derive(Resource)]
 pub struct EguiRenderer {
     state: egui_winit::State,
     renderer: egui_wgpu::Renderer,
-    window_funcs: Vec<Box<dyn Fn(&Context, &mut GameState) + Send + Sync>>,
+    window_funcs: Vec<Box<ScreenCallback>>,
 }
 
 impl EguiRenderer {

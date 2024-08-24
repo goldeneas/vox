@@ -330,7 +330,7 @@ impl App {
         let world = &mut state_mut.world;
         let render_ctx = world.render_context();
 
-        let frame_ctx = FrameContext::new(&render_ctx, None);
+        let frame_ctx = FrameContext::new(render_ctx, None);
         world.insert_resource(frame_ctx);
 
         state_mut.screen_server.draw(world);
@@ -376,8 +376,7 @@ impl App {
         match &mut self.screen_queue {
             Some(vector) => vector.push(screen),
             None => {
-                let mut vector: Vec<Box<dyn Screen>> = Vec::new();
-                vector.push(screen);
+                let vector: Vec<Box<dyn Screen>> = vec![screen];
                 self.screen_queue = Some(vector);
             }
         }

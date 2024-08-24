@@ -16,11 +16,7 @@ impl FrameContext {
         let output = render_ctx.surface.get_current_texture().unwrap();
         let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
 
-        let capacity = match vec_capacity {
-            Some(capacity) => capacity,
-            None => 3,
-        };
-
+        let capacity = vec_capacity.unwrap_or(3);
         let encoders = Vec::with_capacity(capacity);
 
         Self {
