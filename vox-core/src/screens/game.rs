@@ -57,12 +57,12 @@ impl Screen for GameScreen {
         self.to_systems((update_single_instance_entities, update_camera))
     }
 
-    fn ui_systems(&self) -> Option<SystemConfigs> {
-        self.to_systems(draw_glyphon_labels)
-    }
+    //fn ui_systems(&self) -> Option<SystemConfigs> {
+    ////    self.to_systems(draw_glyphon_labels)
+    //}
 
-    fn game_state(&self) -> &GameState {
-        &GameState::Game
+    fn game_state(&self) -> GameState {
+        GameState::Game
     }
 }
 

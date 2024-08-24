@@ -5,7 +5,7 @@ use crate::resources::game_state::GameState;
 #[allow(unused_variables)]
 pub trait Screen
 where Self: Send + Sync + 'static {
-    fn game_state(&self) -> &GameState;
+    fn game_state(&self) -> GameState;
 
     fn start(&mut self, world: &mut World) {}
     fn ui(&mut self, world: &mut World) {}

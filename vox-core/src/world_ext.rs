@@ -1,6 +1,6 @@
 use bevy_ecs::world::{Mut, World};
 
-use crate::{resources::render_context::RenderContext, ui::{egui_renderer::EguiRenderer, glyphon_renderer::GlyphonRenderer}};
+use crate::{resources::{game_state::GameState, render_context::RenderContext}, ui::{egui_renderer::EguiRenderer, glyphon_renderer::GlyphonRenderer}};
 
 pub trait WorldExt {
     fn render_context(&self) -> &RenderContext;
@@ -9,6 +9,7 @@ pub trait WorldExt {
     fn egui_renderer_mut(&mut self) -> Mut<EguiRenderer>;
     fn glyphon_renderer(&self) -> &GlyphonRenderer;
     fn glyphon_renderer_mut(&mut self) -> Mut<GlyphonRenderer>;
+    fn game_state(&self) -> GameState;
 }
 
 impl WorldExt for World {
@@ -34,5 +35,10 @@ impl WorldExt for World {
 
     fn glyphon_renderer_mut(&mut self) -> Mut<GlyphonRenderer> {
         self.resource_mut::<GlyphonRenderer>()
+    }
+
+    fn game_state(&self) -> GameState {
+        self.resource::<GameState>()
+            .clone()
     }
 }

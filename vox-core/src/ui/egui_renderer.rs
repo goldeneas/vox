@@ -1,16 +1,17 @@
 use bevy_ecs::system::Resource;
+use egui::Context;
 use egui_wgpu::ScreenDescriptor;
 use egui_winit::winit::event::WindowEvent;
 use wgpu::CommandEncoderDescriptor;
 use winit::window::Window;
 
-use crate::resources::{frame_context::FrameContext, render_context::RenderContext};
+use crate::resources::{frame_context::FrameContext, game_state::GameState, render_context::RenderContext};
 
 #[derive(Resource)]
 pub struct EguiRenderer {
     state: egui_winit::State,
     renderer: egui_wgpu::Renderer,
-    window_funcs: Vec<Box<dyn FnOnce(&egui::Context) + Send + Sync>>,
+    window_funcs: Vec<Box<dyn Fn(&Context, &mut GameState) + Send + Sync>>,
 }
 
 impl EguiRenderer {
@@ -47,16 +48,16 @@ impl EguiRenderer {
     }
 
     pub fn add_window(&mut self,
-        func: impl FnOnce(&egui::Context) + Send + Sync + 'static
+        func: impl Fn(&Context, &mut GameState) + Send + Sync + 'static
     ) {
         let func = Box::new(func);
         self.window_funcs.push(func);
     }
 
-    pub fn draw_window(&mut self,
+    pub fn draw(&mut self,
         render_ctx: &RenderContext,
         frame_ctx: &mut FrameContext,
-        func: &Box<dyn FnOnce(&egui::Context) + Send + Sync + 'static>,
+        state: &mut GameState,
     ) {
         let device = &render_ctx.device;
         let queue = &render_ctx.queue;
@@ -69,12 +70,15 @@ impl EguiRenderer {
         });
 
         let input = self.state.take_egui_input(window);
+        let context = self.state.egui_ctx();
 
-        let output = self.state
-            .egui_ctx()
-            .run(input, |ui| {
-                func(ui);
+        context.begin_frame(input);
+        self.window_funcs
+            .iter()
+            .for_each(|func| {
+                func(context, state);
             });
+        let output = context.end_frame();
 
         self.state.handle_platform_output(window, output.platform_output);
 
@@ -109,7 +113,7 @@ impl EguiRenderer {
                 },
             })],
             depth_stencil_attachment: None,
-            label: Some("egui main render pass"),
+            label: Some("Egui Pass"),
             timestamp_writes: None,
             occlusion_query_set: None,
         });
@@ -122,16 +126,7 @@ impl EguiRenderer {
                 self.renderer
                     .free_texture(id);
             });
-    }
 
-    pub fn draw(&mut self,
-        render_ctx: &RenderContext,
-        frame_ctx: &mut FrameContext,
-    ) {
-        self.window_funcs
-            .iter()
-            .for_each(|func| {
-                self.draw_window(render_ctx, frame_ctx, func);
-            })
+        frame_ctx.add_encoder(encoder);
     }
 }

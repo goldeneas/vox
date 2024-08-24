@@ -321,12 +321,7 @@ impl App {
         let state_mut = &mut self.state_mut();
         let world = &mut state_mut.world;
 
-        let state = world
-            .resource_ref::<GameState>()
-            .clone();
-
-        state_mut.screen_server
-            .update(world, &state);
+        state_mut.screen_server.update(world);
     }
 
     // TODO: make this code easier to read
@@ -338,12 +333,7 @@ impl App {
         let frame_ctx = FrameContext::new(&render_ctx, None);
         world.insert_resource(frame_ctx);
 
-        let state = world
-            .resource::<GameState>()
-            .clone();
-
-        state_mut.screen_server
-            .draw(world, &state);
+        state_mut.screen_server.draw(world);
 
         let mut frame_ctx = world
             .remove_resource::<FrameContext>()
@@ -352,6 +342,11 @@ impl App {
         world.resource_scope(|world: &mut World, render_ctx: Mut<RenderContext>| {
             world.glyphon_renderer_mut()
                 .draw(&render_ctx, &mut frame_ctx);
+
+            world.resource_scope(|world: &mut World, mut state: Mut<GameState>| {
+                world.egui_renderer_mut()
+                    .draw(&render_ctx, &mut frame_ctx, &mut state);
+            })
         });
 
         let render_ctx = world.render_context();
