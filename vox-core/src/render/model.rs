@@ -26,7 +26,6 @@ pub struct Vertex {
     pub normal: [f32; 3],
 }
 
-// TODO: maybe this rc is not needed in the trait
 pub trait IntoModel {
     fn to_model(&self, device: &wgpu::Device) -> Arc<Model>;
 }

@@ -57,10 +57,6 @@ impl Screen for GameScreen {
         self.to_systems((update_single_instance_entities, update_camera))
     }
 
-    //fn ui_systems(&self) -> Option<SystemConfigs> {
-    ////    self.to_systems(draw_glyphon_labels)
-    //}
-
     fn game_state(&self) -> GameState {
         GameState::Game
     }
@@ -163,15 +159,15 @@ pub fn draw_single_instance_entities(query: Query<(
         label: Some("Single Entity Encoder"),
     });
 
+   let mut render_pass = pipeline
+       .model_pass(&mut encoder, view,
+           render_ctx.depth_texture.view()
+       );
+
     for (model_cmpnt, instance_cmpnt) in &query {
         if instance_cmpnt.instance_buffer().is_none() {
             continue;
         }
-
-        let mut render_pass = pipeline
-            .model_pass(&mut encoder, view,
-                render_ctx.depth_texture.view()
-            );
 
         render_pass.draw_entity(model_cmpnt,
             instance_cmpnt,
@@ -182,6 +178,7 @@ pub fn draw_single_instance_entities(query: Query<(
     frame_ctx.add_encoder(encoder);
 }
 
+// TODO: move this engine side
 pub fn draw_cameras(query: Query<(
     &PositionComponent,
     &CamerableComponent)>,

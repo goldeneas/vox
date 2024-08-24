@@ -65,7 +65,7 @@ impl ScreenServer {
     }
 
     fn register_screen_boxed(&mut self, screen: Box<dyn Screen>) {
-        self.register_screen_systems(&(*screen));
+        self.register_screen_systems(screen.as_ref());
         self.registered_screens.push(screen);
     }
 
