@@ -66,9 +66,6 @@ impl DrawObject for wgpu::RenderPass<'_> {
         self.draw_mesh_instanced(mesh, material, 0..1, camera_bind_group);
     }
 
-    // TODO: set the instance buffer to empty before drawing
-    // since it might have been set before when calling an instanced version
-    // of the drawing
     fn draw_mesh_instanced(&mut self,
         mesh: &Mesh,
         material: &Material,

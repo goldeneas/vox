@@ -38,7 +38,7 @@ impl Screen for GameScreen {
         let mut glyphon_renderer = world.glyphon_renderer_mut();
 
         if self.frame_counter >= 100 {
-            let string = format!("UPDATE DT: {:?}", self.elapsed.unwrap().elapsed());
+            let string = format!("UPDATE DT: {:?}", 1.0 / self.elapsed.unwrap().elapsed().as_secs_f32());
             glyphon_renderer.set_text(self.label_id.unwrap(), string);
             self.frame_counter = 0;
         }
@@ -138,7 +138,6 @@ pub fn spawn_entities(mut asset_server: ResMut<AssetServer>,
         position: (10.0, 0.0, 1.0).into(),
     };
 
-    // FIXME: instance buffer is not being set accordingly before rendering
     commands.spawn(SingleEntity::new(model));
     commands.spawn(e);
 }

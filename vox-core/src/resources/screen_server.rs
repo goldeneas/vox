@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
 use bevy_ecs::{schedule::{Schedule, SystemConfigs}, system::Resource, world::World};
+use log::debug;
 use crate::{screens::screen::Screen, world_ext::WorldExt};
 
 use super::game_state::GameState;
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
-enum ScheduleType {
+enum Cycle {
     Start,
     Ui,
     Draw,
@@ -17,7 +18,7 @@ enum ScheduleType {
 pub struct ScreenServer {
     last_state: Option<GameState>,
     registered_screens: Vec<Box<dyn Screen>>,
-    registered_schedules: HashMap<GameState, HashMap<ScheduleType, Schedule>>,
+    registered_schedules: HashMap<GameState, HashMap<Cycle, Schedule>>,
 }
 
 impl ScreenServer {
@@ -26,15 +27,15 @@ impl ScreenServer {
 
         if self.should_run_start_systems(state) {
             self.set_last_state(state);
-            self.emit_event(world, ScheduleType::Start);
-            self.run_schedule(world, state, ScheduleType::Start);
+            self.emit_event(world, Cycle::Start);
+            self.run_schedule(world, state, Cycle::Start);
         }
 
-        self.emit_event(world, ScheduleType::Draw);
-        self.run_schedule(world, state, ScheduleType::Draw);
+        self.emit_event(world, Cycle::Draw);
+        self.run_schedule(world, state, Cycle::Draw);
 
-        self.emit_event(world, ScheduleType::Ui);
-        self.run_schedule(world, state, ScheduleType::Ui);
+        self.emit_event(world, Cycle::Ui);
+        self.run_schedule(world, state, Cycle::Ui);
     }
 
     pub fn update(&mut self, world: &mut World) {
@@ -42,12 +43,12 @@ impl ScreenServer {
 
         if self.should_run_start_systems(state) {
             self.set_last_state(state);
-            self.emit_event(world, ScheduleType::Start);
-            self.run_schedule(world, state, ScheduleType::Start);
+            self.emit_event(world, Cycle::Start);
+            self.run_schedule(world, state, Cycle::Start);
         }
 
-        self.emit_event(world, ScheduleType::Update);
-        self.run_schedule(world, state, ScheduleType::Update);
+        self.emit_event(world, Cycle::Update);
+        self.run_schedule(world, state, Cycle::Update);
     }
 
     pub fn register_screens(&mut self,
@@ -72,15 +73,15 @@ impl ScreenServer {
     fn register_screen_systems(&mut self, screen: &dyn Screen) {
         let state = screen.game_state();
 
-        self.add_systems(state, ScheduleType::Start, screen.start_systems());
-        self.add_systems(state, ScheduleType::Ui, screen.ui_systems());
-        self.add_systems(state, ScheduleType::Draw, screen.draw_systems());
-        self.add_systems(state, ScheduleType::Update, screen.update_systems());
+        self.add_systems(state, Cycle::Start, screen.start_systems());
+        self.add_systems(state, Cycle::Ui, screen.ui_systems());
+        self.add_systems(state, Cycle::Draw, screen.draw_systems());
+        self.add_systems(state, Cycle::Update, screen.update_systems());
     }
 
     fn add_systems(&mut self,
         state: GameState,
-        cycle: ScheduleType,
+        cycle: Cycle,
         systems: Option<SystemConfigs>,
     ) {
         if systems.is_none() {
@@ -111,7 +112,7 @@ impl ScreenServer {
         }
     }
 
-    fn emit_event(&mut self, world: &mut World, cycle: ScheduleType) {
+    fn emit_event(&mut self, world: &mut World, cycle: Cycle) {
         self.registered_screens
             .iter_mut()
             .for_each(|screen| {
@@ -120,10 +121,10 @@ impl ScreenServer {
                 }
 
                 match cycle {
-                    ScheduleType::Start => screen.start(world),
-                    ScheduleType::Update => screen.update(world),
-                    ScheduleType::Ui => screen.ui(world),
-                    ScheduleType::Draw => screen.draw(world),
+                    Cycle::Start => screen.start(world),
+                    Cycle::Update => screen.update(world),
+                    Cycle::Ui => screen.ui(world),
+                    Cycle::Draw => screen.draw(world),
                 }
             });
     }
@@ -131,10 +132,12 @@ impl ScreenServer {
     fn run_schedule(&mut self,
         world: &mut World,
         state: GameState,
-        cycle: ScheduleType
+        cycle: Cycle
     ) {
-        if let Some(schedule) = self.get_state_map(state).get_mut(&cycle) {
-            schedule.run(world);
+        if let Some(state_map) = self.get_state_map(state) {
+            if let Some(schedule) = state_map.get_mut(&cycle) {
+                schedule.run(world);
+            }
         }
     }
 
@@ -151,9 +154,8 @@ impl ScreenServer {
 
     fn get_state_map(&mut self,
         state: GameState
-    ) -> &mut HashMap<ScheduleType, Schedule> {
+    ) -> Option<&mut HashMap<Cycle, Schedule>> {
         self.registered_schedules
             .get_mut(&state)
-            .expect("Could not get state map! Did you register all your screens?")
     }
 }

@@ -1,5 +1,7 @@
+use std::{collections::HashMap, os::macos::raw::stat};
+
 use bevy_ecs::system::Resource;
-use egui::Context;
+use egui::{ahash::HashMapExt, Context};
 use egui_wgpu::ScreenDescriptor;
 use egui_winit::winit::event::WindowEvent;
 use wgpu::CommandEncoderDescriptor;
@@ -13,7 +15,7 @@ type ScreenCallback = dyn Fn(&Context, &mut GameState) + Send + Sync;
 pub struct EguiRenderer {
     state: egui_winit::State,
     renderer: egui_wgpu::Renderer,
-    window_funcs: Vec<Box<ScreenCallback>>,
+    window_funcs: HashMap<GameState, Box<ScreenCallback>>,
 }
 
 impl EguiRenderer {
@@ -36,12 +38,12 @@ impl EguiRenderer {
             false
         );
 
-        let windows = Vec::new();
+        let window_funcs = HashMap::new();
 
         Self {
             state,
             renderer,
-            window_funcs: windows,
+            window_funcs,
         }
     }
 
@@ -50,10 +52,11 @@ impl EguiRenderer {
     }
 
     pub fn add_window(&mut self,
+        required_state: GameState,
         func: impl Fn(&Context, &mut GameState) + Send + Sync + 'static
     ) {
         let func = Box::new(func);
-        self.window_funcs.push(func);
+        self.window_funcs.insert(required_state, func);
     }
 
     pub fn draw(&mut self,
@@ -77,7 +80,11 @@ impl EguiRenderer {
         context.begin_frame(input);
         self.window_funcs
             .iter()
-            .for_each(|func| {
+            .for_each(|(required_state, func)| {
+                if required_state != state {
+                    return;
+                }
+
                 func(context, state);
             });
         let output = context.end_frame();
