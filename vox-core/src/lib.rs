@@ -17,7 +17,6 @@ use bevy_ecs::world::World;
 use render::model::*;
 use resources::asset_server::AssetServer;
 use resources::game_state::GameState;
-use resources::render_context;
 use resources::screen_server::ScreenServer;
 use screens::game::GameScreen;
 use screens::menu::MenuScreen;
@@ -31,7 +30,6 @@ use resources::render_context::RenderContext;
 use resources::input::InputRes;
 use resources::input::KeyState;
 use resources::mouse::MouseRes;
-use ui::egui_renderer;
 use ui::egui_renderer::EguiRenderer;
 use ui::glyphon_renderer::GlyphonRenderer;
 use winit::application::ApplicationHandler;
@@ -47,7 +45,7 @@ use winit::{
 use wasm_bindgen::prelude::*;
 use world_ext::WorldExt;
 
-const SIM_DT: f32 = 1.0/60.0;
+const SIM_DT: f32 = 1.0/144.0;
 
 struct AppState {
     delta_time: Instant,

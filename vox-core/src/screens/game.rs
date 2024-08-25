@@ -2,7 +2,6 @@ use std::time::Instant;
 
 use bevy_ecs::{schedule::SystemConfigs, system::{Commands, Query, Res, ResMut}, world::World};
 use cgmath::{EuclideanSpace, InnerSpace, Matrix4};
-use glyphon::Resolution;
 use wgpu::CommandEncoderDescriptor;
 
 use crate::{bundles::{camera_bundle::CameraBundle, single_entity_bundle::SingleEntity}, components::{camerable::CamerableComponent, model::ModelComponent, position::PositionComponent, rotation::RotationComponent, single_instance::SingleInstanceComponent, speed::SpeedComponent}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, world_ext::WorldExt, DrawObject, InstanceData, Model};
@@ -38,7 +37,7 @@ impl Screen for GameScreen {
         let mut glyphon_renderer = world.glyphon_renderer_mut();
 
         if self.frame_counter >= 100 {
-            let string = format!("UPDATE DT: {:?}", 1.0 / self.elapsed.unwrap().elapsed().as_secs_f32());
+            let string = format!("UPDATE DT: {:?}", self.elapsed.unwrap().elapsed());
             glyphon_renderer.set_text(self.label_id.unwrap(), string);
             self.frame_counter = 0;
         }

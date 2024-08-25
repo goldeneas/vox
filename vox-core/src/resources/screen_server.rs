@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use bevy_ecs::{schedule::{Schedule, SystemConfigs}, system::Resource, world::World};
-use log::debug;
 use crate::{screens::screen::Screen, world_ext::WorldExt};
 
 use super::game_state::GameState;

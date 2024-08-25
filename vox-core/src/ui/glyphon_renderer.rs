@@ -1,7 +1,7 @@
 
-use bevy_ecs::{system::Resource, world::Mut};
+use bevy_ecs::{system::Resource};
 use glyphon::{Attrs, Buffer, Cache, Color, FontSystem, Metrics, Resolution, Shaping, SwashCache, TextArea, TextAtlas, TextBounds, TextRenderer, Viewport};
-use wgpu::{CommandEncoderDescriptor, Device, MultisampleState, Queue, RenderPass};
+use wgpu::{CommandEncoderDescriptor, Device, MultisampleState, Queue};
 
 use crate::resources::{frame_context::FrameContext, render_context::RenderContext};
 

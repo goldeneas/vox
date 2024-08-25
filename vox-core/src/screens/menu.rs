@@ -1,9 +1,9 @@
 use std::process::exit;
 
-use bevy_ecs::{schedule::SystemConfigs, system::ResMut, world::World};
+use bevy_ecs::world::World;
 use egui::{Align2, Button};
 
-use crate::{resources::game_state::GameState, ui::egui_renderer::EguiRenderer, world_ext::WorldExt};
+use crate::{resources::game_state::GameState, world_ext::WorldExt};
 
 use super::screen::Screen;
 
