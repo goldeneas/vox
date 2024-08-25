@@ -1,7 +1,7 @@
-use std::{collections::HashMap, os::macos::raw::stat};
+use std::collections::HashMap;
 
 use bevy_ecs::system::Resource;
-use egui::{ahash::HashMapExt, Context};
+use egui::Context;
 use egui_wgpu::ScreenDescriptor;
 use egui_winit::winit::event::WindowEvent;
 use wgpu::CommandEncoderDescriptor;
