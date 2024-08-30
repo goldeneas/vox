@@ -1,4 +1,7 @@
 use cgmath::Vector3;
+use rand::{distributions::Standard, prelude::Distribution, Rng};
+
+use super::types::{ChunkCol, ChunkHeight, ChunkRow, CoordinateBound, VoxelBitmap};
 
 // THE PLAN:
 // we want to store a 32x32x32 chunk of voxels.
@@ -28,91 +31,49 @@ use cgmath::Vector3;
 //u32   |000011000...
 //u32   *--------> +X
 
-// index referring to the position of a voxel in a column
-// 0 => highest voxel
-// ... => lower voxel
-pub type VoxelIndex = u32;
-pub type VoxelNumber = u32;
-type VoxelRow = u32;
-
-const MAX_HEIGHT: u32 = VoxelRow::BITS - 1;
-const CHUNK_ROWS: usize = 32;
-const CHUNK_COLS: usize = 32;
+pub const CHUNK_ROWS: usize = 32;
+pub const CHUNK_COLS: usize = 32;
 
 // u64 column of binary represented voxels
 // 64 x 64 => 64 x 64 x 64 total voxels represented by 1 bit
 pub struct Chunk {
-    pub voxels: [[VoxelRow ; CHUNK_ROWS] ; CHUNK_COLS],
+    pub voxels: [[VoxelBitmap ; CHUNK_ROWS] ; CHUNK_COLS],
 }
 
 impl Chunk {
     pub fn new() -> Self {
-        let s = "Could not find voxel column height correctly";
-        debug_assert!(Self::find_height(0b0) == None, "{s}");
-        debug_assert!(Self::find_height(0b1) == Some(MAX_HEIGHT), "{s}");
-        debug_assert!(Self::find_height(0b010) == Some(1), "{s}");
-        debug_assert!(Self::find_height(0b11010) == Some(1), "{s}");
-
-        let voxels = [[0b10; 32] ; 32];
-
         Self {
-            voxels,
+            voxels: rand::random(),
         }
     }
 
-    fn generate_meshes(&self) -> Option<Vec<(Vector3<u32>, Vector3<u32>)>> {
-        let mut row = 0;
-        let mut col = 0;
-        let mut greedy_rows = 0;
+    pub fn generate_quads(&self, y: ChunkHeight) {
+        let voxel_bitmaps = self.get_voxel_bitmap_at_height(y);
+
+        let col = ChunkCol::parse(0).unwrap();
 
         loop {
-            if row == CHUNK_ROWS || col == CHUNK_COLS {
-                println!("Reached the end of the chunk");
-                return None;
-            }
-
-            // TODO on the second iter we dont need to retake the first row
-            // but its most likely cached and its not expensive soo...
-            let first = self.voxels[row][col];
-            let second = self.voxels[row][col+1]; // first row but second column
-
-            let c = first & second;
-
-            if c == 0 {
-                println!("greedy_rows: {}", greedy_rows);
-                return None;
-            }
-
-            greedy_rows += 1;
-            row += 1;
-            col += 1;
+            let voxel_bitmap = &voxel_bitmaps[col.0];
+            println!("{}", voxel_bitmap);
         }
-
     }
 
-    // returns index of first opaque voxel
-    // take a look at this file for more info
-    pub fn column_height(&self, column_id: (usize, usize)) -> Option<VoxelIndex> {
-        let column = self.voxels[column_id.0][column_id.1];
-        Self::find_height(column)
+    fn get_voxel_bitmap_at_row(&self, row: ChunkRow
+    ) -> &[VoxelBitmap; CHUNK_ROWS] {
+        &self.voxels[row.0]
     }
 
-    // for input:
-    // MSB = bot voxel
-    // LSB = top voxel
-    fn find_height(mut column_number: VoxelNumber) -> Option<VoxelIndex> {
-        if column_number == 0 { return None; }
-        if column_number == 1 { return Some(MAX_HEIGHT); }
+    fn get_voxel_bitmap_at_height(&self, y: ChunkHeight
+    ) -> &[VoxelBitmap; CHUNK_ROWS] {
+        let row = ChunkRow::from(y);
+        &self.voxels[row.0]
+    }
 
-        let mut height = 0;
-        column_number = column_number.reverse_bits();
+}
 
-        loop {
-            if (column_number >> (MAX_HEIGHT-height)) == 1 {
-                return Some(height);
-            } else {
-                height += 1;
-            }
-        }
+impl Distribution<VoxelBitmap> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> VoxelBitmap {
+        let rand: u32 = rng.gen();
+        VoxelBitmap(rand)
     }
 }
