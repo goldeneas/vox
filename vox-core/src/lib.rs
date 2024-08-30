@@ -7,6 +7,7 @@ pub mod ui;
 pub mod screens;
 pub mod asset;
 pub mod world_ext;
+pub mod voxel;
 
 use std::borrow::BorrowMut;
 use std::sync::Arc;
