@@ -62,6 +62,7 @@ impl CoordinateBound for ChunkCol {
 // represents a bitmap of voxels
 // 1: opaque voxel
 // 0: transparent voxel
+#[derive(Clone)]
 pub struct VoxelBitmap(pub u32);
 
 impl Display for VoxelBitmap {
@@ -83,3 +84,5 @@ impl CoordinateBound for ChunkHeight {
         }
     }
 }
+
+pub struct RelativeVoxelPosition(pub u32);

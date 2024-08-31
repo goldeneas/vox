@@ -1,3 +1,9 @@
+use rand::{distributions::Standard, prelude::Distribution, Rng};
+
+use crate::types::RelativeVoxelPosition;
+
+use super::types::{ChunkCol, ChunkHeight, ChunkRow, CoordinateBound, VoxelBitmap};
+
 // THE PLAN:
 // we want to store a 32x32x32 chunk of voxels.
 // for simplicity lets imagine that each voxel is of the same type
@@ -25,144 +31,51 @@
 //u32   |101011000...
 //u32   |000011000...
 //u32   *--------> +X
-//
-// implementing a greedy mesher now requires extremely fast bitwise operations.
-// this could be the possible algorith implementation:
-// 1. load next u32 (voxels[a][b])
-// 1a. the first row should now be in cache -> subsequent calls should be faster
-// 2. bitwise and the first and second u32
-// 2a. if 0 there is no possibility of greedy meshing -> generate normal mesh -> goto begin
-// 2b. if not 0, we can greedy mesh -> lets call c the result of &
-// 3. the binary rappresentation of c tells us where we can greedy mesh but we wait
-// 3a. we need to know if this mesh can keep going to other rows
-// 4. bitwise and the next row with c. the result of this & is c'
-// 4a. if c != c' -> we cannot keep going. generate this mesh
-// 4b. if c == c' -> go to 4
-// this is the basic algorithm. it can be optimized but a 
-// basic greedy mesher should come out of this
 
-// index referring to the position of a voxel in a column
-// 0 => highest voxel
-// ... => lower voxel
-pub type VoxelIndex = u32;
-pub type VoxelNumber = u32;
-type VoxelRow = u32;
-
-// voxel position relative to chunk
-type VoxelPosition = (usize, usize, usize);
-
-const MAX_HEIGHT: u32 = VoxelRow::BITS - 1;
-const CHUNK_ROWS: usize = 32;
-const CHUNK_COLS: usize = CHUNK_ROWS;
-const VOXEL_SIZE: usize = 1;
+pub const CHUNK_ROWS: usize = 32;
+pub const CHUNK_COLS: usize = 32;
 
 // u64 column of binary represented voxels
 // 64 x 64 => 64 x 64 x 64 total voxels represented by 1 bit
 pub struct Chunk {
-    pub voxels: [[VoxelRow ; CHUNK_ROWS] ; CHUNK_COLS],
+    pub voxels: [[VoxelBitmap ; CHUNK_COLS] ; CHUNK_ROWS],
 }
 
 impl Chunk {
     pub fn new() -> Self {
-        // TODO: keep assertions if find height is actually used
-        let s = "Could not find voxel column height correctly";
-        debug_assert!(Self::find_height(0b0) == None, "{s}");
-        debug_assert!(Self::find_height(0b1) == Some(MAX_HEIGHT), "{s}");
-        debug_assert!(Self::find_height(0b010) == Some(1), "{s}");
-        debug_assert!(Self::find_height(0b11010) == Some(1), "{s}");
-
-        let voxels = [[0b10; 32] ; 32];
-
         Self {
-            voxels,
+            voxels: rand::random(),
         }
     }
 
-    // returns a vector of begin and end position for the calculated meshes
-    // ALGO:
-    // 1. select a row
-    // 2. generate mesh for all the opaque voxel IN THE SAME u32 (prioritize voxels of the same u32)
-    // 3. & the next u32
-    // 3a. -> 
-    fn generate_quad(&self, y: usize) -> Vec<(VoxelPosition, VoxelPosition)> {
-        let row = CHUNK_ROWS - y - 1;
-        let mut col = 0;
+    pub fn generate_quads(&self, y: ChunkHeight
+    ) -> Vec<(RelativeVoxelPosition, RelativeVoxelPosition)> {
+        let voxel_bitmaps = self.get_voxel_bitmaps_at_height(y);
+
+        let col = ChunkCol::parse(0).unwrap();
 
         loop {
-            let mut v1 = self.voxels[row][col];
-            v1 = v1 >> v1.trailing_zeros(); // now we know that we have 1 right of the number
-            let mask = v1.trailing_ones();
-
-            let mut v2 = self.voxels[row][col+1];
-            v2 = v2 >> v2.trailing_zeros(); // now we know that we have 1 right of the number
-            let mask2 = v2.trailing_ones();
-
-            if mask == mask2 {
-                println!("we can greedy mesh!");
-            } else {
-                println!("no can do");
-            }
+            let voxel_bitmap = voxel_bitmaps[col.0].clone();
+            println!("{}", voxel_bitmap);
         }
-
     }
 
-    fn get_voxel_position(row: usize, col: usize, slice: usize) -> VoxelPosition {
-        (slice * VOXEL_SIZE, row * VOXEL_SIZE, col * VOXEL_SIZE)
+    fn get_voxel_bitmaps_at_row(&self, row: ChunkRow
+    ) -> &[VoxelBitmap; CHUNK_COLS] {
+        &self.voxels[row.0]
     }
 
-    fn generate_meshes(&self) -> Option<Vec<(VoxelPosition, VoxelPosition)>> {
-        let mut row = 0;
-        let mut col = 0;
-        let mut greedy_rows = 0;
-
-        loop {
-            if row == CHUNK_ROWS || col == CHUNK_COLS {
-                println!("Reached the end of the chunk");
-                return None;
-            }
-
-            // TODO on the second iter we dont need to retake the first row
-            // but its most likely cached and its not expensive soo...
-            let first = self.voxels[row][col];
-            let second = self.voxels[row][col+1]; // first row but second column
-
-            let c = first & second;
-
-            if c == 0 {
-                println!("greedy_rows: {}", greedy_rows);
-                return None;
-            }
-
-            greedy_rows += 1;
-            row += 1;
-            col += 1;
-        }
-
+    fn get_voxel_bitmaps_at_height(&self, y: ChunkHeight
+    ) -> &[VoxelBitmap; CHUNK_COLS] {
+        let row = ChunkRow::from(y);
+        &self.voxels[row.0]
     }
 
-    // returns index of first opaque voxel
-    // take a look at this file for more info
-    pub fn column_height(&self, column_id: (usize, usize)) -> Option<VoxelIndex> {
-        let column = self.voxels[column_id.0][column_id.1];
-        Self::find_height(column)
-    }
+}
 
-    // for input:
-    // MSB = bot voxel
-    // LSB = top voxel
-    fn find_height(mut column_number: VoxelNumber) -> Option<VoxelIndex> {
-        if column_number == 0 { return None; }
-        if column_number == 1 { return Some(MAX_HEIGHT); }
-
-        let mut height = 0;
-        column_number = column_number.reverse_bits();
-
-        loop {
-            if (column_number >> (MAX_HEIGHT-height)) == 1 {
-                return Some(height);
-            } else {
-                height += 1;
-            }
-        }
+impl Distribution<VoxelBitmap> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> VoxelBitmap {
+        let rand: u32 = rng.gen();
+        VoxelBitmap(rand)
     }
 }
