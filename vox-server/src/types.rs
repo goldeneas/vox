@@ -13,7 +13,10 @@
 //       +Z
 //
 
+use core::panic;
 use std::fmt::{Debug, Display};
+
+use block_mesh::{MergeVoxel, Voxel, VoxelVisibility};
 
 use super::chunk::{CHUNK_COLS, CHUNK_ROWS};
 
@@ -59,15 +62,55 @@ impl CoordinateBound for ChunkCol {
     }
 }
 
-// represents a bitmap of voxels
-// 1: opaque voxel
-// 0: transparent voxel
-#[derive(Clone)]
-pub struct VoxelBitmap(pub u32);
+// represents a sequence of data for a single voxel
+// from MSB to LSB
+// 4 bits -> Voxel Type
+// 4 bits -> Free
 
-impl Display for VoxelBitmap {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "VoxelBitmap [{:#034b}]", self.0)
+const VOXEL_TYPE_BITS: u8 = 4;
+
+#[derive(Clone)]
+pub struct VoxelData(pub u8);
+
+
+impl VoxelData {
+    pub fn get_type(&self) -> VoxelType {
+        VoxelType::from(self)
+    }
+}
+
+impl Voxel for VoxelData {
+    fn get_visibility(&self) -> VoxelVisibility {
+        if self.get_type() == VoxelType::AIR {
+            return VoxelVisibility::Empty
+        }
+
+        VoxelVisibility::Opaque
+    }
+}
+
+impl MergeVoxel for VoxelData {
+    type MergeValue = VoxelType;
+
+    fn merge_value(&self) -> Self::MergeValue {
+        self.get_type()
+    }
+}
+
+#[derive(PartialEq, Eq)]
+pub enum VoxelType {
+    AIR,
+    DIRT,
+}
+
+impl VoxelType {
+    pub fn from(data: &VoxelData) -> VoxelType {
+        let type_id = data.0 >> (data.0);
+        match type_id {
+            0 => VoxelType::AIR,
+            1 => VoxelType::DIRT,
+            _ => panic!("Found unknown voxel type"),
+        }
     }
 }
 
