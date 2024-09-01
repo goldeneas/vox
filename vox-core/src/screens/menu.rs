@@ -3,7 +3,7 @@ use std::process::exit;
 use bevy_ecs::world::World;
 use egui::{Align2, Button};
 
-use crate::{resources::game_state::GameState, voxel::{chunk::Chunk, types::{ChunkHeight, CoordinateBound}}, world_ext::WorldExt};
+use crate::{resources::game_state::GameState, voxels::chunk::Chunk};
 
 use super::screen::Screen;
 
@@ -34,8 +34,6 @@ impl Screen for MenuScreen {
         //        });
         //});
         let chunk = Chunk::new();
-        let chunk_height = ChunkHeight::parse(0).unwrap();
-        chunk.generate_quads(chunk_height);
     }
 
     fn game_state(&self) -> GameState {

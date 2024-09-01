@@ -1,20 +1,27 @@
 use block_mesh::{MergeVoxel, Voxel, VoxelVisibility};
 
+type PackedDataType = u8;
+
+const VOXEL_TYPE_BITS: u32 = 4;
+const VOXEL_VISIBILITY_BITS: u32 = 1;
+
 #[derive(PartialEq, Eq)]
 pub enum VoxelType {
     AIR,
     DIRT,
 }
 
-impl From<VoxelData> for VoxelType {
-    fn from(value: VoxelData) -> Self {
+// TODO: change this
+impl From<&VoxelData> for VoxelType {
+    fn from(value: &VoxelData) -> Self {
         let data = value.0;
-        let type_flag = data & 0xF;
+        let type_identifier = data &
+            (PackedDataType::MAX >> (PackedDataType::BITS - VOXEL_TYPE_BITS));
 
-        match type_flag {
+        match type_identifier {
             0 => Self::AIR,
             1 => Self::DIRT,
-            _ => todo!("Unknown voxel type flag"),
+            _ => todo!("Unknown voxel type flag. Found {}", type_identifier),
         }
     }
 }
@@ -26,11 +33,14 @@ impl From<VoxelData> for VoxelType {
 
 // TODO ADD DEBUG ASSERT
 
-const VOXEL_TYPE_BITS: u32 = 4;
-const VOXEL_VISIBILITY_BITS: u32 = 4;
+#[derive(Clone, Copy, Debug)]
+pub struct VoxelData(PackedDataType);
 
-#[derive(Clone)]
-pub struct VoxelData(u8);
+impl From<PackedDataType> for VoxelData {
+    fn from(value: PackedDataType) -> Self {
+        VoxelData(value)
+    }
+}
 
 impl Voxel for VoxelData {
     fn get_visibility(&self) -> VoxelVisibility {
@@ -50,6 +60,6 @@ impl MergeVoxel for VoxelData {
     type MergeValue = VoxelType;
 
     fn merge_value(&self) -> Self::MergeValue {
-        return if self.
+        VoxelType::from(self)
     }
 }
