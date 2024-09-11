@@ -3,6 +3,5 @@ resolver = "2"
 default-members = ["vox-core"]
 members = [
     "vox-core",
-    "vox-server",
     "xtask",
 ]

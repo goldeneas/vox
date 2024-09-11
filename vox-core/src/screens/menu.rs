@@ -3,7 +3,7 @@ use std::process::exit;
 use bevy_ecs::world::World;
 use egui::{Align2, Button};
 
-use crate::{resources::game_state::GameState, voxels::chunk::Chunk};
+use crate::{resources::game_state::GameState, voxels::chunk::Chunk, world_ext::WorldExt};
 
 use super::screen::Screen;
 
@@ -24,16 +24,24 @@ impl Screen for MenuScreen {
         //            if ui.add_sized([200.0, 30.0], Button::new("Play")).clicked() {
         //                state.set(GameState::Game);
         //            }
-        //    
+    
         //            if ui.add_sized([200.0, 30.0], Button::new("Quit")).clicked() {
         //                exit(0);
         //            }
-        //    
+    
         //            ui.end_row();
         //            ui.allocate_space(ui.available_size());
         //        });
         //});
-        let chunk = Chunk::new();
+        let mut chunk = Chunk::new();
+        let mesh_data = chunk.data();
+
+        for quads in mesh_data.quads.iter() {
+            println!("VECTOR");
+            for quad in quads {
+                println!("{}", quad.clone() >> 32);
+            }
+        }
     }
 
     fn game_state(&self) -> GameState {

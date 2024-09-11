@@ -7,16 +7,8 @@ pub struct Material {
     bind_group: wgpu::BindGroup,
 }
 
-pub struct MaterialDescriptor {
-    pub name: String,
-    pub diffuse_texture: Arc<Texture>,
-}
-
 impl Material {
-    pub fn new(device: &wgpu::Device, descriptor: MaterialDescriptor) -> Self {
-        let name = descriptor.name;
-        let diffuse_texture = descriptor.diffuse_texture;
-
+    pub fn new(device: &wgpu::Device, diffuse_texture: Arc<Texture>, name: &str) -> Self {
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: None,
             entries: &[
@@ -40,7 +32,7 @@ impl Material {
         });
         
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some(&format!("Material Bind Group - {}", name)),
+            label: Some(name),
             layout: &bind_group_layout,
             entries: &[
                 wgpu::BindGroupEntry {

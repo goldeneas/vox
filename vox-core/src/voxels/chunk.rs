@@ -1,45 +1,68 @@
-use std::usize;
+use std::collections::BTreeSet;
 
-use block_mesh::{greedy_quads, ndshape::{ConstShape, ConstShape3u32}, GreedyQuadsBuffer, RIGHT_HANDED_Y_UP_CONFIG};
+use binary_greedy_meshing::{self as bgm, CS_P3};
 
-use super::voxel::VoxelData;
+use crate::components::multiple_instance::MultipleInstanceComponent;
 
-type ChunkShape = ConstShape3u32<18, 18, 18>;
+use super::voxel::{VoxelRegistry, VoxelType, VoxelTypeIdentifier};
 
+#[derive(Debug)]
 pub struct Chunk {
-    voxels: [VoxelData; ChunkShape::SIZE as usize],
-    buffer: GreedyQuadsBuffer,
+    data: [VoxelTypeIdentifier ; CS_P3],
+    mesh_data: bgm::MeshData,
 }
 
 impl Chunk {
-    pub fn new() -> Self {
-        let mut voxels = [VoxelData::from(0b0); ChunkShape::SIZE as usize];
-        for i in 0..ChunkShape::SIZE {
-            let [x, y, z] = ChunkShape::delinearize(i);
-            voxels[i as usize] = if ((x * x + y * y + z * z) as f32).sqrt() < 15.0 {
-                VoxelData::from(0b11111111)
-            } else {
-                VoxelData::from(0b0)
-            };
-        }
-
-        let buffer = GreedyQuadsBuffer::new(voxels.len());
+    pub fn new() -> Chunk {
+        let data = [0 ; CS_P3];
+        let mesh_data = bgm::MeshData::new();
 
         Self {
-            voxels,
-            buffer,
+            data,
+            mesh_data,
         }
     }
 
-    pub fn greedy_mesh(&mut self) -> &GreedyQuadsBuffer {
-        greedy_quads(&self.voxels,
-            &ChunkShape {},
-            [0; 3],
-            [17 ; 3],
-            &RIGHT_HANDED_Y_UP_CONFIG.faces,
-            &mut self.buffer
-        );
+    pub fn set_voxel_type_at(&mut self,
+        position: (usize, usize, usize),
+        voxel_type: VoxelTypeIdentifier
+    ) {
+        let idx = bgm::pad_linearize(position.0, position.1, position.2);
+        self.data[idx] = voxel_type;
+    }
 
-        &self.buffer
+    pub fn get_voxel_type_at(&self,
+        position: (usize, usize, usize),
+        voxel_registry: &VoxelRegistry
+    ) -> Option<VoxelType> {
+        let idx = bgm::pad_linearize(position.0, position.1, position.2);
+        let voxel_id = self.data[idx];
+        
+        voxel_registry.get_type(voxel_id)
+    }
+
+    pub fn faces_instance_cmpnts(&mut self,
+        device: &wgpu::Device,
+    ) -> Vec<MultipleInstanceComponent> {
+        // capacity 6 because there will be 6 instance components
+        // one for each face
+        let vec = Vec::with_capacity(6);
+        self.generate_mesh();
+
+        self.mesh_data.quads
+            .iter()
+            .for_each(|oriented_faces| {
+                oriented_faces
+                    .iter()
+                    .for_each(|face| {
+
+                    })
+            })
+
+    }
+
+    fn generate_mesh(&mut self) {
+        self.mesh_data.clear();
+        bgm::mesh(&self.data, &mut self.mesh_data, BTreeSet::default());
     }
 }

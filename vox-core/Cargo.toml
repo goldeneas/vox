@@ -22,7 +22,7 @@ egui = { git = "https://github.com/emilk/egui" }
 egui-wgpu = { git = "https://github.com/emilk/egui" }
 egui-winit = { git = "https://github.com/emilk/egui" }
 rand = "0.8.5"
-block-mesh = "0.2.0"
+binary-greedy-meshing = "0.3.5"
 
 # wasm dependencies
 console_error_panic_hook = "0.1.6"

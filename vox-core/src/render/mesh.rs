@@ -10,28 +10,18 @@ pub struct Mesh {
     material_id: usize, 
 }
 
-pub struct MeshDescriptor {
-    pub name: String,
-    pub indices: Box<[u32]>,
-    pub vertices: Box<[Vertex]>,
-}
-
 impl Mesh {
-    pub fn new(device: &wgpu::Device, descriptor: MeshDescriptor) -> Self {
-        let name = descriptor.name;
-        let indices = descriptor.indices;
-        let vertices = descriptor.vertices;
-
+    pub fn new(device: &wgpu::Device, vertices: &[Vertex], indices: &[u32], name: &str) -> Self {
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some(&format!("{:?} Vertex Buffer", name)),
+            label: Some(name),
             usage: wgpu::BufferUsages::VERTEX,
-            contents: bytemuck::cast_slice(&vertices),
+            contents: bytemuck::cast_slice(vertices),
         });
         
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some(&format!("{:?} Index Buffer", name)),
+            label: Some(name),
             usage: wgpu::BufferUsages::INDEX,
-            contents: bytemuck::cast_slice(&indices),
+            contents: bytemuck::cast_slice(indices),
         });
 
         let num_indices = indices.len() as u32;

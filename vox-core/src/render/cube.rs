@@ -10,8 +10,8 @@ pub struct CubeModel {
 impl IntoModel for CubeModel {
     fn to_model(&self, device: &wgpu::Device) -> Arc<Model> {
         let model = Model::new(device,
-            cube_vertices(self.scale),
-            cube_indices(),
+            &cube_vertices(self.scale),
+            &cube_indices(),
             self.diffuse_texture.clone(),
             "Cube Model",
         );
@@ -20,7 +20,7 @@ impl IntoModel for CubeModel {
     }
 }
 
-fn cube_vertices(scale: f32) -> Box<[Vertex]> {
+fn cube_vertices(scale: f32) -> Vec<Vertex> {
     vec![
         // Front face
         Vertex {
@@ -148,10 +148,10 @@ fn cube_vertices(scale: f32) -> Box<[Vertex]> {
             normal: [0.0, -scale, 0.0],
             tex_coords: [0.0, 0.5],
         },
-    ].into_boxed_slice()
+    ]
 }
 
-fn cube_indices() -> Box<[u32]> {
+fn cube_indices() -> Vec<u32> {
     vec![
         0, 1, 2, 0, 2, 3, // front
         4, 5, 6, 4, 6, 7, // back
@@ -159,5 +159,5 @@ fn cube_indices() -> Box<[u32]> {
         12, 13, 14, 12, 14, 15, // bottom
         16, 17, 18, 16, 18, 19, // right
         20, 21, 22, 20, 22, 23, // left
-    ].into_boxed_slice()
+    ]
 }

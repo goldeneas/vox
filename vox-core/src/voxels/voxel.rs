@@ -1,65 +1,61 @@
-use block_mesh::{MergeVoxel, Voxel, VoxelVisibility};
+use std::collections::HashMap;
 
-type PackedDataType = u8;
+use log::debug;
 
-const VOXEL_TYPE_BITS: u32 = 4;
-const VOXEL_VISIBILITY_BITS: u32 = 1;
-
-#[derive(PartialEq, Eq)]
+#[derive(Eq, PartialEq, Hash, Clone, Copy, Debug)]
 pub enum VoxelType {
     AIR,
     DIRT,
 }
 
-// TODO: change this
-impl From<&VoxelData> for VoxelType {
-    fn from(value: &VoxelData) -> Self {
-        let data = value.0;
-        let type_identifier = data &
-            (PackedDataType::MAX >> (PackedDataType::BITS - VOXEL_TYPE_BITS));
+pub type VoxelTypeIdentifier = u16;
+pub struct VoxelRegistry {
+    type_registry: HashMap<VoxelType, VoxelTypeIdentifier>,
+}
 
-        match type_identifier {
-            0 => Self::AIR,
-            1 => Self::DIRT,
-            _ => todo!("Unknown voxel type flag. Found {}", type_identifier),
+impl Default for VoxelRegistry {
+    fn default() -> Self {
+        let type_registry = HashMap::new();
+        let mut registry = Self {
+            type_registry,
+        };
+
+        registry.register_type(VoxelType::AIR, 0);
+        registry.register_type(VoxelType::DIRT, 1);
+
+        registry
+    }
+}
+
+impl VoxelRegistry {
+    pub fn register_type(&mut self,
+        voxel_type: VoxelType,
+        id: VoxelTypeIdentifier
+    ) {
+        let opt = self.type_registry.insert(voxel_type, id);
+        if opt.is_some() {
+            debug!("Replaced voxel type {:?} with id {}", voxel_type, id);
         }
     }
-}
 
-// VOXEL DATA
-// MSB 0b00000000 LSB
-// FROM LSB TO MSB
-// (RIGHT TO LEFT)
-
-// TODO ADD DEBUG ASSERT
-
-#[derive(Clone, Copy, Debug)]
-pub struct VoxelData(PackedDataType);
-
-impl From<PackedDataType> for VoxelData {
-    fn from(value: PackedDataType) -> Self {
-        VoxelData(value)
+    pub fn get_id(&self, voxel_type: VoxelType) -> Option<VoxelTypeIdentifier> {
+        self.type_registry
+            .get(&voxel_type)
+            .copied()
     }
-}
 
-impl Voxel for VoxelData {
-    fn get_visibility(&self) -> VoxelVisibility {
-        let data = self.0;
-        let visibility_flag = data >> VOXEL_TYPE_BITS;
-        let is_visible = visibility_flag & 1;
+    pub fn get_type(&self, id: VoxelTypeIdentifier) -> Option<VoxelType> {
+        self.type_registry
+            .keys()
+            .find_map(|voxel_type| {
+                let candidate_id = self.get_id(*voxel_type)
+                    .unwrap();
 
-        if is_visible == 1 {
-            VoxelVisibility::Opaque
-        } else {
-            VoxelVisibility::Empty
-        }
-    }
-}
-
-impl MergeVoxel for VoxelData {
-    type MergeValue = VoxelType;
-
-    fn merge_value(&self) -> Self::MergeValue {
-        VoxelType::from(self)
+                if candidate_id == id {
+                    Some(*voxel_type)
+                } else {
+                    None
+                }
+            })
     }
 }

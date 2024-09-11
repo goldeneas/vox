@@ -46,7 +46,7 @@ use winit::{
 use wasm_bindgen::prelude::*;
 use world_ext::WorldExt;
 
-const SIM_DT: f32 = 1.0/144.0;
+const SIM_DT: f32 = 1.0/60.0;
 
 struct AppState {
     delta_time: Instant,

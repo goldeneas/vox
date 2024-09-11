@@ -4,7 +4,7 @@ use bytemuck::{Pod, Zeroable};
 
 use crate::{asset::Asset, components::{model::ModelComponent, multiple_instance::MultipleInstanceComponent, single_instance::SingleInstanceComponent}, resources::asset_server::AssetServer, Texture};
 
-use super::{material::{Material, MaterialDescriptor}, mesh::{Mesh, MeshDescriptor}};
+use super::{material::Material, mesh::Mesh};
 
 pub struct Model {
     meshes: Box<[Mesh]>,
@@ -159,25 +159,24 @@ impl Vertex {
 // TODO: Make materials cached so that when reusing the same we dont create another
 impl Model {
     pub fn new(device: &wgpu::Device,
-        vertices: Box<[Vertex]>,
-        indices: Box<[u32]>,
+        vertices: &[Vertex],
+        indices: &[u32],
         diffuse_texture: Arc<Texture>,
         name: &str
     ) -> Self {
-        let material = Material::new(device, MaterialDescriptor {
-            name: format!("Material - {}", name),
+        let material = Material::new(device,
             diffuse_texture,
-        });
+            &format!("{} - Material", name),
+        );
 
-        let materials = Box::new([material]);
-
-        let mesh = Mesh::new(device, MeshDescriptor {
-            name: format!("Mesh - {}", name),
+        let mesh = Mesh::new(device,
             vertices,
-            indices
-        });
+            indices,
+            &format!("{} - Mesh", name),
+        );
 
         let meshes = Box::new([mesh]);
+        let materials = Box::new([material]);
 
         let name = name.to_string();
 
@@ -202,10 +201,10 @@ impl Model {
                             .get_or_load(diffuse_texture_name, device, queue)
                             .unwrap();
 
-                        Material::new(device, MaterialDescriptor {
-                            name: format!("Material - {}", diffuse_texture_name),
-                            diffuse_texture
-                        })
+                        Material::new(device,
+                            diffuse_texture,
+                            &format!("Material - {}", diffuse_texture_name),
+                        )
                     }).collect::<Vec<_>>();
 
                 materials.into()
@@ -215,10 +214,10 @@ impl Model {
                     .get_or_load("debug.png", device, queue)
                     .unwrap();
 
-                let material = Material::new(device, MaterialDescriptor {
-                    name: "Debug Material".to_owned(),
-                    diffuse_texture
-                });
+                let material = Material::new(device,
+                    diffuse_texture,
+                    "Debug Material",
+                );
 
                 Box::new([material])
             }
@@ -252,11 +251,11 @@ impl Model {
                 let indices: Box<[u32]> = m.mesh.indices
                     .into();
 
-                Mesh::new(device, MeshDescriptor {
-                    vertices,
-                    indices,
-                    name: file_name.to_owned(),
-                })
+                Mesh::new(device,
+                    &vertices,
+                    &indices,
+                    file_name,
+                )
             }).collect::<Vec<_>>()
         .into();
 
