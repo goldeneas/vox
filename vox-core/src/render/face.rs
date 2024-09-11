@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{IntoModel, Model};
+use crate::{IntoModel, Model, Vertex};
 
 pub struct FaceDescriptor {
     pub x: u32,
@@ -14,11 +14,13 @@ pub struct FaceDescriptor {
 impl IntoModel for Face {
     fn to_model(&self, device: &wgpu::Device) -> Arc<Model> {
         let model = Model::new(device,
-            )
+            &self.0,
+            &[0, 1, 2, 3],
+        );
     }
 }
 
-pub struct Face([u32;4]);
+pub struct Face(Vec<Vertex>);
 impl Face {
     pub fn new(descriptor: &FaceDescriptor) -> Self {
         let x = descriptor.x;
@@ -77,6 +79,14 @@ impl Face {
         };
 
         Self(vertices)
+    }
+
+    fn vertices(&self) -> Vec<Vertex> {
+        vec![
+            Vertex {
+
+            }
+        ]
     }
 
     fn pack_xyz(x: u32, y: u32, z: u32) -> u32 {
