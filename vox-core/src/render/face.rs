@@ -12,7 +12,7 @@ pub struct FaceDescriptor {
 }
 
 impl IntoModel for Face {
-    fn to_model(&self, device: &wgpu::Device) -> Arc<Model> {
+    fn to_model(&self, device: &wgpu::Device) -> Model {
         let model = Model::new(device,
             &self.0,
             &[0, 1, 2, 3],
@@ -40,37 +40,37 @@ impl Face {
         let xyz = Self::pack_xyz(x, y, z);
         
         let vertices = match descriptor.direction {
-            FaceDirection::LEFT => [
+            FaceDirection::LEFT => vec![
                 Self::pack_vertex(xyz, h, w),
                 Self::pack_vertex(xyz, 0, w),
                 Self::pack_vertex(xyz, h, 0),
                 Self::pack_vertex(xyz, 0, 0),
             ],
-            FaceDirection::DOWN => [
+            FaceDirection::DOWN => vec![
                 Self::pack_vertex(xyz, w, h),
                 Self::pack_vertex(xyz, w, 0),
                 Self::pack_vertex(xyz, 0, h),
                 Self::pack_vertex(xyz, 0, 0),
             ],
-            FaceDirection::BACK => [
+            FaceDirection::BACK => vec![
                 Self::pack_vertex(xyz, w, h),
                 Self::pack_vertex(xyz, w, 0),
                 Self::pack_vertex(xyz, 0, h),
                 Self::pack_vertex(xyz, 0, 0),
             ],
-            FaceDirection::RIGHT => [
+            FaceDirection::RIGHT => vec![
                 Self::pack_vertex(xyz, 0, 0),
                 Self::pack_vertex(xyz, h, 0),
                 Self::pack_vertex(xyz, 0, w),
                 Self::pack_vertex(xyz, h, w),
             ],
-            FaceDirection::UP => [
+            FaceDirection::UP => vec![
                 Self::pack_vertex(xyz, w, h),
                 Self::pack_vertex(xyz, w, 0),
                 Self::pack_vertex(xyz, 0, h),
                 Self::pack_vertex(xyz, 0, 0),
             ],
-            FaceDirection::FRONT => [
+            FaceDirection::FRONT => vec![
                 Self::pack_vertex(xyz, 0, 0),
                 Self::pack_vertex(xyz, 0, h),
                 Self::pack_vertex(xyz, w, 0),
@@ -79,14 +79,6 @@ impl Face {
         };
 
         Self(vertices)
-    }
-
-    fn vertices(&self) -> Vec<Vertex> {
-        vec![
-            Vertex {
-
-            }
-        ]
     }
 
     fn pack_xyz(x: u32, y: u32, z: u32) -> u32 {

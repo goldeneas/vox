@@ -27,7 +27,7 @@ pub struct Vertex {
 }
 
 pub trait IntoModel {
-    fn to_model(&self, device: &wgpu::Device) -> Arc<Model>;
+    fn to_model(&self, device: &wgpu::Device) -> Model;
 }
 
 pub trait DrawObject {
