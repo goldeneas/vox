@@ -3,62 +3,34 @@ use std::sync::Arc;
 use crate::{IntoModel, Model, Vertex, Texture};
 
 pub struct CubeModel {
-    pub scale: f32,
-    pub diffuse_texture: Arc<Texture>,
+    scale: f32,
+    diffuse_texture: Arc<Texture>,
 }
 
 impl IntoModel for CubeModel {
-    fn to_model(&self, device: &wgpu::Device) -> Model {
-        Model::new(device,
+    fn to_model(self, device: &wgpu::Device) -> Arc<Model> {
+        let model = Model::new(device,
             &cube_vertices(self.scale),
             &cube_indices(),
-            self.diffuse_texture.clone(),
+            self.diffuse_texture,
             "Cube Model",
-        )
+        );
+
+        Arc::new(model)
     }
 }
 
-fn cube_vertices(scale: f32) -> Vec<Vertex> {
-        let vertices = match descriptor.direction {
-            FaceDirection::LEFT => vec![
-                Self::pack_vertex(xyz, h, w),
-                Self::pack_vertex(xyz, 0, w),
-                Self::pack_vertex(xyz, h, 0),
-                Self::pack_vertex(xyz, 0, 0),
-            ],
-            FaceDirection::DOWN => vec![
-                Self::pack_vertex(xyz, w, h),
-                Self::pack_vertex(xyz, w, 0),
-                Self::pack_vertex(xyz, 0, h),
-                Self::pack_vertex(xyz, 0, 0),
-            ],
-            FaceDirection::BACK => vec![
-                Self::pack_vertex(xyz, w, h),
-                Self::pack_vertex(xyz, w, 0),
-                Self::pack_vertex(xyz, 0, h),
-                Self::pack_vertex(xyz, 0, 0),
-            ],
-            FaceDirection::RIGHT => vec![
-                Self::pack_vertex(xyz, 0, 0),
-                Self::pack_vertex(xyz, h, 0),
-                Self::pack_vertex(xyz, 0, w),
-                Self::pack_vertex(xyz, h, w),
-            ],
-            FaceDirection::UP => vec![
-                Self::pack_vertex(xyz, w, h),
-                Self::pack_vertex(xyz, w, 0),
-                Self::pack_vertex(xyz, 0, h),
-                Self::pack_vertex(xyz, 0, 0),
-            ],
-            FaceDirection::FRONT => vec![
-                Self::pack_vertex(xyz, 0, 0),
-                Self::pack_vertex(xyz, 0, h),
-                Self::pack_vertex(xyz, w, 0),
-                Self::pack_vertex(xyz, w, h),
-            ],
-        };
+impl CubeModel {
+    pub fn new(scale: f32, diffuse_texture: Arc<Texture>) -> Self {
+        Self {
+            scale,
+            diffuse_texture,
+        }
+    }
+}
 
-    vec![
+fn cube_vertices(scale: f32) -> [Vertex ; 24] {
+    [
         // Front face
         Vertex {
             position: [-scale, -scale, scale],
@@ -188,8 +160,8 @@ fn cube_vertices(scale: f32) -> Vec<Vertex> {
     ]
 }
 
-fn cube_indices() -> Vec<u32> {
-    vec![
+fn cube_indices() -> [u32 ; 36] {
+    [
         0, 1, 2, 0, 2, 3, // front
         4, 5, 6, 4, 6, 7, // back
         8, 9, 10, 8, 10, 11, // top

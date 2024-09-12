@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use binary_greedy_meshing::{self as bgm, CS_P3};
 
-use crate::components::multiple_instance::MultipleInstanceComponent;
+use crate::{components::multiple_instance::MultipleInstanceComponent, render::face::{Face, FaceDirection}};
 
 use super::voxel::{VoxelRegistry, VoxelType, VoxelTypeIdentifier};
 
@@ -41,25 +41,19 @@ impl Chunk {
         voxel_registry.get_type(voxel_id)
     }
 
-    pub fn faces_instance_cmpnts(&mut self,
-        device: &wgpu::Device,
-    ) -> Vec<MultipleInstanceComponent> {
-        // capacity 6 because there will be 6 instance components
-        // one for each face
-        let vec = Vec::with_capacity(6);
-        self.generate_mesh();
-
-        self.mesh_data.quads
-            .iter()
-            .for_each(|oriented_faces| {
-                oriented_faces
-                    .iter()
-                    .for_each(|face| {
-
-                    })
-            })
-
-    }
+    //pub fn faces(&mut self,
+    //    device: &wgpu::Device,
+    //) -> Vec<Face> {
+    //    // capacity 6 because there will be 6 instance components
+    //    // one for each face
+    //    let vec = Vec::with_capacity(6);
+    //    self.generate_mesh();
+    //
+    //    self.mesh_data.quads.iter().enumerate(|(direction, faces))| {
+    //        let direction = FaceDirection::from_bgm(direction);
+    //    });
+    //
+    //}
 
     fn generate_mesh(&mut self) {
         self.mesh_data.clear();

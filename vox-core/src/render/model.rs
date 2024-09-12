@@ -26,8 +26,9 @@ pub struct Vertex {
     pub normal: [f32; 3],
 }
 
+// Maybe make a way to cache these models too?
 pub trait IntoModel {
-    fn to_model(&self, device: &wgpu::Device) -> Model;
+    fn to_model(self, device: &wgpu::Device) -> Arc<Model>;
 }
 
 pub trait DrawObject {
@@ -210,9 +211,7 @@ impl Model {
                 materials.into()
             },
             Err(_) => {
-                let diffuse_texture = asset_server
-                    .get_or_load("debug.png", device, queue)
-                    .unwrap();
+                let diffuse_texture = Texture::debug(asset_server, device, queue);
 
                 let material = Material::new(device,
                     diffuse_texture,

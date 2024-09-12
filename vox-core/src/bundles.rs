@@ -1,2 +1,2 @@
 pub mod camera_bundle;
-pub mod single_entity_bundle;
+pub mod game_object;

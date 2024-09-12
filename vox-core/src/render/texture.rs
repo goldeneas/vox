@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use image::GenericImageView;
-use crate::{asset::Asset, util::load_binary};
+use crate::{asset::Asset, resources::asset_server::AssetServer, util::load_binary};
 
 pub struct Texture {
     texture: wgpu::Texture,
@@ -19,6 +19,15 @@ impl Asset for Texture {
 impl Texture {
     pub const DEPTH_TEXTURE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
     pub const TEXTURE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
+
+    pub fn debug(asset_server: &mut AssetServer,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue
+    ) -> Arc<Texture> {
+        asset_server
+            .get_or_load("debug.png", device, queue)
+            .unwrap()
+    }
 
     pub fn from_bytes(
         device: &wgpu::Device,
