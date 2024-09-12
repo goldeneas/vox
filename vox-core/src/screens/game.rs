@@ -4,7 +4,7 @@ use bevy_ecs::{schedule::SystemConfigs, system::{Commands, Query, Res, ResMut}, 
 use cgmath::{EuclideanSpace, InnerSpace, Matrix4};
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{bundles::{camera_bundle::CameraBundle, game_object::GameObject}, components::{camerable::CamerableComponent, model::ModelComponent, position::PositionComponent, rotation::RotationComponent, single_instance::SingleInstanceComponent, speed::SpeedComponent}, render::face::{FaceModel, FaceDirection}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, world_ext::WorldExt, DrawObject, InstanceData};
+use crate::{bundles::{camera_bundle::CameraBundle, game_object::GameObject}, components::{camerable::CamerableComponent, model::ModelComponent, position::PositionComponent, rotation::RotationComponent, single_instance::SingleInstanceComponent, speed::SpeedComponent}, render::face::{FaceDirection, FaceModel}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::Chunk, voxel::{VoxelType, VoxelTypeIdentifier}}, world_ext::WorldExt, DrawObject, InstanceData, IntoModel};
 
 use super::screen::Screen;
 
@@ -45,7 +45,7 @@ impl Screen for GameScreen {
     }
 
     fn start_systems(&self) -> Option<SystemConfigs> {
-        self.to_systems((spawn_game_objects, spawn_camera))
+        self.to_systems((spawn_game_objects, spawn_camera, spawn_chunks))
     }
 
     fn draw_systems(&self) -> Option<SystemConfigs> {
@@ -123,6 +123,21 @@ pub fn update_camera(mut query: Query<(
     }
 }
 
+pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
+    commands: Commands,
+    render_ctx: Res<RenderContext>
+) {
+    let mut chunk = Chunk::new();
+    chunk.set_voxel_type_at((0, 0, 1), 1);
+    chunk.generate_mesh();
+
+    chunk.faces(&mut asset_server,
+        commands,
+        &render_ctx.device,
+        &render_ctx.queue
+    );
+}
+
 pub fn spawn_game_objects(mut asset_server: ResMut<AssetServer>,
         mut commands: Commands,
         render_ctx: Res<RenderContext>,
@@ -130,14 +145,11 @@ pub fn spawn_game_objects(mut asset_server: ResMut<AssetServer>,
     let face = FaceModel::new(&mut asset_server,
         &render_ctx.device,
         &render_ctx.queue,
-        FaceDirection::UP
+        FaceDirection::DOWN
     );
 
-    let model = 
-
-    let mut e = GameObject::new(face.to_model(device));
-
-    commands.spawn(e);
+    //let e = GameObject::debug(face, &render_ctx.device);
+    //commands.spawn(e);
 }
 
 pub fn spawn_camera(mut commands: Commands) {

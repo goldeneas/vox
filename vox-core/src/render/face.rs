@@ -2,26 +2,22 @@ use std::sync::Arc;
 
 use crate::{resources::asset_server::AssetServer, IntoModel, Model, Texture, Vertex};
 
-pub struct FaceDescriptor {
-    pub x: u32,
-    pub y: u32,
-    pub z: u32,
-    pub width: u32,
-    pub height: u32,
-    pub direction: FaceDirection,
-    pub scale: f32,
-}
-
 pub struct FaceModel {
     vertices: [Vertex ; 4],
     diffuse_texture: Arc<Texture>,
+}
+
+pub struct FaceModelDescriptor {
+    pub direction: FaceDirection,
+    pub width: u32,
+    pub height: u32,
 }
 
 impl IntoModel for FaceModel {
     fn to_model(self, device: &wgpu::Device) -> Arc<Model> {
         let model = Model::new(device,
             &self.vertices,
-            &[0, 1, 2, 3],
+            &[0, 1, 2, 0, 2, 3],
             self.diffuse_texture,
             "Face Model",
         );
@@ -31,15 +27,27 @@ impl IntoModel for FaceModel {
 }
 
 impl FaceModel {
-    pub fn new(asset_server: &mut AssetServer,
+    pub fn new(descriptor: FaceModelDescriptor,
+        asset_server: &mut AssetServer,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         direction: FaceDirection
     ) -> Self {
-        let scale = 1.0;
         let diffuse_texture = Texture::debug(asset_server, device, queue);
 
-        let vertices = match direction {
+        let vertices = Self::vertices(direction);
+
+        Self {
+            vertices,
+            diffuse_texture,
+        }
+    }
+
+    fn vertices(direction: FaceDirection,
+        width: u32,
+        height: u32
+    ) -> [Vertex ; 4] {
+        match direction {
             FaceDirection::FRONT => [
                 Vertex {
                     position: [-scale, -scale, scale],
@@ -172,11 +180,6 @@ impl FaceModel {
                     tex_coords: [0.0, 0.5],
                 },
             ],
-        };
-
-        Self {
-            vertices,
-            diffuse_texture,
         }
     }
 
@@ -190,6 +193,7 @@ impl FaceModel {
 }
 
 // Y-UP RIGHT HAND
+#[derive(Debug, Clone, Copy)]
 pub enum FaceDirection {
     UP,
     DOWN,
@@ -200,7 +204,7 @@ pub enum FaceDirection {
 }
 
 impl FaceDirection {
-    pub fn from_bgm(direction: u32) -> Self {
+    pub fn from_bgm(direction: usize) -> Self {
         debug_assert!(direction < 6, "Unknown bgm direction");
 
         match direction {

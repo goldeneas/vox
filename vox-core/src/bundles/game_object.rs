@@ -3,18 +3,41 @@ use std::sync::Arc;
 use bevy_ecs::prelude::*;
 use cgmath::{Quaternion, Zero};
 
-use crate::{components::{model::ModelComponent, position::PositionComponent, rotation::RotationComponent, single_instance::SingleInstanceComponent}, Model};
+use crate::{components::{model::ModelComponent, position::PositionComponent, rotation::RotationComponent, single_instance::SingleInstanceComponent}, IntoModel, Model};
 
 #[derive(Bundle)]
 pub struct GameObject {
-    pub position: PositionComponent,
-    pub model: ModelComponent,
-    pub instance: SingleInstanceComponent,
-    pub rotation: RotationComponent,
+    position: PositionComponent,
+    model: ModelComponent,
+    instance: SingleInstanceComponent,
+    rotation: RotationComponent,
 }
 
 impl GameObject {
-    pub fn new(model: Arc<Model>) -> Self {
+    pub fn new(into_model: impl IntoModel,
+        position: (f32, f32, f32),
+        rotation: Quaternion<f32>,
+        device: &wgpu::Device
+    ) -> Self {
+        let model = into_model.to_model(device);
+
+        Self {
+            position: PositionComponent {
+                position: position.into() 
+            },
+            model: ModelComponent {
+                model,
+            },
+            rotation: RotationComponent {
+                quaternion: rotation,
+            },
+            instance: SingleInstanceComponent::default(),
+        }
+    }
+
+    pub fn debug(model: impl IntoModel, device: &wgpu::Device) -> Self {
+        let model = model.to_model(device);
+
         Self {
             position: PositionComponent {
                 position: (0.0, 0.0, 0.0).into() 
