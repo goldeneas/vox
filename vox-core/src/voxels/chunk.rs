@@ -67,6 +67,8 @@ impl Chunk {
                 let x = x as f32;
                 let y = y as f32;
                 let z = z as f32;
+                println!("{:?}", direction);
+                println!("{} {} {}", x, y, z);
 
                 let face = FaceModel::new(FaceModelDescriptor {
                     width,
@@ -76,8 +78,6 @@ impl Chunk {
 
                 let object = GameObject::new(face, (x, y, z), Quaternion::zero(), device);
                 commands.spawn(object);
-                
-                println!("{} {} {} {}", voxel_id, width, height, xyz);
             }
 
             //let face = FaceModel::new(asset_server, device, queue, direction);
