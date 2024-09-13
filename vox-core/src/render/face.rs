@@ -9,8 +9,8 @@ pub struct FaceModel {
 
 pub struct FaceModelDescriptor {
     pub direction: FaceDirection,
-    pub width: u32,
-    pub height: u32,
+    pub width: u64,
+    pub height: u64,
 }
 
 impl IntoModel for FaceModel {
@@ -46,8 +46,8 @@ impl FaceModel {
     }
 
     fn vertices(direction: FaceDirection,
-        width: u32,
-        height: u32
+        width: u64,
+        height: u64
     ) -> [Vertex ; 4] {
         let scale = 1.0;
         let width = width as f32;
@@ -61,17 +61,17 @@ impl FaceModel {
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [scale + width, -scale, scale],
+                    position: [scale * width, -scale, scale],
                     normal: [0.0, 0.0, -scale],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [scale + width, scale + height, scale],
+                    position: [scale * width, scale * height, scale],
                     normal: [scale, 0.0, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [-scale, scale + height, scale],
+                    position: [-scale, scale * height, scale],
                     normal: [-scale, 0.0, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
@@ -83,17 +83,17 @@ impl FaceModel {
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [-scale, scale + height, -scale],
+                    position: [-scale, scale * height, -scale],
                     normal: [0.0, -scale, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [scale + width, scale + height, -scale],
+                    position: [scale * width, scale * height, -scale],
                     normal: [0.0, 0.0, scale],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [scale + width, -scale, -scale],
+                    position: [scale * width, -scale, -scale],
                     normal: [0.0, 0.0, -scale],
                     tex_coords: [0.0, 0.5],
                 },
@@ -105,17 +105,17 @@ impl FaceModel {
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [-scale, scale, scale + height],
+                    position: [-scale, scale, scale * height],
                     normal: [-scale, 0.0, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [scale + width, scale, scale + height],
+                    position: [scale * width, scale, scale * height],
                     normal: [0.0, scale, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [scale + width, scale, -scale],
+                    position: [scale * width, scale, -scale],
                     normal: [0.0, -scale, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
@@ -127,34 +127,34 @@ impl FaceModel {
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [scale + width, -scale, -scale],
+                    position: [scale * width, -scale, -scale],
                     normal: [0.0, 0.0, -scale],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [scale + width, -scale, scale + height],
+                    position: [scale * width, -scale, scale * height],
                     normal: [scale, 0.0, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [-scale, -scale, scale + height],
+                    position: [-scale, -scale, scale * height],
                     normal: [-scale, 0.0, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
             ],
             FaceDirection::RIGHT => [
                 Vertex {
-                    position: [scale, -scale, -scale - width],
+                    position: [scale, -scale, -scale * width],
                     normal: [0.0, scale, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [scale, scale + height, -scale - width],
+                    position: [scale, scale * height, -scale * width],
                     normal: [0.0, -scale, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [scale, scale + height, scale],
+                    position: [scale, scale * height, scale],
                     normal: [0.0, 0.0, scale],
                     tex_coords: [0.0, 0.5],
                 },
@@ -171,17 +171,17 @@ impl FaceModel {
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [-scale, -scale, scale + width],
+                    position: [-scale, -scale, scale * width],
                     normal: [-scale, 0.0, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [-scale, scale + height, scale + width],
+                    position: [-scale, scale * height, scale * width],
                     normal: [0.0, scale, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [-scale, scale + height, -scale],
+                    position: [-scale, scale * height, -scale],
                     normal: [0.0, -scale, 0.0],
                     tex_coords: [0.0, 0.5],
                 },

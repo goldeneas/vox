@@ -2,8 +2,9 @@ use std::collections::BTreeSet;
 
 use bevy_ecs::system::Commands;
 use binary_greedy_meshing::{self as bgm, CS_P3};
+use cgmath::{Quaternion, Zero};
 
-use crate::{bundles::game_object::GameObject, render::face::{FaceDirection, FaceModel}, resources::asset_server::{self, AssetServer}};
+use crate::{bundles::game_object::GameObject, render::face::{FaceDirection, FaceModel, FaceModelDescriptor}, resources::asset_server::{self, AssetServer}};
 
 use super::voxel::{VoxelRegistry, VoxelType, VoxelTypeIdentifier};
 
@@ -57,7 +58,24 @@ impl Chunk {
                 let voxel_id = bgm_face >> 32;
                 let width = (bgm_face >> 18) & MASK_6;
                 let height = (bgm_face >> 24) & MASK_6;
+                
                 let xyz = bgm_face & MASK_XYZ;
+                let x = xyz & MASK_6;
+                let y = (xyz >> 6) & MASK_6;
+                let z = (xyz >> 12) & MASK_6;
+
+                let x = x as f32;
+                let y = y as f32;
+                let z = z as f32;
+
+                let face = FaceModel::new(FaceModelDescriptor {
+                    width,
+                    height,
+                    direction,
+                }, asset_server, device, queue);
+
+                let object = GameObject::new(face, (x, y, z), Quaternion::zero(), device);
+                commands.spawn(object);
                 
                 println!("{} {} {} {}", voxel_id, width, height, xyz);
             }

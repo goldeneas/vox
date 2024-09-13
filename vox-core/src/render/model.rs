@@ -4,7 +4,7 @@ use bytemuck::{Pod, Zeroable};
 
 use crate::{asset::Asset, components::{model::ModelComponent, multiple_instance::MultipleInstanceComponent, single_instance::SingleInstanceComponent}, resources::asset_server::AssetServer, Texture};
 
-use super::{material::Material, mesh::Mesh};
+use super::{material::Material, mesh::Mesh, vertex::Vertex};
 
 pub struct Model {
     meshes: Box<[Mesh]>,
@@ -16,14 +16,6 @@ impl Asset for Model {
     fn file_name(&self) -> &str {
         &self.name
     }
-}
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
-pub struct Vertex {
-    pub position: [f32; 3],
-    pub tex_coords: [f32; 2],
-    pub normal: [f32; 3],
 }
 
 // Maybe make a way to cache these models too?
@@ -128,32 +120,6 @@ impl DrawObject for wgpu::RenderPass<'_> {
         self.draw_model(&model_cmpnt.model,
             camera_bind_group
         );
-    }
-}
-
-impl Vertex {
-    pub fn desc() -> wgpu::VertexBufferLayout<'static> {
-        wgpu::VertexBufferLayout {
-            step_mode: wgpu::VertexStepMode::Vertex,
-            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    shader_location: 0,
-                    offset: 0,
-                    format: wgpu::VertexFormat::Float32x3,
-                },
-                wgpu::VertexAttribute {
-                    shader_location: 1,
-                    offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
-                    format: wgpu::VertexFormat::Float32x2,
-                },
-                wgpu::VertexAttribute {
-                    shader_location: 2,
-                    offset: std::mem::size_of::<[f32; 5]>() as wgpu::BufferAddress,
-                    format: wgpu::VertexFormat::Float32x3,
-                },
-            ]
-        }
     }
 }
 

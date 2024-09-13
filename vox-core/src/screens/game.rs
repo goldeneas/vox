@@ -142,11 +142,11 @@ pub fn spawn_game_objects(mut asset_server: ResMut<AssetServer>,
         mut commands: Commands,
         render_ctx: Res<RenderContext>,
 ) {
-    let face = FaceModel::new(&mut asset_server,
-        &render_ctx.device,
-        &render_ctx.queue,
-        FaceDirection::DOWN
-    );
+    //let face = FaceModel::new(&mut asset_server,
+    //    &render_ctx.device,
+    //    &render_ctx.queue,
+    //    FaceDirection::DOWN
+    //);
 
     //let e = GameObject::debug(face, &render_ctx.device);
     //commands.spawn(e);
