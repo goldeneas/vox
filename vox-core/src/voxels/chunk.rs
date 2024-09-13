@@ -21,8 +21,6 @@ impl Chunk {
         let mut data = [0 ; CS_P3];
         let mesh_data = bgm::MeshData::new();
 
-        data[21] = 20;
-
         Self {
             data,
             mesh_data,

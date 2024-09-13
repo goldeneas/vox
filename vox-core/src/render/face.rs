@@ -31,11 +31,13 @@ impl FaceModel {
         asset_server: &mut AssetServer,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-        direction: FaceDirection
     ) -> Self {
-        let diffuse_texture = Texture::debug(asset_server, device, queue);
+        let direction = descriptor.direction;
+        let width = descriptor.width;
+        let height = descriptor.height;
 
-        let vertices = Self::vertices(direction);
+        let diffuse_texture = Texture::debug(asset_server, device, queue);
+        let vertices = Self::vertices(direction, width, height);
 
         Self {
             vertices,
@@ -47,6 +49,10 @@ impl FaceModel {
         width: u32,
         height: u32
     ) -> [Vertex ; 4] {
+        let scale = 1.0;
+        let width = width as f32;
+        let height = height as f32;
+
         match direction {
             FaceDirection::FRONT => [
                 Vertex {
@@ -55,17 +61,17 @@ impl FaceModel {
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [scale, -scale, scale],
+                    position: [scale + width, -scale, scale],
                     normal: [0.0, 0.0, -scale],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [scale, scale, scale],
+                    position: [scale + width, scale + height, scale],
                     normal: [scale, 0.0, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [-scale, scale, scale],
+                    position: [-scale, scale + height, scale],
                     normal: [-scale, 0.0, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
@@ -77,17 +83,17 @@ impl FaceModel {
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [-scale, scale, -scale],
+                    position: [-scale, scale + height, -scale],
                     normal: [0.0, -scale, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [scale, scale, -scale],
+                    position: [scale + width, scale + height, -scale],
                     normal: [0.0, 0.0, scale],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [scale, -scale, -scale],
+                    position: [scale + width, -scale, -scale],
                     normal: [0.0, 0.0, -scale],
                     tex_coords: [0.0, 0.5],
                 },
@@ -99,17 +105,17 @@ impl FaceModel {
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [-scale, scale, scale],
+                    position: [-scale, scale, scale + height],
                     normal: [-scale, 0.0, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [scale, scale, scale],
+                    position: [scale + width, scale, scale + height],
                     normal: [0.0, scale, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [scale, scale, -scale],
+                    position: [scale + width, scale, -scale],
                     normal: [0.0, -scale, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
@@ -121,34 +127,34 @@ impl FaceModel {
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [scale, -scale, -scale],
+                    position: [scale + width, -scale, -scale],
                     normal: [0.0, 0.0, -scale],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [scale, -scale, scale],
+                    position: [scale + width, -scale, scale + height],
                     normal: [scale, 0.0, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [-scale, -scale, scale],
+                    position: [-scale, -scale, scale + height],
                     normal: [-scale, 0.0, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
             ],
             FaceDirection::RIGHT => [
                 Vertex {
-                    position: [scale, -scale, -scale],
+                    position: [scale, -scale, -scale - width],
                     normal: [0.0, scale, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [scale, scale, -scale],
+                    position: [scale, scale + height, -scale - width],
                     normal: [0.0, -scale, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [scale, scale, scale],
+                    position: [scale, scale + height, scale],
                     normal: [0.0, 0.0, scale],
                     tex_coords: [0.0, 0.5],
                 },
@@ -165,17 +171,17 @@ impl FaceModel {
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [-scale, -scale, scale],
+                    position: [-scale, -scale, scale + width],
                     normal: [-scale, 0.0, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [-scale, scale, scale],
+                    position: [-scale, scale + height, scale + width],
                     normal: [0.0, scale, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
                 Vertex {
-                    position: [-scale, scale, -scale],
+                    position: [-scale, scale + height, -scale],
                     normal: [0.0, -scale, 0.0],
                     tex_coords: [0.0, 0.5],
                 },
