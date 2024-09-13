@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use crate::{IntoModel, Model, Vertex, Texture};
+use crate::{IntoModel, Model, Texture};
+
+use super::vertex::Vertex;
 
 pub struct CubeModel {
     scale: f32,

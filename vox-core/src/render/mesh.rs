@@ -1,6 +1,6 @@
 use wgpu::util::DeviceExt;
 
-use crate::Vertex;
+use super::vertex::Vertex;
 
 pub struct Mesh {
     index_buffer: wgpu::Buffer,

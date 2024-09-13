@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use crate::{resources::asset_server::AssetServer, IntoModel, Model, Texture, Vertex};
+use crate::{resources::asset_server::AssetServer, IntoModel, Model, Texture};
+
+use super::vertex::Vertex;
 
 pub struct FaceModel {
     vertices: [Vertex ; 4],
