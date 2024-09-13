@@ -3,6 +3,7 @@ use cgmath::{Matrix4, SquareMatrix};
 
 use crate::components::{camerable::CamerableComponent, position::PositionComponent, speed::SpeedComponent};
 
+// TODO: dont really like how cameras are structured
 #[derive(Bundle)]
 pub struct CameraBundle {
     speed: SpeedComponent,
@@ -10,8 +11,8 @@ pub struct CameraBundle {
     camerable: CamerableComponent,
 }
 
-impl Default for CameraBundle {
-    fn default() -> Self {
+impl CameraBundle {
+    pub fn debug(config: &wgpu::SurfaceConfiguration) -> Self {
         Self {
             position: PositionComponent {
                 position: (0.0, 1.0, 2.0).into() 
@@ -22,7 +23,7 @@ impl Default for CameraBundle {
             camerable: CamerableComponent {
                 target: (0.0, 0.0, 0.0).into(),
                 up: cgmath::Vector3::unit_y(),
-                aspect: 1920.0 / 1080.0,
+                aspect: config.width as f32 / config.height as f32,
                 fovy: 45.0,
                 znear: 0.1,
                 zfar: 100.0,

@@ -4,7 +4,7 @@ use bevy_ecs::{schedule::SystemConfigs, system::{Commands, Query, Res, ResMut}, 
 use cgmath::{EuclideanSpace, InnerSpace, Matrix4};
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{bundles::{camera_bundle::CameraBundle, game_object::GameObject}, components::{camerable::CamerableComponent, model::ModelComponent, position::PositionComponent, rotation::RotationComponent, single_instance::SingleInstanceComponent, speed::SpeedComponent}, render::face::{FaceDirection, FaceModel}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::Chunk, voxel::{VoxelType, VoxelTypeIdentifier}}, world_ext::WorldExt, DrawObject, InstanceData, IntoModel};
+use crate::{bundles::{camera_bundle::CameraBundle, game_object::GameObject}, components::{camerable::{CameraUniform, CamerableComponent}, model::ModelComponent, position::PositionComponent, rotation::RotationComponent, single_instance::SingleInstanceComponent, speed::SpeedComponent}, render::face::{FaceDirection, FaceModel}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::Chunk, voxel::{VoxelType, VoxelTypeIdentifier}}, world_ext::WorldExt, DrawObject, InstanceData, IntoModel};
 
 use super::screen::Screen;
 
@@ -152,8 +152,10 @@ pub fn spawn_game_objects(mut asset_server: ResMut<AssetServer>,
     //commands.spawn(e);
 }
 
-pub fn spawn_camera(mut commands: Commands) {
-    commands.spawn(CameraBundle::default());
+pub fn spawn_camera(mut commands: Commands,
+    render_ctx: Res<RenderContext>,
+) {
+    commands.spawn(CameraBundle::debug(&render_ctx.config));
 }
 
 pub fn draw_game_objects(query: Query<(
@@ -208,7 +210,7 @@ pub fn draw_cameras(query: Query<(
             camerable_cmpnt.zfar
         );
         
-        let uniform: [[f32;4];4] = (OPENGL_TO_WGPU_MATRIX * proj * view)
+        let uniform: CameraUniform = (OPENGL_TO_WGPU_MATRIX * proj * view)
             .into();
         
         render_ctx.queue.write_buffer(pipeline.camera_buffer(),

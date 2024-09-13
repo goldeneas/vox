@@ -145,7 +145,7 @@ impl DefaultPipeline {
         depth_texture_view: &wgpu::TextureView,
     ) -> wgpu::RenderPass<'a> {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("Render Pass"),
+            label: Some("Model Render Pass"),
             // this is what @location(0) in the fragment shader targets
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view,
