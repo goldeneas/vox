@@ -11,6 +11,27 @@ use super::voxel::{VoxelRegistry, VoxelType, VoxelTypeIdentifier};
 const MASK_6: u64 = 0b111111;
 const MASK_XYZ: u64 = 0b111111_111111_111111;
 
+pub struct VoxelPosition {
+    position: (usize, usize, usize),
+}
+
+impl VoxelPosition {
+    pub fn index(&self) -> usize {
+        bgm::pad_linearize(self.position.0, self.position.1, self.position.1)
+    }
+}
+
+// TODO: setting a voxel at (62 62 62) doesnt actually set it for some reason
+//impl From<(usize, usize, usize)> for VoxelPosition {
+//    fn from(value: (usize, usize, usize)) -> Self {
+//        let x = value.0;
+//        let y = value.1;
+//        let z = value.2;
+//
+//        debug_assert!(x <= 62; "");
+//    }
+//}
+
 #[derive(Debug)]
 pub struct Chunk {
     data: [VoxelTypeIdentifier ; CS_P3],
@@ -55,20 +76,19 @@ impl Chunk {
         for (bgm_direction, bgm_faces) in self.mesh_data.quads.iter().enumerate() {
             let direction = FaceDirection::from_bgm(bgm_direction);
             for bgm_face in bgm_faces.iter() {
-                let voxel_id = bgm_face >> 32;
+                let x = bgm_face & MASK_6;
+                let y = (bgm_face >> 6) & MASK_6;
+                let z = (bgm_face >> 12) & MASK_6;
                 let width = (bgm_face >> 18) & MASK_6;
                 let height = (bgm_face >> 24) & MASK_6;
-                
-                let xyz = bgm_face & MASK_XYZ;
-                let x = xyz & MASK_6;
-                let y = (xyz >> 6) & MASK_6;
-                let z = (xyz >> 12) & MASK_6;
+                let voxel_id = bgm_face >> 32;
 
                 let x = x as f32;
                 let y = y as f32;
                 let z = z as f32;
                 println!("{:?}", direction);
                 println!("{} {} {}", x, y, z);
+                println!("{} {}", width, height);
 
                 let face = FaceModel::new(FaceModelDescriptor {
                     width,
@@ -76,7 +96,7 @@ impl Chunk {
                     direction,
                 }, asset_server, device, queue);
 
-                let object = GameObject::new(face, (x, y, z), Quaternion::zero(), device);
+                let object = GameObject::new(face, (0.0, 0.0, 0.0), Quaternion::zero(), device);
                 commands.spawn(object);
             }
 

@@ -53,7 +53,7 @@ impl Screen for GameScreen {
     }
 
     fn update_systems(&self) -> Option<SystemConfigs> {
-        self.to_systems((update_single_instance_entities, update_camera))
+        self.to_systems((update_game_objects, update_camera))
     }
 
     fn game_state(&self) -> GameState {
@@ -61,7 +61,7 @@ impl Screen for GameScreen {
     }
 }
 
-pub fn update_single_instance_entities(mut query: Query<(
+pub fn update_game_objects(mut query: Query<(
         &PositionComponent,
         &mut SingleInstanceComponent,
         &RotationComponent)>,
@@ -129,6 +129,7 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
 ) {
     let mut chunk = Chunk::new();
     chunk.set_voxel_type_at((0, 0, 0), 1);
+    chunk.set_voxel_type_at((0, 1, 0), 1);
     chunk.generate_mesh();
 
     chunk.faces(&mut asset_server,
