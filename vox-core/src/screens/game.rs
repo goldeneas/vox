@@ -1,7 +1,9 @@
 use std::time::Instant;
 
 use bevy_ecs::{schedule::SystemConfigs, system::{Commands, Query, Res, ResMut}, world::World};
+use binary_greedy_meshing::{CS_P, CS_P3};
 use cgmath::{EuclideanSpace, InnerSpace, Matrix4};
+use web_sys::js_sys::Math::sqrt;
 use wgpu::CommandEncoderDescriptor;
 
 use crate::{bundles::{camera_bundle::CameraBundle, game_object::GameObject}, components::{camerable::{CameraUniform, CamerableComponent}, model::ModelComponent, position::PositionComponent, rotation::RotationComponent, single_instance::SingleInstanceComponent, speed::SpeedComponent}, render::face::{FaceDirection, FaceModel}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::Chunk, voxel::{VoxelType, VoxelTypeIdentifier}}, world_ext::WorldExt, DrawObject, InstanceData, IntoModel};
@@ -128,8 +130,8 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
     render_ctx: Res<RenderContext>
 ) {
     let mut chunk = Chunk::new();
-    // TODO make a bounded type for the voxel position
-    chunk.set_voxel_type_at((0, 1, 0), 1);
+    // TODO make a boundedfor i in 0..ChunkShape::SIZE {
+    chunk.set_voxel_type_at((0, 0, 0), 1);
     chunk.generate_mesh();
 
     chunk.faces(&mut asset_server,

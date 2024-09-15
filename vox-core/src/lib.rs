@@ -46,7 +46,7 @@ use winit::{
 use wasm_bindgen::prelude::*;
 use world_ext::WorldExt;
 
-const SIM_DT: f32 = 1.0/60.0;
+const SIM_DT: f32 = 1.0/144.0;
 
 struct AppState {
     delta_time: Instant,
@@ -78,7 +78,7 @@ impl AppState {
         }).await.unwrap();
 
         let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor {
-            required_features: wgpu::Features::empty(),
+            required_features: wgpu::Features::POLYGON_MODE_LINE,
             #[cfg(not(target_arch="wasm32"))]
             required_limits: wgpu::Limits::default(),
             #[cfg(target_arch="wasm32")]

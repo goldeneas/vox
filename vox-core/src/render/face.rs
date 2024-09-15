@@ -6,55 +6,11 @@ use super::vertex::Vertex;
 
 const MASK_6: u64 = 0b111111;
 
-pub struct FacePosition {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
-}
-
-impl FacePosition {
-    pub fn from_bgm(bgm_data: &u64, direction: FaceDirection) -> Self {
-        let x = bgm_data & MASK_6;
-        let y = (bgm_data >> 6) & MASK_6;
-        let z = (bgm_data >> 12) & MASK_6;
-
-        // TODO check actual boundaries
-        debug_assert!(x <= 61, "voxel's x position is greater that chunk's max position!");
-        debug_assert!(y <= 61, "voxel's y position is greater that chunk's max position!");
-        debug_assert!(z <= 61, "voxel's z position is greater that chunk's max position!");
-
-        let x = x as f32;
-        let y = y as f32;
-        let z = z as f32;
-
-        match direction {
-            FaceDirection::FRONT => Self{
-                x: x - 1.0, y, z
-            },
-            FaceDirection::BACK => Self{
-                x, y, z
-            },
-            FaceDirection::UP => Self{
-                x, y, z
-            },
-            FaceDirection::DOWN => Self{
-                x: x - 1.0, y, z
-            },
-            FaceDirection::RIGHT => Self{
-                x, y, z
-            },
-            FaceDirection::LEFT => Self{
-                x, y, z
-            },
-        }
-    }
-}
-
 pub struct FaceModel {
     width: f32,
     height: f32,
     direction: FaceDirection,
-    position: FacePosition,
+    position: (f32, f32, f32),
     diffuse_texture: Arc<Texture>,
 }
 
@@ -77,7 +33,7 @@ impl IntoModel for FaceModel {
 
 impl FaceModel {
     pub fn new(direction: FaceDirection,
-        position: FacePosition,
+        position: (f32, f32, f32),
         width: f32,
         height: f32,
         diffuse_texture: Arc<Texture>,
@@ -97,9 +53,9 @@ impl FaceModel {
         // looking at the face with the axis in the middle of the block
         let scale = 1.0;
 
-        let x = self.position.x;
-        let y = self.position.y;
-        let z = self.position.z;
+        let x = self.position.0;
+        let y = self.position.1;
+        let z = self.position.2;
 
         let width = self.width;
         let height = self.height;
@@ -214,12 +170,12 @@ impl FaceModel {
                     tex_coords: [0.0, 1.0],
                 },
                 Vertex {
-                    position: [x, y + width, z],
+                    position: [x, y - width, z],
                     normal: [0.0, 0.0, scale],
                     tex_coords: [1.0, 1.0],
                 },
                 Vertex {
-                    position: [x, y + width, z + height],
+                    position: [x, y - width, z + height],
                     normal: [0.0, 0.0, -scale],
                     tex_coords: [1.0, 0.0],
                 },
