@@ -6,7 +6,12 @@ use super::vertex::Vertex;
 
 const MASK_6: u64 = 0b111111;
 
-pub struct FacePosition([f32 ; 3]);
+pub struct FacePosition {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+}
+
 impl FacePosition {
     pub fn from_bgm(bgm_data: u64, direction: FaceDirection) -> Self {
         let x = bgm_data & MASK_6;
@@ -18,35 +23,44 @@ impl FacePosition {
         let z = z as f32;
 
         match direction {
-            FaceDirection::FRONT => Self([x - 1.0, y, z]),
-            FaceDirection::BACK => Self([x, y, z]),
-            FaceDirection::UP => Self([x, y, z]),
-            FaceDirection::DOWN => Self([x, y, z]),
-            FaceDirection::RIGHT => Self([x - 1.0, y, z]),
-            FaceDirection::LEFT => Self([x, y, z]),
+            FaceDirection::FRONT => Self{
+                x: x - 1.0, y, z
+            },
+            FaceDirection::BACK => Self{
+                x, y, z
+            },
+            FaceDirection::UP => Self{
+                x, y, z
+            },
+            FaceDirection::DOWN => Self{
+                x, y, z
+            },
+            FaceDirection::RIGHT => Self{
+                x: x - 1.0, y, z
+            },
+            FaceDirection::LEFT => Self{
+                x, y, z
+            },
         }
     }
 }
 
 pub struct FaceModel {
-    vertices: [Vertex ; 4],
+    width: f32,
+    height: f32,
+    direction: FaceDirection,
+    position: FacePosition,
     diffuse_texture: Arc<Texture>,
 }
 
 // TODO: maybe bound check the position attribute as we are converting
 // to f32
 // maybe make a FacePosition wrapper
-pub struct FaceModelDescriptor {
-    direction: FaceDirection,
-    width: u32,
-    height: u32,
-    position: (f32, f32, f32),
-}
 
 impl IntoModel for FaceModel {
     fn to_model(self, device: &wgpu::Device) -> Arc<Model> {
         let model = Model::new(device,
-            &self.vertices,
+            &self.compute_vertices(),
             &[0, 1, 2, 0, 2, 3],
             self.diffuse_texture,
             "Face Model",
@@ -57,47 +71,33 @@ impl IntoModel for FaceModel {
 }
 
 impl FaceModel {
-    pub fn new(descriptor: FaceModelDescriptor,
-        asset_server: &mut AssetServer,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
+    pub fn new(direction: FaceDirection,
+        position: FacePosition,
+        width: f32,
+        height: f32,
+        diffuse_texture: Arc<Texture>,
     ) -> Self {
-        let direction = descriptor.direction;
-        let position = descriptor.position;
-        let width = descriptor.width;
-        let height = descriptor.height;
 
-        let diffuse_texture = Texture::debug(asset_server, device, queue);
-        let vertices = Self::vertices(
+        Self {
             direction,
             position,
             width,
-            height
-        );
-
-        Self {
-            vertices,
+            height,
             diffuse_texture,
         }
     }
 
-    fn vertices(direction: FaceDirection,
-        position: (f32, f32, f32),
-        width: u32,
-        height: u32
-    ) -> [Vertex ; 4] {
+    fn compute_vertices(&self) -> [Vertex ; 4] {
         // TODO: start first vertex from the bottom left vertex
         // looking at the face with the axis in the middle of the block
         let scale = 1.0;
-        let width = width as f32;
-        let height = height as f32;
 
-        let x = position.0;
-        let y = position.1;
-        let z = position.2;
+        let x = self.position.x;
+        let y = self.position.y;
+        let z = self.position.z;
 
-        let y = 0.0;
-        let z = 0.0;
+        let width = self.width;
+        let height = self.height;
 
         // width = growing towards positive x
         // height = growing towards positive z
@@ -108,7 +108,7 @@ impl FaceModel {
         // TODO: use an helper function to calculare pos * scale * multiplier
         // where multiplier is either width or height based on the face
         // also check if the formula is correct ;)
-        match direction {
+        match self.direction {
             FaceDirection::FRONT => [
                 Vertex {
                     position: [x, 0.0, 1.0],
@@ -214,7 +214,7 @@ impl FaceModel {
                     tex_coords: [1.0, 1.0],
                 },
                 Vertex {
-                    position: [x, width, 1.0 * height],
+                    position: [x, width, height],
                     normal: [0.0, 0.0, -scale],
                     tex_coords: [1.0, 0.0],
                 },

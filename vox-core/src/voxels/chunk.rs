@@ -4,7 +4,7 @@ use bevy_ecs::system::Commands;
 use binary_greedy_meshing::{self as bgm, CS_P3};
 use cgmath::{Quaternion, Zero};
 
-use crate::{bundles::game_object::GameObject, render::face::{FaceDirection, FaceModel, FaceModelDescriptor}, resources::asset_server::{self, AssetServer}};
+use crate::{bundles::game_object::GameObject, render::face::{FaceDirection, FaceModel, FacePosition}, resources::asset_server::AssetServer, Texture};
 
 use super::voxel::{VoxelRegistry, VoxelType, VoxelTypeIdentifier};
 
@@ -94,12 +94,14 @@ impl Chunk {
                 println!("{} {} {}", x, y, z);
                 println!("{} {}", width, height);
 
-                let face = FaceModel::new(FaceModelDescriptor {
-                    width,
-                    height,
-                    direction,
-                    position: (x, y, z),
-                }, asset_server, device, queue);
+                let diffuse_texture = Texture::debug(asset_server, device, queue);
+
+                let face = FaceModel::new(direction,
+                    FacePosition {
+                        x: 1.0,
+                        y: 0.0,
+                        z: 0.0,
+                    }, width as f32, height as f32, diffuse_texture);
 
                 let object = GameObject::new(face, (0.0, 0.0, 0.0), Quaternion::zero(), device);
                 commands.spawn(object);
