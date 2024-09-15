@@ -13,10 +13,15 @@ pub struct FacePosition {
 }
 
 impl FacePosition {
-    pub fn from_bgm(bgm_data: u64, direction: FaceDirection) -> Self {
+    pub fn from_bgm(bgm_data: &u64, direction: FaceDirection) -> Self {
         let x = bgm_data & MASK_6;
         let y = (bgm_data >> 6) & MASK_6;
         let z = (bgm_data >> 12) & MASK_6;
+
+        // TODO check actual boundaries
+        debug_assert!(x <= 61, "voxel's x position is greater that chunk's max position!");
+        debug_assert!(y <= 61, "voxel's y position is greater that chunk's max position!");
+        debug_assert!(z <= 61, "voxel's z position is greater that chunk's max position!");
 
         let x = x as f32;
         let y = y as f32;
@@ -33,10 +38,10 @@ impl FacePosition {
                 x, y, z
             },
             FaceDirection::DOWN => Self{
-                x, y, z
+                x: x - 1.0, y, z
             },
             FaceDirection::RIGHT => Self{
-                x: x - 1.0, y, z
+                x, y, z
             },
             FaceDirection::LEFT => Self{
                 x, y, z

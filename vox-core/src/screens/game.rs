@@ -128,7 +128,10 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
     render_ctx: Res<RenderContext>
 ) {
     let mut chunk = Chunk::new();
+    // TODO make a bounded type for the voxel position
     chunk.set_voxel_type_at((0, 0, 0), 1);
+    chunk.set_voxel_type_at((1, 0, 0), 1);
+    chunk.set_voxel_type_at((2, 0, 0), 1);
     chunk.generate_mesh();
 
     chunk.faces(&mut asset_server,

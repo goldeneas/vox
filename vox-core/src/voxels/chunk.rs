@@ -97,12 +97,13 @@ impl Chunk {
                 let diffuse_texture = Texture::debug(asset_server, device, queue);
 
                 let face = FaceModel::new(direction,
-                    FacePosition {
-                        x: 1.0,
-                        y: 0.0,
-                        z: 0.0,
-                    }, width as f32, height as f32, diffuse_texture);
+                    FacePosition::from_bgm(bgm_face, direction),
+                    width as f32,
+                    height as f32,
+                    diffuse_texture
+                );
 
+                // this is the chunk's position
                 let object = GameObject::new(face, (0.0, 0.0, 0.0), Quaternion::zero(), device);
                 commands.spawn(object);
             }
