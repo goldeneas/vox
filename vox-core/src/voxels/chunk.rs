@@ -11,26 +11,29 @@ use super::voxel::{VoxelRegistry, VoxelType, VoxelTypeIdentifier};
 const MASK_6: u64 = 0b111111;
 const MASK_XYZ: u64 = 0b111111_111111_111111;
 
-pub struct VoxelPosition {
-    position: (usize, usize, usize),
-}
+pub struct VoxelPosition((usize, usize, usize));
 
 impl VoxelPosition {
-    pub fn index(&self) -> usize {
-        bgm::pad_linearize(self.position.0, self.position.1, self.position.1)
+    fn index(&self) -> usize {
+        let position = self.0;
+        bgm::pad_linearize(position.0, position.1, position.2)
     }
 }
 
-// TODO: setting a voxel at (62 62 62) doesnt actually set it for some reason
-//impl From<(usize, usize, usize)> for VoxelPosition {
-//    fn from(value: (usize, usize, usize)) -> Self {
-//        let x = value.0;
-//        let y = value.1;
-//        let z = value.2;
-//
-//        debug_assert!(x <= 62; "");
-//    }
-//}
+// TODO: setting a voxel at (62 62 62) doesnt actually work
+impl From<(usize, usize, usize)> for VoxelPosition {
+    fn from(value: (usize, usize, usize)) -> Self {
+        let x = value.0;
+        let y = value.1;
+        let z = value.2;
+
+        debug_assert!(x <= 62, "Tried changing a voxel out of bounds on x axis!");
+        debug_assert!(y <= 62, "Tried changing a voxel out of bounds on y axis!");
+        debug_assert!(z <= 62, "Tried changing a voxel out of bounds on z axis!");
+
+        Self((x, y, z))
+    }
+}
 
 #[derive(Debug)]
 pub struct Chunk {
@@ -50,18 +53,18 @@ impl Chunk {
     }
 
     pub fn set_voxel_type_at(&mut self,
-        position: (usize, usize, usize),
+        position: VoxelPosition,
         voxel_type: VoxelTypeIdentifier
     ) {
-        let idx = bgm::pad_linearize(position.0, position.1, position.2);
+        let idx = position.index();
         self.data[idx] = voxel_type;
     }
 
     pub fn get_voxel_type_at(&self,
-        position: (usize, usize, usize),
+        position: VoxelPosition,
         voxel_registry: &VoxelRegistry
     ) -> Option<VoxelType> {
-        let idx = bgm::pad_linearize(position.0, position.1, position.2);
+        let idx = position.index();
         let voxel_id = self.data[idx];
         
         voxel_registry.get_type(voxel_id)
@@ -90,10 +93,7 @@ impl Chunk {
                 let width = width as u32;
                 let height = height as u32;
 
-                println!("{:?}", direction);
-                println!("{} {} {}", x, y, z);
-                println!("{} {}", width, height);
-
+                // TODO: remove this once voxels have actual textures
                 let diffuse_texture = Texture::debug(asset_server, device, queue);
 
                 let face = FaceModel::new(direction,
@@ -107,9 +107,6 @@ impl Chunk {
                 let object = GameObject::new(face, (0.0, 0.0, 0.0), Quaternion::zero(), device);
                 commands.spawn(object);
             }
-
-            //let face = FaceModel::new(asset_server, device, queue, direction);
-            //commands.spawn(GameObject::debug(face, device));
         };
     }
 
