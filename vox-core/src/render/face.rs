@@ -51,6 +51,8 @@ impl FaceModel {
         width: u64,
         height: u64
     ) -> [Vertex ; 4] {
+        // TODO: start first vertex from the bottom left vertex
+        // looking at the face with the axis in the middle of the block
         let scale = 1.0;
         let width = width as f32;
         let height = height as f32;
@@ -58,132 +60,132 @@ impl FaceModel {
         match direction {
             FaceDirection::FRONT => [
                 Vertex {
-                    position: [-scale, -scale, scale],
+                    position: [0.0, 0.0, 1.0],
                     normal: [0.0, 0.0, scale],
                     tex_coords: [0.0, 0.0],
                 },
                 Vertex {
-                    position: [scale * width, -scale, scale],
+                    position: [1.0 * width, 0.0, 1.0],
                     normal: [0.0, 0.0, -scale],
                     tex_coords: [1.0, 0.0],
                 },
                 Vertex {
-                    position: [scale * width, scale * height, scale],
+                    position: [1.0 * width, 1.0 * height, 1.0],
                     normal: [scale, 0.0, 0.0],
                     tex_coords: [1.0, 1.0],
                 },
                 Vertex {
-                    position: [-scale, scale * height, scale],
+                    position: [0.0, 1.0 * height, 1.0],
                     normal: [-scale, 0.0, 0.0],
                     tex_coords: [0.0, 1.0],
                 },
             ],
             FaceDirection::BACK => [
                 Vertex {
-                    position: [-scale, -scale, -scale],
+                    position: [1.0 * width, 0.0, 0.0],
                     normal: [0.0, scale, 0.0],
                     tex_coords: [0.0, 1.0],
                 },
                 Vertex {
-                    position: [-scale, scale * height, -scale],
+                    position: [0.0, 0.0, 0.0],
                     normal: [0.0, -scale, 0.0],
                     tex_coords: [0.0, 1.0],
                 },
                 Vertex {
-                    position: [scale * width, scale * height, -scale],
+                    position: [0.0, 1.0 * height, 0.0],
                     normal: [0.0, 0.0, scale],
                     tex_coords: [0.0, 1.0],
                 },
                 Vertex {
-                    position: [scale * width, -scale, -scale],
+                    position: [1.0 * width, 1.0 * height, 0.0],
                     normal: [0.0, 0.0, -scale],
                     tex_coords: [0.0, 1.0],
                 },
             ],
             FaceDirection::UP => [
                 Vertex {
-                    position: [-scale, scale, -scale],
+                    position: [0.0, 1.0, 1.0],
                     normal: [scale, 0.0, 0.0],
                     tex_coords: [0.0, 1.0],
                 },
                 Vertex {
-                    position: [-scale, scale, scale * height],
+                    position: [1.0 * width, 1.0, 1.0],
                     normal: [-scale, 0.0, 0.0],
                     tex_coords: [0.0, 1.0],
                 },
                 Vertex {
-                    position: [scale * width, scale, scale * height],
+                    position: [1.0 * width, 1.0, 0.0],
                     normal: [0.0, scale, 0.0],
                     tex_coords: [0.0, 1.0],
                 },
                 Vertex {
-                    position: [scale * width, scale, -scale],
+                    position: [0.0, 1.0, 0.0],
                     normal: [0.0, -scale, 0.0],
                     tex_coords: [0.0, 1.0],
                 },
             ],
             FaceDirection::DOWN => [
                 Vertex {
-                    position: [-scale, -scale, -scale],
+                    position: [0.0, 0.0, 0.0],
                     normal: [0.0, 0.0, scale],
                     tex_coords: [0.0, 1.0],
                 },
                 Vertex {
-                    position: [scale * width, -scale, -scale],
+                    position: [1.0 * width, 0.0, 0.0],
                     normal: [0.0, 0.0, -scale],
                     tex_coords: [0.0, 1.0],
                 },
                 Vertex {
-                    position: [scale * width, -scale, scale * height],
+                    position: [1.0 * width, 0.0, 1.0],
                     normal: [scale, 0.0, 0.0],
                     tex_coords: [0.0, 1.0],
                 },
                 Vertex {
-                    position: [-scale, -scale, scale * height],
+                    position: [0.0, 0.0, 1.0],
                     normal: [-scale, 0.0, 0.0],
                     tex_coords: [0.0, 1.0],
                 },
             ],
             FaceDirection::RIGHT => [
                 Vertex {
-                    position: [scale, -scale, -scale * height],
+                    position: [1.0, 0.0, 1.0],
                     normal: [0.0, scale, 0.0],
                     tex_coords: [0.0, 0.0],
                 },
                 Vertex {
-                    position: [scale, scale * width, -scale * height],
+                    position: [1.0, 0.0, 0.0],
                     normal: [0.0, -scale, 0.0],
                     tex_coords: [0.0, 1.0],
                 },
                 Vertex {
-                    position: [scale, scale * width, scale],
+                    position: [1.0, 1.0 * width, 0.0],
                     normal: [0.0, 0.0, scale],
                     tex_coords: [1.0, 1.0],
                 },
                 Vertex {
-                    position: [scale, -scale, scale],
+                    position: [1.0, 1.0 * width, 1.0],
                     normal: [0.0, 0.0, -scale],
                     tex_coords: [1.0, 0.0],
                 },
             ],
             FaceDirection::LEFT => [
                 Vertex {
-                    position: [-scale, -scale, -scale],
+                    position: [0.0, 0.0, 0.0],
                     normal: [scale, 0.0, 0.0],
                     tex_coords: [0.0, 1.0],
                 },
                 Vertex {
-                    position: [-scale, -scale, scale * width],
+                    position: [0.0, 0.0, 1.0],
                     normal: [-scale, 0.0, 0.0],
                     tex_coords: [0.0, 1.0],
                 },
                 Vertex {
-                    position: [-scale, scale * height, scale * width],
+                    position: [0.0, 1.0 * width, 1.0],
                     normal: [0.0, scale, 0.0],
                     tex_coords: [0.0, 1.0],
                 },
                 Vertex {
-                    position: [-scale, scale * height, -scale],
+                    position: [0.0, 1.0 * width, 0.0],
                     normal: [0.0, -scale, 0.0],
                     tex_coords: [0.0, 1.0],
                 },

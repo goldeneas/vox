@@ -129,7 +129,7 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
 ) {
     let mut chunk = Chunk::new();
     chunk.set_voxel_type_at((0, 0, 0), 1);
-    chunk.set_voxel_type_at((0, 1, 0), 1);
+    chunk.set_voxel_type_at((0, 0, 1), 1);
     chunk.generate_mesh();
 
     chunk.faces(&mut asset_server,
