@@ -86,6 +86,10 @@ impl Chunk {
                 let x = x as f32;
                 let y = y as f32;
                 let z = z as f32;
+
+                let width = width as u32;
+                let height = height as u32;
+
                 println!("{:?}", direction);
                 println!("{} {} {}", x, y, z);
                 println!("{} {}", width, height);
@@ -94,6 +98,7 @@ impl Chunk {
                     width,
                     height,
                     direction,
+                    position: (x, y, z),
                 }, asset_server, device, queue);
 
                 let object = GameObject::new(face, (0.0, 0.0, 0.0), Quaternion::zero(), device);
