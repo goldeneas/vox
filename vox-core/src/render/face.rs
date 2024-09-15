@@ -4,6 +4,30 @@ use crate::{resources::asset_server::AssetServer, IntoModel, Model, Texture};
 
 use super::vertex::Vertex;
 
+const MASK_6: u64 = 0b111111;
+
+pub struct FacePosition([f32 ; 3]);
+impl FacePosition {
+    pub fn from_bgm(bgm_data: u64, direction: FaceDirection) -> Self {
+        let x = bgm_data & MASK_6;
+        let y = (bgm_data >> 6) & MASK_6;
+        let z = (bgm_data >> 12) & MASK_6;
+
+        let x = x as f32;
+        let y = y as f32;
+        let z = z as f32;
+
+        match direction {
+            FaceDirection::FRONT => Self([x - 1.0, y, z]),
+            FaceDirection::BACK => Self([x, y, z]),
+            FaceDirection::UP => Self([x, y, z]),
+            FaceDirection::DOWN => Self([x, y, z]),
+            FaceDirection::RIGHT => Self([x - 1.0, y, z]),
+            FaceDirection::LEFT => Self([x, y, z]),
+        }
+    }
+}
+
 pub struct FaceModel {
     vertices: [Vertex ; 4],
     diffuse_texture: Arc<Texture>,
@@ -13,10 +37,10 @@ pub struct FaceModel {
 // to f32
 // maybe make a FacePosition wrapper
 pub struct FaceModelDescriptor {
-    pub direction: FaceDirection,
-    pub width: u32,
-    pub height: u32,
-    pub position: (f32, f32, f32),
+    direction: FaceDirection,
+    width: u32,
+    height: u32,
+    position: (f32, f32, f32),
 }
 
 impl IntoModel for FaceModel {
@@ -81,7 +105,7 @@ impl FaceModel {
         // they mean somehting else :)
         // go ask the author of the library
 
-        // TODO: use an helper function to calculare pos + scale * multiplier
+        // TODO: use an helper function to calculare pos * scale * multiplier
         // where multiplier is either width or height based on the face
         // also check if the formula is correct ;)
         match direction {
