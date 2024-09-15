@@ -97,7 +97,11 @@ impl Chunk {
                 let diffuse_texture = Texture::debug(asset_server, device, queue);
 
                 let face = FaceModel::new(direction,
-                    FacePosition::from_bgm(bgm_face, direction),
+                    FacePosition {
+                        x,
+                        y,
+                        z,
+                    },
                     width as f32,
                     height as f32,
                     diffuse_texture
