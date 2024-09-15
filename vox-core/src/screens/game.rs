@@ -130,10 +130,10 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
     render_ctx: Res<RenderContext>
 ) {
     let mut chunk = Chunk::new();
-    // TODO make a boundedfor i in 0..ChunkShape::SIZE {
     chunk.set_voxel_type_at(VoxelPosition::from((0, 0, 0)), 1);
     chunk.set_voxel_type_at(VoxelPosition::from((1, 0, 0)), 1);
     chunk.set_voxel_type_at(VoxelPosition::from((2, 0, 0)), 1);
+    chunk.set_voxel_type_at(VoxelPosition::from((2, 1, 0)), 1);
     chunk.generate_mesh();
 
     chunk.faces(&mut asset_server,
