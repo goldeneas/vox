@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, sync::Arc};
 
 use bevy_ecs::system::Commands;
 use binary_greedy_meshing::{self as bgm, CS_P3};
@@ -9,7 +9,6 @@ use crate::{bundles::game_object::GameObject, render::face::{FaceDirection, Face
 use super::voxel::{VoxelRegistry, VoxelType, VoxelTypeIdentifier};
 
 const MASK_6: u64 = 0b111111;
-const MASK_XYZ: u64 = 0b111111_111111_111111;
 
 pub struct VoxelPosition((usize, usize, usize));
 
@@ -37,17 +36,17 @@ impl From<(usize, usize, usize)> for VoxelPosition {
 
 #[derive(Debug)]
 pub struct Chunk {
-    data: [VoxelTypeIdentifier ; CS_P3],
+    voxels: [VoxelTypeIdentifier ; CS_P3],
     mesh_data: bgm::MeshData,
 }
 
 impl Chunk {
     pub fn new() -> Chunk {
-        let mut data = [0 ; CS_P3];
+        let voxels = [0 ; CS_P3];
         let mesh_data = bgm::MeshData::new();
 
         Self {
-            data,
+            voxels,
             mesh_data,
         }
     }
@@ -57,7 +56,7 @@ impl Chunk {
         voxel_type: VoxelTypeIdentifier
     ) {
         let idx = position.index();
-        self.data[idx] = voxel_type;
+        self.voxels[idx] = voxel_type;
     }
 
     pub fn get_voxel_type_at(&self,
@@ -65,16 +64,14 @@ impl Chunk {
         voxel_registry: &VoxelRegistry
     ) -> Option<VoxelType> {
         let idx = position.index();
-        let voxel_id = self.data[idx];
+        let voxel_id = self.voxels[idx];
         
         voxel_registry.get_type(voxel_id)
     }
 
     pub fn faces(&self,
-        asset_server: &mut AssetServer,
+        diffuse_texture: Arc<Texture>,
         mut commands: Commands,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue
     ) {
         for (bgm_direction, bgm_faces) in self.mesh_data.quads.iter().enumerate() {
             let direction = FaceDirection::from_bgm(bgm_direction);
@@ -93,9 +90,6 @@ impl Chunk {
                 let width = width as u32;
                 let height = height as u32;
 
-                // TODO: remove this once voxels have actual textures
-                let diffuse_texture = Texture::debug(asset_server, device, queue);
-
                 let face = FaceModel::new(direction,
                     (x, y, z),
                     width as f32,
@@ -112,6 +106,6 @@ impl Chunk {
 
     pub fn generate_mesh(&mut self) {
         self.mesh_data.clear();
-        bgm::mesh(&self.data, &mut self.mesh_data, BTreeSet::default());
+        bgm::mesh(&self.voxels, &mut self.mesh_data, BTreeSet::default());
     }
 }
