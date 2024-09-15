@@ -1,10 +1,8 @@
 use std::sync::Arc;
 
-use crate::{resources::asset_server::AssetServer, IntoModel, Model, Texture};
+use crate::{IntoModel, Model, Texture};
 
 use super::vertex::Vertex;
-
-const MASK_6: u64 = 0b111111;
 
 pub struct FaceModel {
     width: f32,
@@ -22,7 +20,7 @@ impl IntoModel for FaceModel {
     fn to_model(self, device: &wgpu::Device) -> Arc<Model> {
         let model = Model::new(device,
             &self.compute_vertices(),
-            &[0, 1, 2, 0, 2, 3],
+            &self.indices(),
             self.diffuse_texture,
             "Face Model",
         );
@@ -66,9 +64,6 @@ impl FaceModel {
         // they mean somehting else :)
         // go ask the author of the library
 
-        // TODO: use an helper function to calculare pos * scale * multiplier
-        // where multiplier is either width or height based on the face
-        // also check if the formula is correct ;)
         match self.direction {
             FaceDirection::FRONT => [
                 Vertex {
@@ -205,12 +200,15 @@ impl FaceModel {
         }
     }
 
-    fn pack_xyz(x: u32, y: u32, z: u32) -> u32 {
-        (z << 12) | (y << 6) | x
-    }
-
-    fn pack_vertex(xyz: u32, width: u32, height: u32) -> u32 {
-        (height << 24) | (width << 18) | xyz
+    fn indices(&self) -> [u32 ; 6] {
+        match self.direction {
+            FaceDirection::LEFT => [0, 1, 2, 0, 2, 3],
+            FaceDirection::BACK => [0, 1, 2, 0, 2, 3],
+            FaceDirection::UP => [0, 1, 2, 0, 2, 3],
+            FaceDirection::FRONT => [0, 3, 1, 1, 3, 2],
+            FaceDirection::RIGHT => [3, 2, 1, 3, 1, 0],
+            FaceDirection::DOWN => [1, 0, 3, 1, 3, 2],
+        }
     }
 }
 
