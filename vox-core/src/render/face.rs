@@ -47,8 +47,6 @@ impl FaceModel {
     }
 
     fn compute_vertices(&self) -> [Vertex ; 4] {
-        // TODO: start first vertex from the bottom left vertex
-        // looking at the face with the axis in the middle of the block
         let scale = 1.0;
 
         let x = self.position.0;
@@ -184,17 +182,17 @@ impl FaceModel {
                 Vertex {
                     position: [x, y, z + height],
                     normal: [-scale, 0.0, 0.0],
-                    tex_coords: [width, 0.0],
+                    tex_coords: [height, 0.0],
                 },
                 Vertex {
                     position: [x, y + width, z + height],
                     normal: [0.0, scale, 0.0],
-                    tex_coords: [width, height],
+                    tex_coords: [height, width],
                 },
                 Vertex {
                     position: [x, y + width, z],
                     normal: [0.0, -scale, 0.0],
-                    tex_coords: [0.0, height],
+                    tex_coords: [0.0, width],
                 },
             ],
         }

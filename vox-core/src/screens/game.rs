@@ -1,8 +1,8 @@
 use std::time::Instant;
 
-use bevy_ecs::{schedule::SystemConfigs, system::{Commands, Query, Res, ResMut}, world::World};
-use binary_greedy_meshing::{CS_P, CS_P3};
-use cgmath::{EuclideanSpace, InnerSpace, Matrix4};
+use bevy_ecs::{change_detection::DetectChanges, query::{Changed, Or}, schedule::SystemConfigs, system::{Commands, Query, Res, ResMut}, world::{Ref, World}};
+use binary_greedy_meshing::{CS, CS_P, CS_P3};
+use cgmath::{num_traits::Float, EuclideanSpace, InnerSpace, Matrix4};
 use web_sys::js_sys::Math::sqrt;
 use wgpu::CommandEncoderDescriptor;
 
@@ -47,7 +47,7 @@ impl Screen for GameScreen {
     }
 
     fn start_systems(&self) -> Option<SystemConfigs> {
-        self.to_systems((spawn_game_objects, spawn_camera, spawn_chunks))
+        self.to_systems((spawn_camera, spawn_chunks))
     }
 
     fn draw_systems(&self) -> Option<SystemConfigs> {
@@ -64,13 +64,17 @@ impl Screen for GameScreen {
 }
 
 pub fn update_game_objects(mut query: Query<(
-        &PositionComponent,
         &mut SingleInstanceComponent,
-        &RotationComponent)>,
+        Ref<PositionComponent>,
+        Ref<RotationComponent>)>,
         ctx: Res<RenderContext>,
 ) {
-    for (position_cmpnt, mut instance_cmpnt, rotation_cmpnt)
+    for (mut instance_cmpnt, position_cmpnt, rotation_cmpnt)
     in &mut query {
+        if !position_cmpnt.is_changed() && !rotation_cmpnt.is_changed() {
+            continue;
+        }
+
         let rotation = rotation_cmpnt
             .quaternion;
 
@@ -130,10 +134,16 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
     render_ctx: Res<RenderContext>
 ) {
     let mut chunk = Chunk::new();
-    chunk.set_voxel_type_at(VoxelPosition::from((0, 0, 0)), 1);
-    chunk.set_voxel_type_at(VoxelPosition::from((1, 0, 0)), 1);
-    chunk.set_voxel_type_at(VoxelPosition::from((2, 0, 0)), 1);
-    chunk.set_voxel_type_at(VoxelPosition::from((2, 1, 0)), 1);
+    for x in 0..CS_P {
+        for y in 0..CS_P {
+            for z in 0..CS_P {
+                if ((x*x + y*y + z*z) as f32).sqrt() > 30.0 { continue; }
+                let position = VoxelPosition::from((x, y, z));
+                chunk.set_voxel_type_at(position, 1);
+            }
+        }
+    }
+
     chunk.generate_mesh();
 
     chunk.faces(&mut asset_server,
@@ -141,20 +151,6 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
         &render_ctx.device,
         &render_ctx.queue
     );
-}
-
-pub fn spawn_game_objects(mut asset_server: ResMut<AssetServer>,
-        mut commands: Commands,
-        render_ctx: Res<RenderContext>,
-) {
-    //let face = FaceModel::new(&mut asset_server,
-    //    &render_ctx.device,
-    //    &render_ctx.queue,
-    //    FaceDirection::DOWN
-    //);
-
-    //let e = GameObject::debug(face, &render_ctx.device);
-    //commands.spawn(e);
 }
 
 pub fn spawn_camera(mut commands: Commands,

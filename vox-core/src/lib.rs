@@ -308,11 +308,14 @@ impl App {
             state.delta_time = Instant::now();
         }
 
-        while self.state_ref().accumulator >= SIM_DT {
-            self.update();
-            self.state_mut().accumulator -= SIM_DT;
-        }
+        // TODO: check the update loop
+        //while self.state_ref().accumulator >= SIM_DT {
+        //    print!("running update!");
+        //    self.update();
+        //    self.state_mut().accumulator -= SIM_DT;
+        //}
 
+        self.update();
         self.draw();
     }
 
