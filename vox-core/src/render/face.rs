@@ -146,17 +146,17 @@ impl FaceModel {
             ],
             FaceDirection::RIGHT => [
                 Vertex {
-                    position: [scale, -scale, -scale * width],
+                    position: [scale, -scale, -scale * height],
                     normal: [0.0, scale, 0.0],
                     tex_coords: [0.0, 0.0],
                 },
                 Vertex {
-                    position: [scale, scale * height, -scale * width],
+                    position: [scale, scale * width, -scale * height],
                     normal: [0.0, -scale, 0.0],
                     tex_coords: [0.0, 1.0],
                 },
                 Vertex {
-                    position: [scale, scale * height, scale],
+                    position: [scale, scale * width, scale],
                     normal: [0.0, 0.0, scale],
                     tex_coords: [1.0, 1.0],
                 },
