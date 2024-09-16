@@ -1,12 +1,11 @@
 use std::time::Instant;
 
-use bevy_ecs::{change_detection::DetectChanges, query::{Changed, Or}, schedule::SystemConfigs, system::{Commands, Query, Res, ResMut}, world::{Ref, World}};
-use binary_greedy_meshing::{CS, CS_P, CS_P3};
-use cgmath::{num_traits::Float, EuclideanSpace, InnerSpace, Matrix4, Quaternion};
-use web_sys::js_sys::Math::sqrt;
+use bevy_ecs::{schedule::SystemConfigs, system::{Commands, Query, Res, ResMut}, world::{Ref, World}};
+use binary_greedy_meshing::CS_P;
+use cgmath::{InnerSpace, Matrix4, Quaternion};
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{bundles::{camera_bundle::CameraBundle, game_object::GameObject}, components::{camerable::{CameraUniform, CamerableComponent}, model::ModelComponent, position::PositionComponent, rotation::RotationComponent, single_instance::SingleInstanceComponent, speed::SpeedComponent}, render::face::{FaceDirection, FaceMesh}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::{Chunk, VoxelPosition}, voxel_registry::{VoxelType, VoxelTypeIdentifier}}, world_ext::WorldExt, DrawObject, InstanceData, AsModel};
+use crate::{bundles::camera_bundle::CameraBundle, components::{camerable::{CameraUniform, CamerableComponent}, object::ObjectComponent, position::PositionComponent, rotation::RotationComponent, speed::SpeedComponent}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::Chunk, voxel_position::VoxelPosition}, world_ext::WorldExt, DrawObject, InstanceData};
 
 use super::screen::Screen;
 
@@ -51,43 +50,15 @@ impl Screen for GameScreen {
     }
 
     fn draw_systems(&self) -> Option<SystemConfigs> {
-        self.to_systems((draw_game_objects, draw_cameras))
+        self.to_systems((draw_objects, draw_cameras))
     }
 
     fn update_systems(&self) -> Option<SystemConfigs> {
-        self.to_systems((update_game_objects, update_camera))
+        self.to_systems(update_camera)
     }
 
     fn game_state(&self) -> GameState {
         GameState::Game
-    }
-}
-
-// TODO: maybe make a method of SingleInstanceComponent
-// to make From position and rotations without PositionComponent
-// and RotationComponent
-pub fn update_game_objects(mut query: Query<(
-        &mut SingleInstanceComponent,
-        Ref<PositionComponent>,
-        Ref<RotationComponent>)>,
-        ctx: Res<RenderContext>,
-) {
-    for (mut instance_cmpnt, position_cmpnt, rotation_cmpnt)
-    in &mut query {
-        if !position_cmpnt.is_changed() && !rotation_cmpnt.is_changed() {
-            continue;
-        }
-
-        let rotation = rotation_cmpnt
-            .quaternion;
-
-        let position = position_cmpnt.position
-            .to_vec();
-
-        instance_cmpnt.set_instance(&InstanceData {
-            position,
-            rotation
-        }, &ctx.device);
     }
 }
 
@@ -162,9 +133,7 @@ pub fn spawn_camera(mut commands: Commands,
     commands.spawn(CameraBundle::debug(&render_ctx.config));
 }
 
-pub fn draw_game_objects(query: Query<(
-        &ModelComponent,
-        &SingleInstanceComponent)>,
+pub fn draw_objects(query: Query<&ObjectComponent>,
         render_ctx: Res<RenderContext>,
         mut frame_ctx: ResMut<FrameContext>,
         pipeline: Res<DefaultPipeline>,
@@ -179,13 +148,8 @@ pub fn draw_game_objects(query: Query<(
            render_ctx.depth_texture.view()
        );
 
-    for (model_cmpnt, instance_cmpnt) in &query {
-        if instance_cmpnt.instance_buffer().is_none() {
-            continue;
-        }
-
-        render_pass.draw_entity(model_cmpnt,
-            instance_cmpnt,
+    for object_cmpnt in &query {
+        render_pass.draw_object(object_cmpnt,
             pipeline.camera_bind_group()
         );
     }

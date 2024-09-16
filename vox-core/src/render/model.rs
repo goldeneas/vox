@@ -1,9 +1,6 @@
 use std::{ops::Range, sync::Arc};
 
-use bytemuck::{Pod, Zeroable};
-use wgpu::util::DeviceExt;
-
-use crate::{asset::Asset, components::{model::ModelComponent, multiple_instance::MultipleInstanceComponent, single_instance::SingleInstanceComponent}, resources::asset_server::{self, AssetServer}, voxels::chunk::Chunk, Texture};
+use crate::{asset::Asset, components::object::ObjectComponent, resources::asset_server::AssetServer, Texture};
 
 use super::{material::Material, mesh::Mesh, vertex::Vertex};
 
@@ -41,13 +38,11 @@ pub trait DrawObject {
         model: &Model,
         instances: Range<u32>,
         camera_bind_group: &wgpu::BindGroup);
-    fn draw_entity(&mut self,
-        model_cmpnt: &ModelComponent,
-        instance_cmpnt: &SingleInstanceComponent,
+    fn draw_object(&mut self,
+        object_cmpnt: &ObjectComponent,
         camera_bind_group: &wgpu::BindGroup);
-    fn draw_entity_multiple(&mut self,
-        model_cmpnt: &ModelComponent,
-        instance_cmpnt: &MultipleInstanceComponent,
+    fn draw_object_multiple(&mut self,
+        object_cmpnt: &ObjectComponent,
         camera_bind_group: &wgpu::BindGroup);
 }
 
@@ -94,64 +89,30 @@ impl DrawObject for wgpu::RenderPass<'_> {
         }
     }
 
-    fn draw_entity(&mut self,
-        model_cmpnt: &ModelComponent,
-        instance_cmpnt: &SingleInstanceComponent,
+    fn draw_object(&mut self,
+        object_cmpnt: &ObjectComponent,
         camera_bind_group: &wgpu::BindGroup
     ) {
-        self.set_vertex_buffer(1, instance_cmpnt
+        self.set_vertex_buffer(1, object_cmpnt
             .instance_buffer()
-            .unwrap()
             .slice(..));
 
-        self.draw_model(&model_cmpnt.model,
+        self.draw_model(object_cmpnt.model(),
             camera_bind_group
         );
     }
 
-    fn draw_entity_multiple(&mut self,
-        model_cmpnt: &ModelComponent,
-        instance_cmpnt: &MultipleInstanceComponent,
+    fn draw_object_multiple(&mut self,
+        object_cmpnt: &ObjectComponent,
         camera_bind_group: &wgpu::BindGroup
     ) {
-        self.set_vertex_buffer(1, instance_cmpnt
+        self.set_vertex_buffer(1, object_cmpnt
             .instance_buffer()
             .slice(..));
 
-        self.draw_model(&model_cmpnt.model,
+        self.draw_model(object_cmpnt.model(),
             camera_bind_group
         );
-    }
-
-    fn draw_chunk(&mut self,
-        chunk: &mut Chunk,
-        instance_cmpnt: &SingleInstanceComponent,
-        asset_server: &mut AssetServer,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-        camera_bind_group: &wgpu::BindGroup,
-    ) {
-        let diffuse_texture = Texture::debug(asset_server, device, queue);
-        let faces = chunk.update_faces(diffuse_texture.clone());
-
-        let vertices = faces.iter()
-            .flat_map(|face| {
-                face.compute_vertices()
-            }).collect::<Vec<_>>();
-
-        let indices = faces.iter()
-            .flat_map(|face| {
-                face.indices()
-            }).collect::<Vec<_>>();
-
-        self.set_vertex_buffer(1, instance_cmpnt
-            .instance_buffer()
-            .unwrap()
-            .slice(..));
-
-        let mesh = Mesh::new(device, &vertices, &indices, "Chunk");
-        let material = Material::new(device, diffuse_texture, "Debug");
-        self.draw_mesh(&mesh, &material, &camera_bind_group);
     }
 }
 
