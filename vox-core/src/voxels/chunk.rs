@@ -69,10 +69,14 @@ impl Chunk {
         voxel_registry.get_type(voxel_id)
     }
 
-    pub fn faces(&self,
-        diffuse_texture: Arc<Texture>,
-        mut commands: Commands,
-    ) {
+    pub fn generate_mesh(&mut self,
+        diffuse_texture: Arc<Texture>
+    ) -> Vec<FaceModel> {
+        let mut faces = Vec::new();
+
+        self.mesh_data.clear();
+        bgm::mesh(&self.voxels, &mut self.mesh_data, BTreeSet::default());
+
         for (bgm_direction, bgm_faces) in self.mesh_data.quads.iter().enumerate() {
             let direction = FaceDirection::from_bgm(bgm_direction);
             for bgm_face in bgm_faces.iter() {
@@ -94,18 +98,17 @@ impl Chunk {
                     (x, y, z),
                     width as f32,
                     height as f32,
-                    diffuse_texture
+                    diffuse_texture.clone()
                 );
 
-                // this is the chunk's position
-                let object = GameObject::new(face, (0.0, 0.0, 0.0), Quaternion::zero(), device);
-                commands.spawn(object);
-            }
-        };
-    }
+                faces.push(face);
 
-    pub fn generate_mesh(&mut self) {
-        self.mesh_data.clear();
-        bgm::mesh(&self.voxels, &mut self.mesh_data, BTreeSet::default());
+                // this is the chunk's position
+                //let object = GameObject::new(face, (0.0, 0.0, 0.0), Quaternion::zero(), device);
+                //commands.spawn(object);
+            }
+        }
+
+        faces
     }
 }

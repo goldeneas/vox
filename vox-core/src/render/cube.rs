@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{IntoModel, Model, Texture};
+use crate::{AsModel, Model, Texture};
 
 use super::vertex::Vertex;
 
@@ -9,8 +9,8 @@ pub struct CubeModel {
     diffuse_texture: Arc<Texture>,
 }
 
-impl IntoModel for CubeModel {
-    fn to_model(self, device: &wgpu::Device) -> Arc<Model> {
+impl AsModel for CubeModel {
+    fn into_model(self, device: &wgpu::Device) -> Arc<Model> {
         let model = Model::new(device,
             &cube_vertices(self.scale),
             &cube_indices(),

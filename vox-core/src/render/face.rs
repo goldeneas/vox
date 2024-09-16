@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{IntoModel, Model, Texture};
+use crate::{AsModel, Model, Texture};
 
 use super::vertex::Vertex;
 
@@ -16,8 +16,8 @@ pub struct FaceModel {
 // to f32
 // maybe make a FacePosition wrapper
 
-impl IntoModel for FaceModel {
-    fn to_model(self, device: &wgpu::Device) -> Arc<Model> {
+impl AsModel for FaceModel {
+    fn into_model(self, device: &wgpu::Device) -> Arc<Model> {
         let model = Model::new(device,
             &self.compute_vertices(),
             &self.indices(),
@@ -46,7 +46,7 @@ impl FaceModel {
         }
     }
 
-    fn compute_vertices(&self) -> [Vertex ; 4] {
+   pub fn compute_vertices(&self) -> [Vertex ; 4] {
         let scale = 1.0;
 
         let x = self.position.0;
@@ -198,7 +198,7 @@ impl FaceModel {
         }
     }
 
-    fn indices(&self) -> [u32 ; 6] {
+    pub fn indices(&self) -> [u32 ; 6] {
         match self.direction {
             FaceDirection::LEFT => [0, 1, 2, 0, 2, 3],
             FaceDirection::BACK => [0, 1, 2, 0, 2, 3],
