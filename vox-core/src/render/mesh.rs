@@ -2,6 +2,10 @@ use wgpu::util::DeviceExt;
 
 use super::vertex::Vertex;
 
+pub trait AsMesh {
+    fn to_mesh(&self, device: &wgpu::Device) -> Mesh;
+}
+
 pub struct Mesh {
     index_buffer: wgpu::Buffer,
     vertex_buffer: wgpu::Buffer,

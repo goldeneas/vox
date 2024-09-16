@@ -2,39 +2,35 @@ use std::sync::Arc;
 
 use crate::{AsModel, Model, Texture};
 
-use super::vertex::Vertex;
+use super::{mesh::{AsMesh, Mesh}, vertex::Vertex};
 
-pub struct FaceModel {
+#[derive(Debug)]
+pub struct FaceMesh {
     width: f32,
     height: f32,
     direction: FaceDirection,
     position: (f32, f32, f32),
-    diffuse_texture: Arc<Texture>,
 }
 
 // TODO: maybe bound check the position attribute as we are converting
 // to f32
 // maybe make a FacePosition wrapper
 
-impl AsModel for FaceModel {
-    fn into_model(self, device: &wgpu::Device) -> Arc<Model> {
-        let model = Model::new(device,
+impl AsMesh for FaceMesh {
+    fn to_mesh(&self, device: &wgpu::Device) -> Mesh {
+        Mesh::new(device,
             &self.compute_vertices(),
             &self.indices(),
-            self.diffuse_texture,
-            "Face Model",
-        );
-
-        Arc::new(model)
+            "Face Mesh"
+        )
     }
 }
 
-impl FaceModel {
+impl FaceMesh {
     pub fn new(direction: FaceDirection,
         position: (f32, f32, f32),
         width: f32,
         height: f32,
-        diffuse_texture: Arc<Texture>,
     ) -> Self {
 
         Self {
@@ -42,7 +38,6 @@ impl FaceModel {
             position,
             width,
             height,
-            diffuse_texture,
         }
     }
 

@@ -2,11 +2,11 @@ use std::time::Instant;
 
 use bevy_ecs::{change_detection::DetectChanges, query::{Changed, Or}, schedule::SystemConfigs, system::{Commands, Query, Res, ResMut}, world::{Ref, World}};
 use binary_greedy_meshing::{CS, CS_P, CS_P3};
-use cgmath::{num_traits::Float, EuclideanSpace, InnerSpace, Matrix4};
+use cgmath::{num_traits::Float, EuclideanSpace, InnerSpace, Matrix4, Quaternion};
 use web_sys::js_sys::Math::sqrt;
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{bundles::{camera_bundle::CameraBundle, game_object::GameObject}, components::{camerable::{CameraUniform, CamerableComponent}, model::ModelComponent, position::PositionComponent, rotation::RotationComponent, single_instance::SingleInstanceComponent, speed::SpeedComponent}, render::face::{FaceDirection, FaceModel}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::{Chunk, VoxelPosition}, voxel::{VoxelType, VoxelTypeIdentifier}}, world_ext::WorldExt, DrawObject, InstanceData, AsModel};
+use crate::{bundles::{camera_bundle::CameraBundle, game_object::GameObject}, components::{camerable::{CameraUniform, CamerableComponent}, model::ModelComponent, position::PositionComponent, rotation::RotationComponent, single_instance::SingleInstanceComponent, speed::SpeedComponent}, render::face::{FaceDirection, FaceMesh}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::{Chunk, VoxelPosition}, voxel_registry::{VoxelType, VoxelTypeIdentifier}}, world_ext::WorldExt, DrawObject, InstanceData, AsModel};
 
 use super::screen::Screen;
 
@@ -147,13 +147,13 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
         }
     }
 
-    chunk.generate_mesh();
-
-    chunk.faces(&mut asset_server,
-        commands,
-        &render_ctx.device,
-        &render_ctx.queue
+    chunk.update_faces();
+    let object = GameObject::new(chunk,
+        (0.0, 0.0, 0.0),
+        Quaternion::zero(),
+        &render_ctx.device
     );
+    commands.spawn(object);
 }
 
 pub fn spawn_camera(mut commands: Commands,

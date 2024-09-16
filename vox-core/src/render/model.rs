@@ -132,7 +132,7 @@ impl DrawObject for wgpu::RenderPass<'_> {
         camera_bind_group: &wgpu::BindGroup,
     ) {
         let diffuse_texture = Texture::debug(asset_server, device, queue);
-        let faces = chunk.generate_mesh(diffuse_texture.clone());
+        let faces = chunk.update_faces(diffuse_texture.clone());
 
         let vertices = faces.iter()
             .flat_map(|face| {

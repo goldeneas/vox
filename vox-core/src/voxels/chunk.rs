@@ -1,36 +1,29 @@
 use std::{collections::BTreeSet, sync::Arc};
 
-use bevy_ecs::system::Commands;
 use binary_greedy_meshing::{self as bgm, CS_P3};
-use cgmath::{Quaternion, Zero};
 
-use crate::{bundles::game_object::GameObject, render::face::{FaceDirection, FaceModel}, resources::asset_server::AssetServer, Texture};
+use crate::{render::{face::{FaceDirection, FaceMesh}, mesh::{AsMesh, Mesh}}, Texture};
 
-use super::voxel::{VoxelRegistry, VoxelType, VoxelTypeIdentifier};
+use super::{voxel_position::VoxelPosition, voxel_registry::{VoxelRegistry, VoxelType, VoxelTypeIdentifier}};
 
 const MASK_6: u64 = 0b111111;
 
-pub struct VoxelPosition((usize, usize, usize));
+impl AsMesh for Chunk {
+    fn to_mesh(&self, device: &wgpu::Device) -> Mesh {
+        let vertices = self.faces.iter()
+            .flat_map(FaceMesh::compute_vertices)
+            .collect::<Vec<_>>();
 
-impl VoxelPosition {
-    fn index(&self) -> usize {
-        let position = self.0;
-        bgm::pad_linearize(position.0, position.1, position.2)
-    }
-}
+        let mut face_counter = 0;
+        let indices = self.faces.iter()
+            .flat_map(|face| {
+                let mut fi = face.indices();
+                fi.iter_mut().for_each(|index| *index += face_counter * 6);
+                face_counter += 1;
+                fi
+            }).collect::<Vec<_>>();
 
-// TODO: setting a voxel at (62 62 62) doesnt actually work
-impl From<(usize, usize, usize)> for VoxelPosition {
-    fn from(value: (usize, usize, usize)) -> Self {
-        let x = value.0;
-        let y = value.1;
-        let z = value.2;
-
-        debug_assert!(x <= 62, "Tried changing a voxel out of bounds on x axis!");
-        debug_assert!(y <= 62, "Tried changing a voxel out of bounds on y axis!");
-        debug_assert!(z <= 62, "Tried changing a voxel out of bounds on z axis!");
-
-        Self((x, y, z))
+        Mesh::new(device, &vertices, &indices, "Chunk Mesh")
     }
 }
 
@@ -38,16 +31,19 @@ impl From<(usize, usize, usize)> for VoxelPosition {
 pub struct Chunk {
     voxels: [VoxelTypeIdentifier ; CS_P3],
     mesh_data: bgm::MeshData,
+    faces: Vec<FaceMesh>,
 }
 
 impl Chunk {
     pub fn new() -> Chunk {
         let voxels = [0 ; CS_P3];
         let mesh_data = bgm::MeshData::new();
+        let faces = Vec::new();
 
         Self {
             voxels,
             mesh_data,
+            faces,
         }
     }
 
@@ -69,12 +65,9 @@ impl Chunk {
         voxel_registry.get_type(voxel_id)
     }
 
-    pub fn generate_mesh(&mut self,
-        diffuse_texture: Arc<Texture>
-    ) -> Vec<FaceModel> {
-        let mut faces = Vec::new();
-
+    pub fn update_faces(&mut self) {
         self.mesh_data.clear();
+        self.faces.clear();
         bgm::mesh(&self.voxels, &mut self.mesh_data, BTreeSet::default());
 
         for (bgm_direction, bgm_faces) in self.mesh_data.quads.iter().enumerate() {
@@ -94,21 +87,14 @@ impl Chunk {
                 let width = width as u32;
                 let height = height as u32;
 
-                let face = FaceModel::new(direction,
+                let face = FaceMesh::new(direction,
                     (x, y, z),
                     width as f32,
                     height as f32,
-                    diffuse_texture.clone()
                 );
 
-                faces.push(face);
-
-                // this is the chunk's position
-                //let object = GameObject::new(face, (0.0, 0.0, 0.0), Quaternion::zero(), device);
-                //commands.spawn(object);
+                self.faces.push(face);
             }
         }
-
-        faces
     }
 }

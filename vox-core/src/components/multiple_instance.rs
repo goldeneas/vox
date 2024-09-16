@@ -17,7 +17,7 @@ impl MultipleInstanceComponent {
             .collect::<Vec<_>>();
 
         let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Object Instance Buffer"),
+            label: Some("Instance Buffer"),
             usage: wgpu::BufferUsages::VERTEX,
             contents: bytemuck::cast_slice(&instances_raw),
         });
