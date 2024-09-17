@@ -7,6 +7,7 @@ pub struct Material {
     bind_group: wgpu::BindGroup,
 }
 
+// TODO: cache this
 impl Material {
     pub fn new(device: &wgpu::Device, diffuse_texture: Arc<Texture>, name: &str) -> Self {
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {

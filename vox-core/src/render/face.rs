@@ -12,10 +12,6 @@ pub struct FaceMesh {
     position: (f32, f32, f32),
 }
 
-// TODO: maybe bound check the position attribute as we are converting
-// to f32
-// maybe make a FacePosition wrapper
-
 impl AsMesh for FaceMesh {
     fn to_mesh(&self, device: &wgpu::Device) -> Mesh {
         Mesh::new(device,

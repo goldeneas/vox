@@ -119,11 +119,7 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
     }
 
     chunk.update_faces();
-    let object = GameObject::new(chunk,
-        (0.0, 0.0, 0.0),
-        Quaternion::zero(),
-        &render_ctx.device
-    );
+    let object = ObjectComponent::new(model, instances, device)
     commands.spawn(object);
 }
 

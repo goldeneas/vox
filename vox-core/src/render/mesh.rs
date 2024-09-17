@@ -2,20 +2,22 @@ use wgpu::util::DeviceExt;
 
 use super::vertex::Vertex;
 
-pub trait AsMesh {
-    fn to_mesh(&self, device: &wgpu::Device) -> Mesh;
-}
-
 pub struct Mesh {
     index_buffer: wgpu::Buffer,
     vertex_buffer: wgpu::Buffer,
     num_indices: u32,
     // the material assigned to this mesh from the materials
+    // to be used with models
     material_id: usize, 
 }
 
 impl Mesh {
-    pub fn new(device: &wgpu::Device, vertices: &[Vertex], indices: &[u32], name: &str) -> Self {
+    pub fn new(device: &wgpu::Device,
+        vertices: &[Vertex],
+        indices: &[u32],
+        material_id: Option<usize>,
+        name: &str,
+    ) -> Self {
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some(name),
             usage: wgpu::BufferUsages::VERTEX,
@@ -30,7 +32,7 @@ impl Mesh {
 
         let num_indices = indices.len() as u32;
 
-        let material_id = 0;
+        let material_id = material_id.unwrap_or(0);
         
         Mesh {
             index_buffer,

@@ -18,6 +18,7 @@ impl Asset for Model {
 
 // TODO: Maybe make a way to cache these models too?
 pub trait AsModel {
+    fn to_model(&self, device: &wgpu::Device) -> Arc<Model>;
     fn into_model(self, device: &wgpu::Device) -> Arc<Model>;
 }
 
@@ -89,6 +90,7 @@ impl DrawObject for wgpu::RenderPass<'_> {
         }
     }
 
+    // TODO: how do we pass textures?
     fn draw_object(&mut self,
         object_cmpnt: &ObjectComponent,
         camera_bind_group: &wgpu::BindGroup
@@ -116,31 +118,14 @@ impl DrawObject for wgpu::RenderPass<'_> {
     }
 }
 
-// TODO: Make materials cached so that when reusing the same we dont create another
 impl Model {
     pub fn new(device: &wgpu::Device,
-        vertices: &[Vertex],
-        indices: &[u32],
-        diffuse_texture: Arc<Texture>,
-        name: &str
+        meshes: [Mesh],
+        materials: [Material],
+        name: String,
     ) -> Self {
-        let material = Material::new(device,
-            diffuse_texture,
-            &format!("{} - Material", name),
-        );
 
-        let mesh = Mesh::new(device,
-            vertices,
-            indices,
-            &format!("{} - Mesh", name),
-        );
-
-        let meshes = Box::new([mesh]);
-        let materials = Box::new([material]);
-
-        let name = name.to_string();
-
-        Model {
+        Self {
             materials,
             meshes,
             name,
@@ -212,6 +197,7 @@ impl Model {
                 Mesh::new(device,
                     &vertices,
                     &indices,
+                    m.mesh.material_id,
                     file_name,
                 )
             }).collect::<Vec<_>>()

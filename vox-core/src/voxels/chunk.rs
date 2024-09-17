@@ -2,14 +2,14 @@ use std::{collections::BTreeSet, sync::Arc};
 
 use binary_greedy_meshing::{self as bgm, CS_P3};
 
-use crate::{render::{face::{FaceDirection, FaceMesh}, mesh::{AsMesh, Mesh}}, Texture};
+use crate::{render::{face::{FaceDirection, FaceMesh}, mesh::{AsMesh, Mesh}}, AsModel, Model, Texture};
 
 use super::{voxel_position::VoxelPosition, voxel_registry::{VoxelRegistry, VoxelType, VoxelTypeIdentifier}};
 
 const MASK_6: u64 = 0b111111;
 
-impl AsMesh for Chunk {
-    fn to_mesh(&self, device: &wgpu::Device) -> Mesh {
+impl AsModel for Chunk {
+    fn to_model(&self, device: &wgpu::Device) -> Arc<Model> {
         let vertices = self.faces.iter()
             .flat_map(FaceMesh::compute_vertices)
             .collect::<Vec<_>>();
@@ -24,6 +24,10 @@ impl AsMesh for Chunk {
             }).collect::<Vec<_>>();
 
         Mesh::new(device, &vertices, &indices, "Chunk Mesh")
+    }
+
+    fn into_model(self, device: &wgpu::Device) -> Arc<crate::Model> {
+        todo!()
     }
 }
 
