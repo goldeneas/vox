@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{AsModel, Model, Texture};
 
-use super::{mesh::{AsMesh, Mesh}, vertex::Vertex};
+use super::{material::MaterialId, mesh::{AsMesh, Mesh}, vertex::Vertex};
 
 #[derive(Debug)]
 pub struct FaceMesh {
@@ -13,16 +13,17 @@ pub struct FaceMesh {
 }
 
 impl AsMesh for FaceMesh {
-    fn to_mesh(&self,
-        material_id: Option<usize>,
-        device: &wgpu::Device,
-    ) -> Mesh {
-        Mesh::new(device,
-            &self.compute_vertices(),
-            &self.indices(),
+    fn to_mesh(&self, material_id: MaterialId) -> Mesh {
+        let vertices = self.compute_vertices().to_vec();
+        let indices = self.indices().to_vec();
+        let name = String::from("Face Mesh");
+
+        Mesh {
             material_id,
-            "Face Mesh",
-        )
+            vertices,
+            indices,
+            name,
+        }
     }
 }
 

@@ -2,6 +2,12 @@ use std::sync::Arc;
 
 use crate::Texture;
 
+#[derive(Clone, Copy, Debug)]
+pub enum MaterialId {
+    Debug,
+    Index(usize),
+}
+
 pub struct Material {
     diffuse_texture: Arc<Texture>,
     bind_group: wgpu::BindGroup,

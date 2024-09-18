@@ -1,11 +1,11 @@
 use std::time::Instant;
 
-use bevy_ecs::{schedule::SystemConfigs, system::{Commands, Query, Res, ResMut}, world::{Ref, World}};
+use bevy_ecs::{schedule::SystemConfigs, system::{Commands, Query, Res, ResMut}, world::World};
 use binary_greedy_meshing::CS_P;
-use cgmath::{InnerSpace, Matrix4, Quaternion};
+use cgmath::{InnerSpace, Matrix4, Quaternion, Zero};
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{bundles::camera_bundle::CameraBundle, components::{camerable::{CameraUniform, CamerableComponent}, transform::TransformComponent, position::PositionComponent, rotation::RotationComponent, speed::SpeedComponent}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::Chunk, voxel_position::VoxelPosition}, world_ext::WorldExt, DrawPassExt, Transform};
+use crate::{bundles::object::Object, components::{camerable::{CameraComponent, CameraUniform}, model::ModelComponent, transform::TransformComponent}, pass_ext::DrawPassExt, render::{material::MaterialId, mesh::AsMesh}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::Chunk, voxel_position::VoxelPosition}, world_ext::WorldExt, InstanceData};
 
 use super::screen::Screen;
 
@@ -50,7 +50,7 @@ impl Screen for GameScreen {
     }
 
     fn draw_systems(&self) -> Option<SystemConfigs> {
-        self.to_systems((draw_objects, draw_cameras))
+        self.to_systems((draw_objects, draw_camera))
     }
 
     fn update_systems(&self) -> Option<SystemConfigs> {
@@ -62,49 +62,48 @@ impl Screen for GameScreen {
     }
 }
 
-pub fn update_camera(mut query: Query<(
-    &mut PositionComponent,
-    &SpeedComponent,
-    &mut CamerableComponent)>,
+pub fn update_camera(mut query: Query<&mut CameraComponent>,
     input_res: Res<InputRes>,
     mouse_res: Res<MouseRes>,
 ) {
-    for (mut position_cmpnt, speed_cmpnt, mut camerable_cmpnt) in &mut query {
-        let forward = camerable_cmpnt.target - position_cmpnt.position;
+    for mut camera_cmpnt in &mut query {
+        let forward = camera_cmpnt.target - camera_cmpnt.position;
         let forward_norm = forward.normalize();
         let forward_mag = forward.magnitude();
 
-        if input_res.forward.is_pressed && forward_mag > speed_cmpnt.speed {
-            position_cmpnt.position += forward_norm * speed_cmpnt.speed;
+        let speed = camera_cmpnt.speed;
+
+        if input_res.forward.is_pressed && forward_mag > speed {
+            camera_cmpnt.position += forward_norm * speed;
             //camera_transform.target += forward_norm * self.speed;
         }
 
         if input_res.backward.is_pressed {
-            position_cmpnt.position -= forward_norm * speed_cmpnt.speed;
+            camera_cmpnt.position -= forward_norm * speed;
             //camera_transform.target -= forward_norm * self.speed;
         }
 
-        let up_norm = camerable_cmpnt.up.normalize();
+        let up_norm = camera_cmpnt.up.normalize();
         let right_norm = forward_norm.cross(up_norm);
 
         if input_res.right.is_pressed {
-            position_cmpnt.position += right_norm * speed_cmpnt.speed; 
+            camera_cmpnt.position += right_norm * speed; 
             //camera_transform.target += right_norm * self.speed;
         }
 
         if input_res.left.is_pressed {
-            position_cmpnt.position -= right_norm * speed_cmpnt.speed;
+            camera_cmpnt.position -= right_norm * speed;
             //camera_transform.target -= right_norm * self.speed;
         }
 
         let yaw: f32 = (mouse_res.pos.0 * 0.01) as f32;
-        camerable_cmpnt.target.x = 2.23 * yaw.cos();
-        camerable_cmpnt.target.z = 2.23 * yaw.sin();
+        camera_cmpnt.target.x = 2.23 * yaw.cos();
+        camera_cmpnt.target.z = 2.23 * yaw.sin();
     }
 }
 
 pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
-    commands: Commands,
+    mut commands: Commands,
     render_ctx: Res<RenderContext>
 ) {
     let mut chunk = Chunk::new();
@@ -119,20 +118,33 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
     }
 
     chunk.update_faces();
-    let object = TransformComponent::new(model, instances, device)
+
+    let chunk_mesh = chunk.to_mesh(MaterialId::Debug);
+    let chunk_data = InstanceData {
+        position: (0.0, 0.0, 0.0).into(),
+        rotation: Quaternion::zero(),
+    };
+
+    let object = Object {
+        model: ModelComponent::from(chunk_mesh),
+        transform: TransformComponent::from(chunk_data),
+    };
+
     commands.spawn(object);
 }
 
 pub fn spawn_camera(mut commands: Commands,
     render_ctx: Res<RenderContext>,
 ) {
-    commands.spawn(CameraBundle::debug(&render_ctx.config));
+    commands.spawn(CameraComponent::debug(&render_ctx.config));
 }
 
-pub fn draw_objects(query: Query<&TransformComponent>,
-        render_ctx: Res<RenderContext>,
-        mut frame_ctx: ResMut<FrameContext>,
-        pipeline: Res<DefaultPipeline>,
+pub fn draw_objects(query: Query<(
+    &ModelComponent,
+    &TransformComponent)>,
+    render_ctx: Res<RenderContext>,
+    mut frame_ctx: ResMut<FrameContext>,
+    pipeline: Res<DefaultPipeline>,
 ) {
     let view = &frame_ctx.view;
     let mut encoder = render_ctx.device.create_command_encoder(&CommandEncoderDescriptor {
@@ -144,9 +156,11 @@ pub fn draw_objects(query: Query<&TransformComponent>,
            render_ctx.depth_texture.view()
        );
 
-    for object_cmpnt in &query {
-        render_pass.draw_object(object_cmpnt,
-            pipeline.camera_bind_group()
+    for (model_cmpnt, transform_cmpnt) in &query {
+        render_pass.draw_object(model_cmpnt,
+            transform_cmpnt,
+            pipeline.camera_bind_group(),
+            &render_ctx.device,
         );
     }
 
@@ -154,24 +168,22 @@ pub fn draw_objects(query: Query<&TransformComponent>,
 }
 
 // TODO: move this engine side
-pub fn draw_cameras(query: Query<(
-    &PositionComponent,
-    &CamerableComponent)>,
+pub fn draw_camera(query: Query<&CameraComponent>,
     render_ctx: Res<RenderContext>,
     pipeline: Res<DefaultPipeline>,
 ) {
-    for (position_cmpnt, camerable_cmpnt) in &query {
+    for camera_cmpnt in &query {
         let view = Matrix4::look_at_rh(
-            position_cmpnt.position,
-            camerable_cmpnt.target,
-            camerable_cmpnt.up
+            camera_cmpnt.position,
+            camera_cmpnt.target,
+            camera_cmpnt.up
         );
         
         let proj = cgmath::perspective(
-            cgmath::Deg(camerable_cmpnt.fovy),
-            camerable_cmpnt.aspect,
-            camerable_cmpnt.znear,
-            camerable_cmpnt.zfar
+            cgmath::Deg(camera_cmpnt.fovy),
+            camera_cmpnt.aspect,
+            camera_cmpnt.znear,
+            camera_cmpnt.zfar
         );
         
         let uniform: CameraUniform = (OPENGL_TO_WGPU_MATRIX * proj * view)

@@ -24,7 +24,7 @@ use screens::game::GameScreen;
 use screens::menu::MenuScreen;
 use screens::screen::Screen;
 use render::texture::*;
-use render::instance::*;
+use render::instance_data::*;
 
 use resources::default_pipeline::DefaultPipeline;
 use resources::frame_context::FrameContext;

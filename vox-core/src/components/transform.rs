@@ -1,17 +1,17 @@
 use bevy_ecs::component::Component;
 use wgpu::util::DeviceExt;
 
-use crate::Transform;
+use crate::InstanceData;
 
 #[derive(Component)]
 pub struct TransformComponent {
-    pub transforms: [Transform],
+    pub instances_data: Vec<InstanceData>,
 }
 
 impl TransformComponent {
     pub fn compute_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer {
-        let instances_raw = self.transforms.iter()
-            .map(Transform::to_raw)
+        let instances_raw = self.instances_data.iter()
+            .map(InstanceData::to_raw)
             .collect::<Vec<_>>();
 
         let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -21,5 +21,13 @@ impl TransformComponent {
         });
 
         instance_buffer
+    }
+}
+
+impl From<InstanceData> for TransformComponent {
+    fn from(value: InstanceData) -> Self {
+        Self {
+            instances_data: vec![value],
+        }
     }
 }

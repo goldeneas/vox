@@ -2,24 +2,41 @@ use std::{collections::BTreeSet, sync::Arc};
 
 use binary_greedy_meshing::{self as bgm, CS_P3};
 
-use crate::{render::{face::{FaceDirection, FaceMesh}, mesh::{AsMesh, Mesh}}, AsModel, Model, Texture};
+use crate::{render::{face::{FaceDirection, FaceMesh}, material::MaterialId, mesh::{AsMesh, Mesh}}, AsModel, Model, Texture};
 
 use super::{voxel_position::VoxelPosition, voxel_registry::{VoxelRegistry, VoxelType, VoxelTypeIdentifier}};
 
 const MASK_6: u64 = 0b111111;
 
-impl AsModel for Chunk {
-    fn to_model(&self, device: &wgpu::Device) -> Arc<Model> {
-        let material_id = Some(0);
+impl AsMesh for Chunk {
+    fn to_mesh(&self, material_id: MaterialId) -> Mesh {
+        let mut meshes = self.faces.iter_mut()
+            .map(|face| { face.to_mesh(material_id) })
+            .collect::<Vec<_>>();
 
-        let meshes = self.faces.iter()
-            .map(|face| {
-                face.to_mesh(material_id, device)
-            }).collect::<Vec<_>>();
-    }
+        let mut mesh_counter = 0;
+        meshes.iter_mut()
+            .for_each(|mesh| {
+                for index in mesh.indices.iter_mut() {
+                    *index += mesh_counter * 6;
+                    mesh_counter += 1;
+                }
+            });
 
-    fn into_model(self, device: &wgpu::Device) -> Arc<crate::Model> {
-        todo!()
+        let vertices = meshes.iter()
+            .flat_map(|mesh| { mesh.vertices })
+            .collect::<Vec<_>>();
+
+        let indices = meshes.iter()
+            .flat_map(|mesh| { mesh.indices })
+            .collect::<Vec<_>>();
+
+        Mesh {
+            vertices,
+            indices,
+            material_id,
+            name: format!("Chunk {}", "idk")
+        }
     }
 }
 

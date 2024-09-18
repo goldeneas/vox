@@ -1,5 +1,5 @@
 pub mod texture;
-pub mod instance;      
+pub mod instance_data;      
 pub mod model;
 pub mod cube;
 pub mod material;

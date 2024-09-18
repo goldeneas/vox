@@ -2,11 +2,11 @@ use std::{ops::Range, sync::Arc};
 
 use crate::{asset::Asset, components::transform::TransformComponent, resources::asset_server::AssetServer, Texture};
 
-use super::{material::Material, mesh::Mesh, vertex::Vertex};
+use super::{material::{Material, MaterialId}, mesh::Mesh, vertex::Vertex};
 
 pub struct Model {
-    pub meshes: Box<[Mesh]>,
-    pub materials: Box<[Material]>,
+    pub meshes: Vec<Mesh>,
+    pub materials: Vec<Material>,
     pub name: String,
 }
 
@@ -18,31 +18,17 @@ impl Asset for Model {
 
 // TODO: Maybe make a way to cache these models too?
 pub trait AsModel {
-    fn to_model(&self, device: &wgpu::Device) -> Arc<Model>;
-    fn into_model(self, device: &wgpu::Device) -> Arc<Model>;
+    fn to_model(&self) -> Arc<Model>;
 }
 
 impl Model {
-    pub fn new(device: &wgpu::Device,
-        meshes: Box<[Mesh]>,
-        materials: Box<[Material]>,
-        name: String,
-    ) -> Self {
-
-        Self {
-            materials,
-            meshes,
-            name,
-        }
-    }
-
     pub fn load(file_name: &str, asset_server: &mut AssetServer, device: &wgpu::Device, queue: &wgpu::Queue) -> anyhow::Result<Model> {
         let (models, materials_opt) = tobj::load_obj(file_name, &tobj::GPU_LOAD_OPTIONS)
             .expect("Could not load file OBJ file");
 
-        let materials: Box<[Material]> = match materials_opt {
+        let materials: Vec<Material> = match materials_opt {
             Ok(tobj_materials) => {
-                let materials = tobj_materials
+                tobj_materials
                     .into_iter()
                     .map(|m| {
                         let diffuse_texture_name = &m.diffuse_texture.unwrap();
@@ -54,9 +40,7 @@ impl Model {
                             diffuse_texture,
                             &format!("Material - {}", diffuse_texture_name),
                         )
-                    }).collect::<Vec<_>>();
-
-                materials.into()
+                    }).collect::<Vec<_>>()
             },
             Err(_) => {
                 let diffuse_texture = Texture::debug(asset_server, device, queue);
@@ -66,13 +50,13 @@ impl Model {
                     "Debug Material",
                 );
 
-                Box::new([material])
+                vec!(material)
             }
         };
 
-        let meshes: Box<[Mesh]> = models.into_iter()
+        let meshes: Vec<Mesh> = models.into_iter()
             .map(|m| {
-                let vertices: Box<[Vertex]> = (0..m.mesh.positions.len() / 3)
+                let vertices = (0..m.mesh.positions.len() / 3)
                     .map(|i| {
                         let mut normals = [0.0, 0.0, 0.0];
                         if !m.mesh.normals.is_empty() { 
@@ -92,18 +76,21 @@ impl Model {
                             tex_coords: [m.mesh.texcoords[i * 2], 1.0 - m.mesh.texcoords[i * 2 + 1]],
                             normal: normals,
                         }
-                    }).collect::<Vec<_>>()
-                .into();
+                    }).collect::<Vec<_>>();
 
-                let indices: Box<[u32]> = m.mesh.indices
-                    .into();
+                let name = format!("Mesh - {}", file_name);
+                let indices = m.mesh.indices;
+                let material_id = match m.mesh.material_id {
+                    Some(index) => MaterialId::Index(index),
+                    None => MaterialId::Debug,
+                };
 
-                Mesh::new(device,
-                    &vertices,
-                    &indices,
-                    m.mesh.material_id,
-                    file_name,
-                )
+                Mesh {
+                    vertices,
+                    indices,
+                    material_id,
+                    name,
+                }
             }).collect::<Vec<_>>()
         .into();
 
