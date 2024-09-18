@@ -10,20 +10,12 @@ const MASK_6: u64 = 0b111111;
 
 impl AsModel for Chunk {
     fn to_model(&self, device: &wgpu::Device) -> Arc<Model> {
-        let vertices = self.faces.iter()
-            .flat_map(FaceMesh::compute_vertices)
-            .collect::<Vec<_>>();
+        let material_id = Some(0);
 
-        let mut face_counter = 0;
-        let indices = self.faces.iter()
-            .flat_map(|face| {
-                let mut fi = face.indices();
-                fi.iter_mut().for_each(|index| *index += face_counter * 6);
-                face_counter += 1;
-                fi
+        let meshes = self.faces.iter()
+            .map(|face| {
+                face.to_mesh(material_id, device)
             }).collect::<Vec<_>>();
-
-        Mesh::new(device, &vertices, &indices, "Chunk Mesh")
     }
 
     fn into_model(self, device: &wgpu::Device) -> Arc<crate::Model> {

@@ -5,7 +5,7 @@ use binary_greedy_meshing::CS_P;
 use cgmath::{InnerSpace, Matrix4, Quaternion};
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{bundles::camera_bundle::CameraBundle, components::{camerable::{CameraUniform, CamerableComponent}, object::ObjectComponent, position::PositionComponent, rotation::RotationComponent, speed::SpeedComponent}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::Chunk, voxel_position::VoxelPosition}, world_ext::WorldExt, DrawObject, InstanceData};
+use crate::{bundles::camera_bundle::CameraBundle, components::{camerable::{CameraUniform, CamerableComponent}, transform::TransformComponent, position::PositionComponent, rotation::RotationComponent, speed::SpeedComponent}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::Chunk, voxel_position::VoxelPosition}, world_ext::WorldExt, DrawPassExt, Transform};
 
 use super::screen::Screen;
 
@@ -119,7 +119,7 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
     }
 
     chunk.update_faces();
-    let object = ObjectComponent::new(model, instances, device)
+    let object = TransformComponent::new(model, instances, device)
     commands.spawn(object);
 }
 
@@ -129,7 +129,7 @@ pub fn spawn_camera(mut commands: Commands,
     commands.spawn(CameraBundle::debug(&render_ctx.config));
 }
 
-pub fn draw_objects(query: Query<&ObjectComponent>,
+pub fn draw_objects(query: Query<&TransformComponent>,
         render_ctx: Res<RenderContext>,
         mut frame_ctx: ResMut<FrameContext>,
         pipeline: Res<DefaultPipeline>,

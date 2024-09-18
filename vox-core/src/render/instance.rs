@@ -1,13 +1,23 @@
 use bytemuck::{Pod, Zeroable};
+use cgmath::{Quaternion, Vector3, Zero};
 
-pub struct InstanceData {
-    pub position: cgmath::Vector3<f32>,
-    pub rotation: cgmath::Quaternion<f32>,
+pub struct Transform {
+    pub position: Vector3<f32>,
+    pub rotation: Quaternion<f32>,
 }
 
-impl InstanceData {
-    pub fn to_raw(&self) -> InstanceRaw {
-        InstanceRaw {
+impl Transform {
+    pub fn from_position(position: cgmath::Vector3<f32>) -> Self {
+        let rotation = Quaternion::zero();
+
+        Self {
+            position,
+            rotation,
+        }
+    }
+
+    pub fn to_raw(&self) -> TransformRaw {
+        TransformRaw {
             model: (cgmath::Matrix4::from_translation(self.position) * cgmath::Matrix4::from(self.rotation)).into(),
         }
     }
@@ -15,14 +25,14 @@ impl InstanceData {
 
 #[repr(C)]
 #[derive(Copy, Clone, Pod, Zeroable)]
-pub struct InstanceRaw {
+pub struct TransformRaw {
     model: [[f32; 4]; 4],
 }
 
-impl InstanceRaw {
+impl TransformRaw {
     pub fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,
+            array_stride: std::mem::size_of::<TransformRaw>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: &[
                 wgpu::VertexAttribute {

@@ -13,11 +13,15 @@ pub struct FaceMesh {
 }
 
 impl AsMesh for FaceMesh {
-    fn to_mesh(&self, device: &wgpu::Device) -> Mesh {
+    fn to_mesh(&self,
+        material_id: Option<usize>,
+        device: &wgpu::Device,
+    ) -> Mesh {
         Mesh::new(device,
             &self.compute_vertices(),
             &self.indices(),
-            "Face Mesh"
+            material_id,
+            "Face Mesh",
         )
     }
 }

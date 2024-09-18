@@ -1,21 +1,24 @@
 use bevy_ecs::prelude::*;
-use cgmath::{Matrix4, SquareMatrix};
+use cgmath::{Matrix4, Quaternion, SquareMatrix, Zero};
 
-use crate::components::{camerable::CamerableComponent, position::PositionComponent, speed::SpeedComponent};
+use crate::{components::{camerable::CamerableComponent, speed::SpeedComponent, transform::TransformComponent}, Transform};
 
 // TODO: dont really like how cameras are structured
 #[derive(Bundle)]
 pub struct CameraBundle {
     speed: SpeedComponent,
-    position: PositionComponent,
+    transform: TransformComponent,
     camerable: CamerableComponent,
 }
 
 impl CameraBundle {
     pub fn debug(config: &wgpu::SurfaceConfiguration) -> Self {
         Self {
-            position: PositionComponent {
-                position: (0.0, 1.0, 2.0).into() 
+            position: TransformComponent {
+                transforms: [Transform {
+                    position: (0.1, 0.2, 0.3).into(),
+                    rotation: Quaternion::zero(),
+                }]
             },
             speed: SpeedComponent {
                 speed: 0.3,

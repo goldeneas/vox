@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 use cgmath::{Matrix4, SquareMatrix};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions, RenderPipelineDescriptor};
 
-use crate::{components::camerable::CameraUniform, render::vertex::Vertex, InstanceRaw, Texture};
+use crate::{components::camerable::CameraUniform, render::vertex::Vertex, TransformRaw, Texture};
 
 #[derive(Resource)]
 pub struct DefaultPipeline {
@@ -91,7 +91,7 @@ impl DefaultPipeline {
                 entry_point: "vs_main",
                 buffers: &[
                     Vertex::desc(),
-                    InstanceRaw::desc(),
+                    TransformRaw::desc(),
                 ],
                 compilation_options: PipelineCompilationOptions::default(),
             },

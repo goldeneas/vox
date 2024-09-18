@@ -1,5 +1,4 @@
-pub mod position;
-pub mod rotation;
-pub mod object;
+pub mod transform;
 pub mod camerable;
 pub mod speed;
+pub mod model;
