@@ -2,31 +2,6 @@ use std::sync::Arc;
 
 use crate::{voxels::voxel_registry::VoxelTypeIdentifier, Texture};
 
-#[derive(Clone, Copy, Debug)]
-pub enum MaterialId {
-    None,
-    Index(usize),
-}
-
-// TODO: this needs some rework
-// the materialid in general I mean
-// maybe we can avoid the usage of meshes without models
-impl MaterialId {
-    pub fn unwrap(&self) -> usize {
-        match self {
-            MaterialId::None => panic!("Tried rendering a model's mesh without a material id!"),
-            MaterialId::Index(idx) => *idx,
-        }
-    }
-}
-
-// TODO: stub implementation
-impl From<VoxelTypeIdentifier> for MaterialId {
-    fn from(value: VoxelTypeIdentifier) -> Self {
-        Self::Index(value as usize)
-    }
-}
-
 pub struct Material {
     diffuse_texture: Arc<Texture>,
     bind_group: wgpu::BindGroup,

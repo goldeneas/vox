@@ -4,12 +4,12 @@ use crate::{AsModel, Model, Texture};
 
 use super::vertex::Vertex;
 
-pub struct CubeModel {
+pub struct CubePrimitive {
     scale: f32,
     diffuse_texture: Arc<Texture>,
 }
 
-impl AsModel for CubeModel {
+impl AsModel for CubePrimitive {
     fn into_model(self, device: &wgpu::Device) -> Arc<Model> {
         let model = Model::new(device,
             &cube_vertices(self.scale),
@@ -22,7 +22,7 @@ impl AsModel for CubeModel {
     }
 }
 
-impl CubeModel {
+impl CubePrimitive {
     pub fn new(scale: f32, diffuse_texture: Arc<Texture>) -> Self {
         Self {
             scale,

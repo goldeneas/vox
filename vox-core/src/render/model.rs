@@ -2,7 +2,7 @@ use std::{ops::Range, sync::Arc};
 
 use crate::{asset::Asset, components::transform::TransformComponent, resources::asset_server::AssetServer, Texture};
 
-use super::{material::{Material, MaterialId}, mesh::Mesh, vertex::Vertex};
+use super::{material::Material, mesh::Mesh, vertex::Vertex};
 
 pub struct Model {
     pub meshes: Vec<Mesh>,
@@ -18,7 +18,7 @@ impl Asset for Model {
 
 // TODO: Maybe make a way to cache these models too?
 pub trait AsModel {
-    fn to_model(&mut self) -> Model;
+    fn to_model(&self, materials: Vec<Material>) -> Model;
 }
 
 impl Model {
@@ -80,10 +80,7 @@ impl Model {
 
                 let name = format!("Mesh - {}", file_name);
                 let indices = m.mesh.indices;
-                let material_id = match m.mesh.material_id {
-                    Some(index) => MaterialId::Index(index),
-                    None => MaterialId::Debug,
-                };
+                let material_id = m.mesh.material_id;
 
                 Mesh {
                     vertices,
