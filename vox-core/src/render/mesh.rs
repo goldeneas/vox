@@ -35,5 +35,9 @@ impl Mesh {
     pub fn material_id(&self) -> MaterialId {
         self.material_id
     }
+
+    pub fn num_indices(&self) -> u32 {
+        self.indices.len() as u32
+    }
 }
 

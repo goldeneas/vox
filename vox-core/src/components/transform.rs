@@ -9,7 +9,7 @@ pub struct TransformComponent {
 }
 
 impl TransformComponent {
-    pub fn compute_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer {
+    pub fn compute_instance_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer {
         let instances_raw = self.instances_data.iter()
             .map(InstanceData::to_raw)
             .collect::<Vec<_>>();
@@ -21,6 +21,10 @@ impl TransformComponent {
         });
 
         instance_buffer
+    }
+
+    pub fn num_instances(&self) -> u32 {
+        self.instances_data.len()
     }
 }
 

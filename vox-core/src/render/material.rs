@@ -4,8 +4,20 @@ use crate::Texture;
 
 #[derive(Clone, Copy, Debug)]
 pub enum MaterialId {
-    Debug,
+    None,
     Index(usize),
+}
+
+// TODO: this needs some rework
+// the materialid in general I mean
+// maybe we can avoid the usage of meshes without models
+impl MaterialId {
+    pub fn unwrap(&self) -> usize {
+        match self {
+            MaterialId::None => panic!("Tried rendering a model's mesh without a material id!"),
+            MaterialId::Index(idx) => *idx,
+        }
+    }
 }
 
 pub struct Material {

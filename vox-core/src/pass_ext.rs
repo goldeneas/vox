@@ -6,25 +6,24 @@ pub trait DrawPassExt {
     fn draw_mesh(&mut self,
         mesh: &Mesh,
         material: &Material,
-        camera_bind_group: &wgpu::BindGroup);
+        camera_bind_group: &wgpu::BindGroup,
+        device: &wgpu::Device);
     fn draw_mesh_instanced(&mut self,
         mesh: &Mesh,
         material: &Material,
         instances: Range<u32>,
-        camera_bind_group: &wgpu::BindGroup);
+        camera_bind_group: &wgpu::BindGroup,
+        device: &wgpu::Device);
     fn draw_model(&mut self,
         model: &Model,
-        camera_bind_group: &wgpu::BindGroup);
+        camera_bind_group: &wgpu::BindGroup,
+        device: &wgpu::Device);
     fn draw_model_instanced(&mut self,
         model: &Model,
         instances: Range<u32>,
-        camera_bind_group: &wgpu::BindGroup);
-    fn draw_object(&mut self,
-        model_cmpnt: &ModelComponent,
-        transform_cmpnt: &TransformComponent,
         camera_bind_group: &wgpu::BindGroup,
         device: &wgpu::Device);
-    fn draw_object_multiple(&mut self,
+    fn draw_object(&mut self,
         model_cmpnt: &ModelComponent,
         transform_cmpnt: &TransformComponent,
         camera_bind_group: &wgpu::BindGroup,
@@ -35,19 +34,24 @@ impl DrawPassExt for wgpu::RenderPass<'_> {
     fn draw_mesh(&mut self,
         mesh: &Mesh,
         material: &Material,
-        camera_bind_group: &wgpu::BindGroup
+        camera_bind_group: &wgpu::BindGroup,
+        device: &wgpu::Device
     ) {
-        self.draw_mesh_instanced(mesh, material, 0..1, camera_bind_group);
+        self.draw_mesh_instanced(mesh, material, 0..1, camera_bind_group, device);
     }
 
     fn draw_mesh_instanced(&mut self,
         mesh: &Mesh,
         material: &Material,
         instances: Range<u32>,
-        camera_bind_group: &wgpu::BindGroup
+        camera_bind_group: &wgpu::BindGroup,
+        device: &wgpu::Device,
     ) {
-        self.set_vertex_buffer(0, mesh.vertex_buffer().slice(..));
-        self.set_index_buffer(mesh.index_buffer().slice(..), wgpu::IndexFormat::Uint32);
+        let vertex_buffer = mesh.compute_vertex_buffer(device);
+        let index_buffer = mesh.compute_index_buffer(device);
+
+        self.set_vertex_buffer(0, vertex_buffer.slice(..));
+        self.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
         self.set_bind_group(0, material.bind_group(), &[]);
         self.set_bind_group(1, camera_bind_group, &[]);
         self.draw_indexed(0..mesh.num_indices(), 0, instances);
@@ -55,24 +59,31 @@ impl DrawPassExt for wgpu::RenderPass<'_> {
 
     fn draw_model(&mut self,
         model: &Model,
-        camera_bind_group: &wgpu::BindGroup
+        camera_bind_group: &wgpu::BindGroup,
+        device: &wgpu::Device,
     ) {
-        for mesh in model.meshes.as_ref() {
-            let material_id = mesh.material_id().unwrap();
-            let material = &model.materials[material_id];
-            self.draw_mesh(mesh, material, camera_bind_group);
-        }
+        self.draw_model_instanced(model,
+            0..1,
+            camera_bind_group,
+            device
+        );
     }
 
     fn draw_model_instanced(&mut self,
         model: &Model,
         instances: Range<u32>,
-        camera_bind_group: &wgpu::BindGroup
+        camera_bind_group: &wgpu::BindGroup,
+        device: &wgpu::Device,
     ) {
-        for mesh in model.meshes.as_ref() {
+        for mesh in model.meshes.iter() {
             let material_id = mesh.material_id().unwrap();
             let material = &model.materials[material_id];
-            self.draw_mesh_instanced(mesh, material, instances.clone(), camera_bind_group);
+            self.draw_mesh_instanced(mesh,
+                material,
+                instances.clone(),
+                camera_bind_group,
+                device,
+            );
         }
     }
 
@@ -82,30 +93,13 @@ impl DrawPassExt for wgpu::RenderPass<'_> {
         camera_bind_group: &wgpu::BindGroup,
         device: &wgpu::Device,
     ) {
-        self.set_vertex_buffer(1, transform_cmpnt
-            .compute_buffer(device)
-            .slice(..));
-
-        self.draw_model(&model_cmpnt.model,
-            camera_bind_group
-        );
-    }
-
-    fn draw_object_multiple(&mut self,
-        model_cmpnt: &ModelComponent,
-        transform_cmpnt: &TransformComponent,
-        camera_bind_group: &wgpu::BindGroup,
-        device: &wgpu::Device,
-    ) {
-        self.set_vertex_buffer(1, transform_cmpnt
-            .compute_buffer(device)
-            .slice(..));
-
-        let transforms_len = transform_cmpnt.transforms.len() as u32;
+        let instance_buffer = transform_cmpnt.compute_instance_buffer(device);
+        self.set_vertex_buffer(1, instance_buffer.slice(..));
 
         self.draw_model_instanced(&model_cmpnt.model,
-            0..transforms_len,
-            camera_bind_group
+            0..transform_cmpnt.num_instances(),
+            camera_bind_group,
+            device,
         );
     }
 }
