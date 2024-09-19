@@ -3,7 +3,7 @@ use wgpu::util::DeviceExt;
 use super::{material::MaterialId, vertex::Vertex};
 
 pub trait AsMesh {
-    fn to_mesh(&self, material_id: MaterialId) -> Mesh;
+    fn to_mesh(&self) -> Mesh;
 }
 
 pub struct Mesh {

@@ -8,7 +8,7 @@ pub enum VoxelType {
     DIRT,
 }
 
-pub type VoxelTypeIdentifier = u16;
+pub type VoxelTypeIdentifier = u32;
 pub struct VoxelRegistry {
     type_registry: HashMap<VoxelType, VoxelTypeIdentifier>,
 }

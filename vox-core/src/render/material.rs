@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::Texture;
+use crate::{voxels::voxel_registry::VoxelTypeIdentifier, Texture};
 
 #[derive(Clone, Copy, Debug)]
 pub enum MaterialId {
@@ -17,6 +17,13 @@ impl MaterialId {
             MaterialId::None => panic!("Tried rendering a model's mesh without a material id!"),
             MaterialId::Index(idx) => *idx,
         }
+    }
+}
+
+// TODO: stub implementation
+impl From<VoxelTypeIdentifier> for MaterialId {
+    fn from(value: VoxelTypeIdentifier) -> Self {
+        Self::Index(value as usize)
     }
 }
 

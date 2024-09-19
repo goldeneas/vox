@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{AsModel, Model, Texture};
+use crate::{voxels::voxel_registry::VoxelTypeIdentifier, AsModel, Model, Texture};
 
 use super::{material::MaterialId, mesh::{AsMesh, Mesh}, vertex::Vertex};
 
@@ -10,13 +10,15 @@ pub struct FaceMesh {
     height: f32,
     direction: FaceDirection,
     position: (f32, f32, f32),
+    voxel_type: VoxelTypeIdentifier,
 }
 
 impl AsMesh for FaceMesh {
-    fn to_mesh(&self, material_id: MaterialId) -> Mesh {
+    fn to_mesh(&self) -> Mesh {
         let vertices = self.compute_vertices().to_vec();
         let indices = self.indices().to_vec();
         let name = String::from("Face Mesh");
+        let material_id = MaterialId::from(self.voxel_type);
 
         Mesh {
             material_id,
@@ -32,6 +34,7 @@ impl FaceMesh {
         position: (f32, f32, f32),
         width: f32,
         height: f32,
+        voxel_type: VoxelTypeIdentifier,
     ) -> Self {
 
         Self {
@@ -39,6 +42,7 @@ impl FaceMesh {
             position,
             width,
             height,
+            voxel_type,
         }
     }
 

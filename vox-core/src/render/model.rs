@@ -18,7 +18,7 @@ impl Asset for Model {
 
 // TODO: Maybe make a way to cache these models too?
 pub trait AsModel {
-    fn to_model(&self) -> Arc<Model>;
+    fn to_model(&mut self) -> Model;
 }
 
 impl Model {

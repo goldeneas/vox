@@ -24,7 +24,7 @@ impl TransformComponent {
     }
 
     pub fn num_instances(&self) -> u32 {
-        self.instances_data.len()
+        self.instances_data.len() as u32
     }
 }
 

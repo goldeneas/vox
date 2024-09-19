@@ -8,14 +8,14 @@ use super::{voxel_position::VoxelPosition, voxel_registry::{VoxelRegistry, Voxel
 
 const MASK_6: u64 = 0b111111;
 
-impl AsMesh for Chunk {
-    fn to_mesh(&self, material_id: MaterialId) -> Mesh {
-        let mut meshes = self.faces.iter_mut()
-            .map(|face| { face.to_mesh(material_id) })
+impl AsModel for Chunk {
+    fn to_model(&mut self) -> Model {
+        let mut face_meshes = self.faces.iter_mut()
+            .map(|face| { face.to_mesh() })
             .collect::<Vec<_>>();
 
         let mut mesh_counter = 0;
-        meshes.iter_mut()
+        face_meshes.iter_mut()
             .for_each(|mesh| {
                 for index in mesh.indices.iter_mut() {
                     *index += mesh_counter * 6;
@@ -23,20 +23,20 @@ impl AsMesh for Chunk {
                 }
             });
 
-        let vertices = meshes.iter()
+        let vertices = face_meshes.iter()
             .flat_map(|mesh| { mesh.vertices })
             .collect::<Vec<_>>();
 
-        let indices = meshes.iter()
+        let indices = face_meshes.iter()
             .flat_map(|mesh| { mesh.indices })
             .collect::<Vec<_>>();
 
-        Mesh {
+        let chunk_mesh = Mesh {
             vertices,
             indices,
-            material_id,
+            material_id: MaterialId::Index(0),
             name: format!("Chunk {}", "idk")
-        }
+        };
     }
 }
 
