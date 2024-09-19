@@ -9,6 +9,8 @@ pub enum VoxelType {
 }
 
 pub type VoxelTypeIdentifier = u16;
+
+#[derive(Debug)]
 pub struct VoxelRegistry {
     type_registry: HashMap<VoxelType, VoxelTypeIdentifier>,
 }

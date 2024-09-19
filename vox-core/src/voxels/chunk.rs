@@ -1,6 +1,7 @@
 use std::{collections::BTreeSet, sync::Arc};
 
 use binary_greedy_meshing::{self as bgm, CS_P3};
+use egui::ahash::{HashMap, HashMapExt};
 
 use crate::{render::{face_primitive::{FaceDirection, FacePrimitive}, material::MaterialId, mesh::{AsMesh, Mesh}}, AsModel, Model, Texture};
 
@@ -44,28 +45,34 @@ const MASK_6: u64 = 0b111111;
 pub struct Chunk {
     voxels: [VoxelTypeIdentifier ; CS_P3],
     mesh_data: bgm::MeshData,
-    faces: Vec<FacePrimitive>,
+    faces: HashMap<VoxelTypeIdentifier, FacePrimitive>,
+    voxel_registry: VoxelRegistry,
 }
 
 impl Chunk {
     pub fn new() -> Chunk {
         let voxels = [0 ; CS_P3];
         let mesh_data = bgm::MeshData::new();
-        let faces = Vec::new();
+        let faces = HashMap::new();
+        let voxel_registry = VoxelRegistry::default();
 
         Self {
             voxels,
             mesh_data,
             faces,
+            voxel_registry,
         }
     }
 
     pub fn set_voxel_type_at(&mut self,
         position: VoxelPosition,
-        voxel_type: VoxelTypeIdentifier
+        voxel_type: VoxelType
     ) {
         let idx = position.index();
-        self.voxels[idx] = voxel_type;
+        let voxel_id = self.voxel_registry.get_id(voxel_type)
+            .unwrap();
+
+        self.voxels[idx] = voxel_id;
     }
 
     pub fn get_voxel_type_at(&self,
@@ -106,7 +113,7 @@ impl Chunk {
                     height as f32,
                 );
 
-                self.faces.push(face);
+                self.faces.insert(voxel_id, face);
             }
         }
     }
