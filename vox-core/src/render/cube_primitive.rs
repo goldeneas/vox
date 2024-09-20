@@ -2,35 +2,39 @@ use std::sync::Arc;
 
 use crate::{AsModel, Model, Texture};
 
-use super::vertex::Vertex;
+use super::{material::Material, vertex::Vertex};
 
 pub struct CubePrimitive {
     scale: f32,
-    diffuse_texture: Arc<Texture>,
 }
 
-impl AsModel for CubePrimitive {
-    fn into_model(self, device: &wgpu::Device) -> Arc<Model> {
-        let model = Model::new(device,
-            &cube_vertices(self.scale),
-            &cube_indices(),
-            self.diffuse_texture,
-            "Cube Model",
-        );
+//impl AsModel for CubePrimitive {
+//    fn into_model(self, device: &wgpu::Device) -> Arc<Model> {
+//        let model = Model::new(device,
+//            &cube_vertices(self.scale),
+//            &cube_indices(),
+//            self.diffuse_texture,
+//            "Cube Model",
+//        );
+//
+//        Arc::new(model)
+//    }
+//
+//    fn to_model(&self, materials: Vec<Material>) -> Model {
+//        todo!()
+//    }
+//}
+//
+//impl CubePrimitive {
+//    pub fn new(scale: f32) -> Self {
+//        Self {
+//            scale,
+//        }
+//    }
+//}
 
-        Arc::new(model)
-    }
-}
-
-impl CubePrimitive {
-    pub fn new(scale: f32, diffuse_texture: Arc<Texture>) -> Self {
-        Self {
-            scale,
-            diffuse_texture,
-        }
-    }
-}
-
+// TODO: should we have a position set here or only do with transforms?
+// setting both of them can cause problems with instancing
 fn cube_vertices(scale: f32) -> [Vertex ; 24] {
     [
         // Front face

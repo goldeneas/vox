@@ -1,11 +1,11 @@
-use std::time::Instant;
+use std::{sync::Arc, time::Instant};
 
 use bevy_ecs::{schedule::SystemConfigs, system::{Commands, Query, Res, ResMut}, world::World};
 use binary_greedy_meshing::CS_P;
 use cgmath::{InnerSpace, Matrix4, Quaternion, Zero};
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{bundles::object::Object, components::{camerable::{CameraComponent, CameraUniform}, model::ModelComponent, transform::TransformComponent}, pass_ext::DrawPassExt, render::{material::MaterialId, mesh::AsMesh}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::Chunk, voxel_position::VoxelPosition}, world_ext::WorldExt, InstanceData};
+use crate::{bundles::object::Object, components::{camerable::{CameraComponent, CameraUniform}, model::ModelComponent, transform::TransformComponent}, pass_ext::DrawPassExt, render::{material::{Material, MaterialId}, mesh::AsMesh}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::Chunk, voxel_position::VoxelPosition, voxel_registry::VoxelType}, world_ext::WorldExt, AsModel, InstanceData, Texture};
 
 use super::screen::Screen;
 
@@ -112,21 +112,32 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
             for z in 0..CS_P {
                 if ((x*x + y*y + z*z) as f32).sqrt() > 60.0 { continue; }
                 let position = VoxelPosition::from((x, y, z));
-                chunk.set_voxel_type_at(position, 1);
+                chunk.set_voxel_type_at(position, VoxelType::DIRT);
             }
         }
     }
 
     chunk.update_faces();
 
-    let chunk_mesh = chunk.to_mesh(MaterialId::Debug);
+    let device = &render_ctx.device;
+    let queue = &render_ctx.queue;
+
+    let texture = Texture::debug(&mut asset_server, device, queue);
+    let material = Material::new(device, texture, "HI");
+    let materials = vec![material];
+
+    let chunk_model = chunk.to_model(materials);
+    println!("{:?}", chunk_model);
+
     let chunk_data = InstanceData {
         position: (0.0, 0.0, 0.0).into(),
         rotation: Quaternion::zero(),
     };
 
     let object = Object {
-        model: ModelComponent::from(chunk_mesh),
+        model: ModelComponent {
+            model: Arc::new(chunk_model)
+        },
         transform: TransformComponent::from(chunk_data),
     };
 

@@ -2,8 +2,9 @@ use std::{ops::Range, sync::Arc};
 
 use crate::{asset::Asset, components::transform::TransformComponent, resources::asset_server::AssetServer, Texture};
 
-use super::{material::Material, mesh::Mesh, vertex::Vertex};
+use super::{material::{Material, MaterialId}, mesh::Mesh, vertex::Vertex};
 
+#[derive(Debug)]
 pub struct Model {
     pub meshes: Vec<Mesh>,
     pub materials: Vec<Material>,
@@ -80,7 +81,7 @@ impl Model {
 
                 let name = format!("Mesh - {}", file_name);
                 let indices = m.mesh.indices;
-                let material_id = m.mesh.material_id;
+                let material_id = MaterialId::Index(m.mesh.material_id.unwrap_or(0));
 
                 Mesh {
                     vertices,

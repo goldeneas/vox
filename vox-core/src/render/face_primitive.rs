@@ -2,7 +2,10 @@ use std::sync::Arc;
 
 use crate::{voxels::voxel_registry::VoxelTypeIdentifier, AsModel, Model, Texture};
 
-use super::{material::Material, mesh::Mesh, vertex::Vertex};
+use super::{material::{Material, MaterialId}, mesh::{AsMesh, Mesh}, vertex::Vertex};
+
+
+// TODO: make a poision struct wrapper
 
 #[derive(Debug)]
 pub struct FacePrimitive {
@@ -12,22 +15,76 @@ pub struct FacePrimitive {
     position: (f32, f32, f32),
 }
 
-impl AsModel for FacePrimitive {
-    fn to_model(&self, materials: Vec<Material>) -> Model {
+//impl AsMesh for FacePrimitive {
+//    fn to_mesh(&self, material_id: usize) -> Mesh {
+//        let vertices = self.vertices().to_vec();
+//        let indices = self.indices().to_vec();
+//        let name = String::from("Face Mesh");
+//
+//        Mesh {
+//            vertices,
+//            indices,
+//            name,
+//            material_id,
+//        }
+//    }
+//}
+
+impl AsMesh for FacePrimitive {
+    fn to_mesh(&self, material_id: MaterialId) -> Mesh {
         let vertices = self.vertices().to_vec();
         let indices = self.indices().to_vec();
 
-        let mesh = Mesh {
+        Mesh {
             vertices,
             indices,
-            material_id: 0,
+            material_id,
             name: String::from("Face Mesh"),
-        };
+        }
+    }
+}
+
+impl AsModel for FacePrimitive {
+    fn to_model(&self, materials: Vec<Material>) -> Model {
+        let material_id = MaterialId::Index(0);
+        let mesh = self.to_mesh(material_id);
 
         Model {
             meshes: vec![mesh],
             materials,
             name: String::from("Face Model"),
+        }
+    }
+}
+
+// TODO: maybe make this a method of chunk.rs
+impl From<&Vec<FacePrimitive>> for Mesh {
+    fn from(value: &Vec<FacePrimitive>) -> Self {
+        let vertices = value.iter()
+            .flat_map(FacePrimitive::vertices)
+            .collect::<Vec<_>>();
+
+        let mut indices = Vec::with_capacity(value.len() * 6);
+        for (i, face) in value.iter().enumerate() {
+            let voxel_i = (i / 6) as u32;
+
+            let mut face_indices = face.indices()
+                .into_iter()
+                .map(|index| {
+                    index + voxel_i * 6
+                }).collect::<Vec<_>>();
+
+            indices.append(&mut face_indices);
+        }
+
+        let material_id = MaterialId::Index(0);
+        let name = String::from("Faces Mesh");
+
+        Mesh {
+            vertices,
+            indices,
+            material_id,
+            name,
         }
     }
 }

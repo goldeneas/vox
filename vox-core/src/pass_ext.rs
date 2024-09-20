@@ -76,7 +76,7 @@ impl DrawPassExt for wgpu::RenderPass<'_> {
         device: &wgpu::Device,
     ) {
         for mesh in model.meshes.iter() {
-            let material_id = mesh.material_id().unwrap();
+            let material_id = mesh.material_id().get();
             let material = &model.materials[material_id];
             self.draw_mesh_instanced(mesh,
                 material,

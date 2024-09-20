@@ -1,51 +1,34 @@
-use std::{collections::BTreeSet, sync::Arc};
+use std::collections::{BTreeSet, HashMap};
 
 use binary_greedy_meshing::{self as bgm, CS_P3};
-use egui::ahash::{HashMap, HashMapExt};
 
-use crate::{render::{face_primitive::{FaceDirection, FacePrimitive}, material::MaterialId, mesh::{AsMesh, Mesh}}, AsModel, Model, Texture};
+use crate::{render::{face_primitive::{FaceDirection, FacePrimitive}, material::{Material, MaterialId}, mesh::{AsMesh, Mesh}}, AsModel, Model};
 
 use super::{voxel_position::VoxelPosition, voxel_registry::{VoxelRegistry, VoxelType, VoxelTypeIdentifier}};
 
 const MASK_6: u64 = 0b111111;
 
-//impl AsModel for Chunk {
-//    fn to_model(&mut self) -> Model {
-//        let mut face_meshes = self.faces.iter_mut()
-//            .map(|face| { face.to_mesh() })
-//            .collect::<Vec<_>>();
-//
-//        let mut mesh_counter = 0;
-//        face_meshes.iter_mut()
-//            .for_each(|mesh| {
-//                for index in mesh.indices.iter_mut() {
-//                    *index += mesh_counter * 6;
-//                    mesh_counter += 1;
-//                }
-//            });
-//
-//        let vertices = face_meshes.iter()
-//            .flat_map(|mesh| { mesh.vertices })
-//            .collect::<Vec<_>>();
-//
-//        let indices = face_meshes.iter()
-//            .flat_map(|mesh| { mesh.indices })
-//            .collect::<Vec<_>>();
-//
-//        let chunk_mesh = Mesh {
-//            vertices,
-//            indices,
-//            material_id: MaterialId::Index(0),
-//            name: format!("Chunk {}", "idk")
-//        };
-//    }
-//}
+impl AsModel for Chunk {
+    fn to_model(&self, materials: Vec<Material>) -> Model {
+        let meshes: Vec<Mesh> = self.faces
+            .iter()
+            .map(|(voxel_type, faces)| {
+                faces.into()
+            }).collect::<Vec<_>>();
+
+        Model {
+            meshes,
+            materials,
+            name: String::from("Chunk Model")
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct Chunk {
     voxels: [VoxelTypeIdentifier ; CS_P3],
     mesh_data: bgm::MeshData,
-    faces: HashMap<VoxelTypeIdentifier, FacePrimitive>,
+    faces: HashMap<VoxelType, Vec<FacePrimitive>>,
     voxel_registry: VoxelRegistry,
 }
 
@@ -98,14 +81,19 @@ impl Chunk {
                 let z = (bgm_face >> 12) & MASK_6;
                 let width = (bgm_face >> 18) & MASK_6;
                 let height = (bgm_face >> 24) & MASK_6;
-                let voxel_id = bgm_face >> 32;
+
+                // INVARIANT: we can cast to 16 bits because
+                // we can only set a voxel's id with a number using 16 bits.
+                // the topmost 16 bits are not used (probably)
+                let voxel_id = (bgm_face >> 32) as u16;
+
+                let voxel_type = self.voxel_registry
+                    .get_type(voxel_id)
+                    .unwrap();
 
                 let x = x as f32;
                 let y = y as f32;
                 let z = z as f32;
-
-                let width = width as u32;
-                let height = height as u32;
 
                 let face = FacePrimitive::new(direction,
                     (x, y, z),
@@ -113,7 +101,14 @@ impl Chunk {
                     height as f32,
                 );
 
-                self.faces.insert(voxel_id, face);
+                let face_vector = self.faces.get_mut(&voxel_type);
+                match face_vector {
+                    Some(vector) => vector.push(face),
+                    None => {
+                        let vector = vec![face];
+                        self.faces.insert(voxel_type, vector);
+                    }
+                }
             }
         }
     }

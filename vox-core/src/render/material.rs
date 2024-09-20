@@ -1,7 +1,25 @@
+use core::panic;
 use std::sync::Arc;
 
 use crate::{voxels::voxel_registry::VoxelTypeIdentifier, Texture};
 
+#[derive(Clone, Copy, Debug)]
+pub enum MaterialId {
+    Index(usize),
+}
+
+// TODO bad
+impl MaterialId {
+    pub fn get(&self) -> usize {
+        if let MaterialId::Index(idx) = self {
+            *idx
+        } else {
+            panic!("how did we get here");
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct Material {
     diffuse_texture: Arc<Texture>,
     bind_group: wgpu::BindGroup,

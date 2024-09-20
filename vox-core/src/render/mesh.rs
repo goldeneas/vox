@@ -1,13 +1,18 @@
 use wgpu::util::DeviceExt;
 
-use super::vertex::Vertex;
+use super::{material::MaterialId, vertex::Vertex};
 
+pub trait AsMesh {
+    fn to_mesh(&self, material_id: MaterialId) -> Mesh;
+}
+
+#[derive(Debug)]
 pub struct Mesh {
     pub vertices: Vec<Vertex>,
     pub indices: Vec<u32>,
    // the material assigned to this mesh from the materials
    // to be used with models
-    pub material_id: usize, 
+    pub material_id: MaterialId, 
     pub name: String,
 }
 
@@ -28,7 +33,7 @@ impl Mesh {
         })
     }
 
-    pub fn material_id(&self) -> usize {
+    pub fn material_id(&self) -> MaterialId {
         self.material_id
     }
 

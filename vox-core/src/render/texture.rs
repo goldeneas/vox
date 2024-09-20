@@ -3,6 +3,7 @@ use std::sync::Arc;
 use image::GenericImageView;
 use crate::{asset::Asset, resources::asset_server::AssetServer, util::load_binary};
 
+#[derive(Debug)]
 pub struct Texture {
     texture: wgpu::Texture,
     view: wgpu::TextureView,
