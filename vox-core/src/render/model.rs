@@ -4,11 +4,11 @@ use bevy_ecs::component::Component;
 
 use crate::{asset::Asset, resources::asset_server::AssetServer, InstanceData, Texture};
 
-use super::{material::{Material, MaterialId}, mesh::Mesh, vertex::Vertex};
+use super::{material::{Material, MaterialId}, mesh::AsMesh, vertex::Vertex};
 
-#[derive(Debug, Component)]
+#[derive(Component)]
 pub struct Model {
-    pub meshes: Vec<Mesh>,
+    pub meshes: Vec<Box<dyn AsMesh>>,
     pub materials: Vec<Material>,
     pub name: String,
 }
