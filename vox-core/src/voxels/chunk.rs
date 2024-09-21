@@ -11,11 +11,15 @@ const MASK_6: u64 = 0b111111;
 
 impl AsModel for Chunk {
     fn to_model(&self, materials: Vec<Material>) -> Model {
-        let meshes: Vec<Mesh> = self.faces
-            .iter()
-            .map(|(voxel_type, faces)| {
-                faces.into()
-            }).collect::<Vec<_>>();
+        //let meshes: Vec<Mesh> = self.faces
+        //    .iter()
+        //    .map(|(voxel_type, faces)| {
+        //        faces.into()
+        //    }).collect::<Vec<_>>();
+
+        let meshes = self.faces.values()
+            .flatten().map(|face| { face.to_mesh(MaterialId::Index(0))})
+            .collect::<Vec<_>>();
 
         Model {
             meshes,

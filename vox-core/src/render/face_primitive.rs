@@ -17,14 +17,10 @@ impl AsMesh for FacePrimitive {
         let vertices = self.vertices().to_vec();
         let indices = self.indices().to_vec();
         let instance_data = InstanceData::from_position(self.position);
+        let instances_data = vec![instance_data];
+        let name = String::from("Face Mesh");
 
-        Mesh {
-            vertices,
-            indices,
-            material_id,
-            instances_data: vec![instance_data],
-            name: String::from("Face Mesh"),
-        }
+        Mesh::new(vertices, indices, instances_data, material_id, name)
     }
 }
 

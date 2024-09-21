@@ -35,7 +35,7 @@ impl InstanceData {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Pod, Zeroable)]
+#[derive(Copy, Clone, Pod, Zeroable, Debug)]
 pub struct InstanceRaw {
     model: [[f32; 4]; 4],
 }

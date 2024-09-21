@@ -87,14 +87,9 @@ impl Model {
 
                 // TODO: make this position customizable
                 let instance_data = InstanceData::from_position((0.0, 0.0, 0.0));
+                let instances_data = vec![instance_data];
 
-                Mesh {
-                    vertices,
-                    indices,
-                    material_id,
-                    name,
-                    instances_data: vec![instance_data],
-                }
+                Mesh::new(vertices, indices, instances_data, material_id, name)
             }).collect::<Vec<_>>()
         .into();
 

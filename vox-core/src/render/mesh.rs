@@ -1,6 +1,6 @@
 use wgpu::util::DeviceExt;
 
-use crate::InstanceData;
+use crate::{InstanceData, InstanceRaw};
 
 use super::{material::MaterialId, vertex::Vertex};
 
@@ -10,28 +10,51 @@ pub trait AsMesh {
 
 #[derive(Debug)]
 pub struct Mesh {
-    pub vertices: Vec<Vertex>,
-    pub indices: Vec<u32>,
-    pub instances_data: Vec<InstanceData>,
+    vertices: Vec<Vertex>,
+    indices: Vec<u32>,
+    instances_data: Vec<InstanceData>,
+    instances_raw: Vec<InstanceRaw>,
     // the material assigned to this mesh from the materials
     // to be used with models
-    pub material_id: MaterialId, 
-    pub name: String,
+    material_id: MaterialId, 
+    name: String,
 }
 
 impl Mesh {
-    pub fn compute_instance_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer {
-        let instances_raw = self.instances_data.iter()
+    pub fn new(vertices: Vec<Vertex>,
+        indices: Vec<u32>,
+        instances_data: Vec<InstanceData>,
+        material_id: MaterialId,
+        name: String,
+    ) -> Self {
+        let instances_raw = instances_data.iter()
             .map(InstanceData::to_raw)
             .collect::<Vec<_>>();
 
-        let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        Self {
+            vertices,
+            indices,
+            instances_data,
+            instances_raw,
+            material_id,
+            name,
+        }
+    }
+
+    pub fn set_instances(&mut self, instances_data: Vec<InstanceData>) {
+        self.instances_raw = instances_data.iter()
+            .map(InstanceData::to_raw)
+            .collect::<Vec<_>>();
+
+        self.instances_data = instances_data;
+    }
+
+    pub fn compute_instance_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer {
+        device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Instance Buffer"),
             usage: wgpu::BufferUsages::VERTEX,
-            contents: bytemuck::cast_slice(&instances_raw),
-        });
-
-        instance_buffer
+            contents: bytemuck::cast_slice(&self.instances_raw),
+        })
     } 
 
     pub fn compute_index_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer {

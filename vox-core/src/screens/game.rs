@@ -110,7 +110,7 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
     for x in 0..CS_P {
         for y in 0..CS_P {
             for z in 0..CS_P {
-                if ((x*x + y*y + z*z) as f32).sqrt() > 60.0 { continue; }
+                if ((x*x + y*y + z*z) as f32).sqrt() > 30.0 { continue; }
                 let position = VoxelPosition::from((x, y, z));
                 chunk.set_voxel_type_at(position, VoxelType::DIRT);
             }
@@ -126,13 +126,7 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
     let material = Material::new(device, texture, "HI");
     let materials = vec![material];
 
-    //let chunk_model = chunk.to_model(materials);
-    //println!("{:?}", chunk_model);
-    //
-    //let chunk_data = InstanceData {
-    //    position: (0.0, 0.0, 0.0).into(),
-    //    rotation: Quaternion::zero(),
-    //};
+    let chunk_model = chunk.to_model(materials);
 
     let face = FacePrimitive {
         width: 1.0,
@@ -142,7 +136,7 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
     };
 
     let object = Object {
-        model: face.to_model(materials),
+        model: chunk_model,
     };
 
     commands.spawn(object);
