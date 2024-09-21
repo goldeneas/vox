@@ -1,10 +1,12 @@
 use std::{ops::Range, sync::Arc};
 
-use crate::{asset::Asset, components::transform::TransformComponent, resources::asset_server::AssetServer, Texture};
+use bevy_ecs::component::Component;
+
+use crate::{asset::Asset, resources::asset_server::AssetServer, InstanceData, Texture};
 
 use super::{material::{Material, MaterialId}, mesh::Mesh, vertex::Vertex};
 
-#[derive(Debug)]
+#[derive(Debug, Component)]
 pub struct Model {
     pub meshes: Vec<Mesh>,
     pub materials: Vec<Material>,
@@ -83,11 +85,15 @@ impl Model {
                 let indices = m.mesh.indices;
                 let material_id = MaterialId::Index(m.mesh.material_id.unwrap_or(0));
 
+                // TODO: make this position customizable
+                let instance_data = InstanceData::from_position((0.0, 0.0, 0.0));
+
                 Mesh {
                     vertices,
                     indices,
                     material_id,
                     name,
+                    instances_data: vec![instance_data],
                 }
             }).collect::<Vec<_>>()
         .into();

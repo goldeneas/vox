@@ -1,12 +1,32 @@
 use bytemuck::{Pod, Zeroable};
 use cgmath::{Quaternion, Vector3, Zero};
 
+#[derive(Debug)]
 pub struct InstanceData {
     pub position: Vector3<f32>,
     pub rotation: Quaternion<f32>,
 }
 
 impl InstanceData {
+    pub fn from_position(position: (f32, f32, f32)) -> Self {
+        let position: Vector3<f32> = position.into();
+        let rotation = Quaternion::zero();
+
+        Self {
+            position,
+            rotation,
+        }
+    }
+
+    pub fn from_rotation(rotation: Quaternion<f32>) -> Self {
+        let position: Vector3<f32> = (0.0, 0.0, 0.0).into();
+
+        Self {
+            position,
+            rotation,
+        }
+    }
+
     pub fn to_raw(&self) -> InstanceRaw {
         InstanceRaw {
             model: (cgmath::Matrix4::from_translation(self.position) * cgmath::Matrix4::from(self.rotation)).into(),

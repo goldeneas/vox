@@ -1,9 +1,8 @@
 use bevy_ecs::bundle::Bundle;
 
-use crate::{components::{model::ModelComponent, transform::TransformComponent}, InstanceData};
+use crate::Model;
 
 #[derive(Bundle)]
 pub struct Object {
-    pub model: ModelComponent,
-    pub transform: TransformComponent,
+    pub model: Model,
 }

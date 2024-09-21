@@ -1,44 +1,28 @@
 use std::sync::Arc;
 
-use crate::{voxels::voxel_registry::VoxelTypeIdentifier, AsModel, Model, Texture};
+use crate::{voxels::voxel_registry::VoxelTypeIdentifier, AsModel, InstanceData, Model, Texture};
 
 use super::{material::{Material, MaterialId}, mesh::{AsMesh, Mesh}, vertex::Vertex};
 
-
-// TODO: make a poision struct wrapper
-
 #[derive(Debug)]
 pub struct FacePrimitive {
-    width: f32,
-    height: f32,
-    direction: FaceDirection,
-    position: (f32, f32, f32),
+    pub width: f32,
+    pub height: f32,
+    pub direction: FaceDirection,
+    pub position: (f32, f32, f32),
 }
-
-//impl AsMesh for FacePrimitive {
-//    fn to_mesh(&self, material_id: usize) -> Mesh {
-//        let vertices = self.vertices().to_vec();
-//        let indices = self.indices().to_vec();
-//        let name = String::from("Face Mesh");
-//
-//        Mesh {
-//            vertices,
-//            indices,
-//            name,
-//            material_id,
-//        }
-//    }
-//}
 
 impl AsMesh for FacePrimitive {
     fn to_mesh(&self, material_id: MaterialId) -> Mesh {
         let vertices = self.vertices().to_vec();
         let indices = self.indices().to_vec();
+        let instance_data = InstanceData::from_position(self.position);
 
         Mesh {
             vertices,
             indices,
             material_id,
+            instances_data: vec![instance_data],
             name: String::from("Face Mesh"),
         }
     }
@@ -58,61 +42,52 @@ impl AsModel for FacePrimitive {
 }
 
 // TODO: maybe make this a method of chunk.rs
-impl From<&Vec<FacePrimitive>> for Mesh {
-    fn from(value: &Vec<FacePrimitive>) -> Self {
-        let vertices = value.iter()
-            .flat_map(FacePrimitive::vertices)
-            .collect::<Vec<_>>();
-
-        let mut indices = Vec::with_capacity(value.len() * 6);
-        for (i, face) in value.iter().enumerate() {
-            let voxel_i = (i / 6) as u32;
-
-            let mut face_indices = face.indices()
-                .into_iter()
-                .map(|index| {
-                    index + voxel_i * 6
-                }).collect::<Vec<_>>();
-
-            indices.append(&mut face_indices);
-        }
-
-        let material_id = MaterialId::Index(0);
-        let name = String::from("Faces Mesh");
-
-        Mesh {
-            vertices,
-            indices,
-            material_id,
-            name,
-        }
-    }
-}
+//impl From<&Vec<FacePrimitive>> for Mesh {
+//    fn from(value: &Vec<FacePrimitive>) -> Self {
+//        let vertices = value.iter()
+//            .flat_map(FacePrimitive::vertices)
+//            .collect::<Vec<_>>();
+//
+//        let mut indices = Vec::with_capacity(value.len() * 6);
+//        for (i, face) in value.iter().enumerate() {
+//            let voxel_i = (i / 6) as u32;
+//
+//            let mut face_indices = face.indices()
+//                .into_iter()
+//                .map(|index| {
+//                    index + voxel_i * 6
+//                }).collect::<Vec<_>>();
+//
+//            indices.append(&mut face_indices);
+//        }
+//
+//        let material_id = MaterialId::Index(0);
+//        let name = String::from("Faces Mesh");
+//
+//        Mesh {
+//            vertices,
+//            indices,
+//            material_id,
+//            name,
+//        }
+//    }
+//}
 
 impl FacePrimitive {
-    pub fn new(direction: FaceDirection,
-        position: (f32, f32, f32),
-        width: f32,
-        height: f32,
-    ) -> Self {
-
-        Self {
-            direction,
-            position,
-            width,
-            height,
-        }
-    }
-
    pub fn vertices(&self) -> [Vertex ; 4] {
         let scale = 1.0;
 
-        let x = self.position.0;
-        let y = self.position.1;
-        let z = self.position.2;
+        //let x = self.position.0;
+        //let y = self.position.1;
+        //let z = self.position.2;
 
         let width = self.width;
         let height = self.height;
+
+        // TODO: this is used for testing
+        let x = 0.0;
+        let y = 0.0;
+        let z = 0.0;
 
         // width = growing towards positive x
         // height = growing towards positive z

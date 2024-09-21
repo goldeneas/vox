@@ -1,5 +1,6 @@
 use std::collections::{BTreeSet, HashMap};
 
+use bevy_ecs::system::IntoSystem;
 use binary_greedy_meshing::{self as bgm, CS_P3};
 
 use crate::{render::{face_primitive::{FaceDirection, FacePrimitive}, material::{Material, MaterialId}, mesh::{AsMesh, Mesh}}, AsModel, Model};
@@ -8,21 +9,21 @@ use super::{voxel_position::VoxelPosition, voxel_registry::{VoxelRegistry, Voxel
 
 const MASK_6: u64 = 0b111111;
 
-impl AsModel for Chunk {
-    fn to_model(&self, materials: Vec<Material>) -> Model {
-        let meshes: Vec<Mesh> = self.faces
-            .iter()
-            .map(|(voxel_type, faces)| {
-                faces.into()
-            }).collect::<Vec<_>>();
-
-        Model {
-            meshes,
-            materials,
-            name: String::from("Chunk Model")
-        }
-    }
-}
+//impl AsModel for Chunk {
+//    fn to_model(&self, materials: Vec<Material>) -> Model {
+//        let meshes: Vec<Mesh> = self.faces
+//            .iter()
+//            .map(|(voxel_type, faces)| {
+//                faces.into()
+//            }).collect::<Vec<_>>();
+//
+//        Model {
+//            meshes,
+//            materials,
+//            name: String::from("Chunk Model")
+//        }
+//    }
+//}
 
 #[derive(Debug)]
 pub struct Chunk {
@@ -95,11 +96,15 @@ impl Chunk {
                 let y = y as f32;
                 let z = z as f32;
 
-                let face = FacePrimitive::new(direction,
-                    (x, y, z),
-                    width as f32,
-                    height as f32,
-                );
+                let width = width as f32;
+                let height = height as f32;
+
+                let face = FacePrimitive {
+                    direction,
+                    position: (x, y, z),
+                    width,
+                    height,
+                };
 
                 let face_vector = self.faces.get_mut(&voxel_type);
                 match face_vector {

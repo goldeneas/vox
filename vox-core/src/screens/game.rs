@@ -5,7 +5,7 @@ use binary_greedy_meshing::CS_P;
 use cgmath::{InnerSpace, Matrix4, Quaternion, Zero};
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{bundles::object::Object, components::{camerable::{CameraComponent, CameraUniform}, model::ModelComponent, transform::TransformComponent}, pass_ext::DrawPassExt, render::{material::{Material, MaterialId}, mesh::AsMesh}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::Chunk, voxel_position::VoxelPosition, voxel_registry::VoxelType}, world_ext::WorldExt, AsModel, InstanceData, Texture};
+use crate::{bundles::object::Object, components::camerable::{CameraComponent, CameraUniform}, pass_ext::DrawPassExt, render::{face_primitive::{FaceDirection, FacePrimitive}, material::{Material, MaterialId}, mesh::AsMesh}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::Chunk, voxel_position::VoxelPosition, voxel_registry::VoxelType}, world_ext::WorldExt, AsModel, InstanceData, Model, Texture};
 
 use super::screen::Screen;
 
@@ -126,19 +126,23 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
     let material = Material::new(device, texture, "HI");
     let materials = vec![material];
 
-    let chunk_model = chunk.to_model(materials);
-    println!("{:?}", chunk_model);
+    //let chunk_model = chunk.to_model(materials);
+    //println!("{:?}", chunk_model);
+    //
+    //let chunk_data = InstanceData {
+    //    position: (0.0, 0.0, 0.0).into(),
+    //    rotation: Quaternion::zero(),
+    //};
 
-    let chunk_data = InstanceData {
-        position: (0.0, 0.0, 0.0).into(),
-        rotation: Quaternion::zero(),
+    let face = FacePrimitive {
+        width: 1.0,
+        height: 1.0,
+        direction: FaceDirection::BACK,
+        position: (0.0, 0.0, 0.0),
     };
 
     let object = Object {
-        model: ModelComponent {
-            model: Arc::new(chunk_model)
-        },
-        transform: TransformComponent::from(chunk_data),
+        model: face.to_model(materials),
     };
 
     commands.spawn(object);
@@ -150,9 +154,7 @@ pub fn spawn_camera(mut commands: Commands,
     commands.spawn(CameraComponent::debug(&render_ctx.config));
 }
 
-pub fn draw_objects(query: Query<(
-    &ModelComponent,
-    &TransformComponent)>,
+pub fn draw_objects(query: Query<&Model>,
     render_ctx: Res<RenderContext>,
     mut frame_ctx: ResMut<FrameContext>,
     pipeline: Res<DefaultPipeline>,
@@ -167,9 +169,8 @@ pub fn draw_objects(query: Query<(
            render_ctx.depth_texture.view()
        );
 
-    for (model_cmpnt, transform_cmpnt) in &query {
-        render_pass.draw_object(model_cmpnt,
-            transform_cmpnt,
+    for model in &query {
+        render_pass.draw_model(model,
             pipeline.camera_bind_group(),
             &render_ctx.device,
         );
