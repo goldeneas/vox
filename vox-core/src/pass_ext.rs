@@ -4,7 +4,7 @@ use wgpu::util::RenderEncoder;
 
 use crate::{render::{material::Material, mesh::Mesh}, Model};
 
-pub trait DrawPassExt {
+pub trait VoxDrawPassExt {
     fn draw_mesh(&mut self,
         mesh: &Mesh,
         material: &Material,
@@ -16,7 +16,7 @@ pub trait DrawPassExt {
         device: &wgpu::Device);
 }
 
-impl DrawPassExt for wgpu::RenderPass<'_> {
+impl VoxDrawPassExt for wgpu::RenderPass<'_> {
     fn draw_mesh(&mut self,
         mesh: &Mesh,
         material: &Material,

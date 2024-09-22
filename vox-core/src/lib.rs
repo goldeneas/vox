@@ -9,6 +9,7 @@ pub mod asset;
 pub mod world_ext;
 pub mod voxels;
 pub mod pass_ext;
+pub mod device_ext;
 
 use std::borrow::BorrowMut;
 use std::sync::Arc;

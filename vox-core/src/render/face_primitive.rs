@@ -13,19 +13,17 @@ pub struct FacePrimitive {
 }
 
 impl AsMesh for FacePrimitive {
-    fn to_mesh(&self, material_id: MaterialId) -> Mesh {
-        let vertices = self.vertices().to_vec();
-        let indices = self.indices().to_vec();
+    fn to_mesh(&self, material_id: MaterialId, device: &wgpu::Device) -> Mesh {
+        let vertices = &self.vertices();
+        let indices = &self.indices();
         let instance_data = InstanceData::from_position(self.position);
-        let instances_data = vec![instance_data];
-        let name = String::from("Face Mesh");
 
-        Mesh::new(vertices, indices, instances_data, material_id, name)
+        Mesh::new(vertices, indices, &[instance_data], material_id, device)
     }
 }
 
 impl AsModel for FacePrimitive {
-    fn to_model(&self, materials: Vec<Material>) -> Model {
+    fn to_model(&self, materials: Vec<Material>, device: &wgpu::Device) -> Model {
         let material_id = MaterialId::Index(0);
         let mesh = self.to_mesh(material_id);
 
