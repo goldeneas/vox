@@ -50,6 +50,10 @@ impl Mesh {
         }
     }
 
+    pub fn mesh_id(&self) -> MeshId {
+        self.mesh_id
+    }
+
     pub fn vertex_buffer(&self) -> &wgpu::Buffer {
         &self.vertex_buffer
     }

@@ -56,7 +56,7 @@ impl Model {
             }
         };
 
-        let meshes: Vec<Mesh> = models.into_iter()
+        let meshes = models.into_iter()
             .map(|m| {
                 let vertices = (0..m.mesh.positions.len() / 3)
                     .map(|i| {
@@ -80,17 +80,26 @@ impl Model {
                         }
                     }).collect::<Vec<_>>();
 
-                let name = format!("Mesh - {}", file_name);
-                let indices = m.mesh.indices;
-                let material_id = MaterialId::Index(m.mesh.material_id.unwrap_or(0));
+                let indices = m.mesh.indices.iter_mut()
+                    .map(|index| *index as usize)
+                    .collect::<Vec<_>>();
 
                 // TODO: make this position customizable
                 let instance_data = InstanceData::from_position((0.0, 0.0, 0.0));
-                let instances_data = vec![instance_data];
+                let instances = vec![instance_data];
+                // we need to convert the meshes' material idxs to our own
+                // material ids
+                let material_id = material_ids[m.mesh.material_id.unwrap_or(0)];
+                let mesh_id = render_server.free_mesh_id();
 
-                Mesh::new(vertices, indices, instances_data, material_id, name)
-            }).collect::<Vec<_>>()
-        .into();
+                let mesh = Mesh::new(&vertices,
+                    &indices,
+                    &instances,
+                    material_id,
+                    mesh_id,
+                    device
+                );
+            }).collect::<Vec<_>>();
 
         let name = file_name.to_string();
 

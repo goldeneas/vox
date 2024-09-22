@@ -14,28 +14,33 @@ pub struct ModelId(Option<usize>);
 pub struct RenderServer {
     meshes: Vec<Mesh>,
     materials: Vec<Material>,
+    free_mesh_id: MeshId,
+    free_material_id: MeshId,
 }
 
 impl RenderServer {
-    pub fn new() -> Self {
-        let meshes = Vec::new();
-        let materials = Vec::new();
-
-        Self {
-            meshes,
-            materials,
-        }
-    }
-
     pub fn push_material(&mut self,
         diffuse_texture: Arc<Texture>,
         device: &wgpu::Device,
     ) -> MaterialId {
-        let material_id = self.materials().len();
+        let material_id = self.free_material_id;
         let material = Material::new(diffuse_texture, material_id, device);
 
         self.materials.push(material);
+        self.free_material_id += 1;
+
         material_id
+    }
+    
+    pub fn push_mesh_raw(&mut self, mesh: Mesh) -> MeshId {
+        let mesh_id = mesh.mesh_id();
+        debug_assert!(mesh_id == self.free_mesh_id,
+            "Tried pushing a mesh which has a mismatched id");
+
+        self.meshes.push(mesh);
+        self.free_mesh_id += 1;
+
+        mesh_id
     }
 
     pub fn push_mesh(&mut self, as_mesh: &impl AsMesh, device: &wgpu::Device) -> MeshId {
@@ -44,7 +49,7 @@ impl RenderServer {
         let instances = as_mesh.instances();
         let material_id = as_mesh.material_id();
 
-        let mesh_id = self.meshes().len();
+        let mesh_id = self.free_mesh_id;
         let mesh = Mesh::new(&vertices,
             &indices,
             &instances,
@@ -53,8 +58,11 @@ impl RenderServer {
             device
         );
 
-        self.meshes.push(mesh);
-        mesh_id
+        self.push_mesh_raw(mesh)
+    }
+
+    pub fn free_mesh_id(&self) -> MeshId {
+        self.free_mesh_id
     }
 
     pub fn get_material(&self, material_id: MaterialId) -> &Material {
