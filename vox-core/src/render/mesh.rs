@@ -2,7 +2,7 @@ use wgpu::util::DeviceExt;
 
 use crate::{device_ext::VoxDeviceExt, InstanceData, InstanceRaw};
 
-use super::{render_server::{MaterialId, MeshId}, vertex::{Index, Vertex}};
+use super::{render_server::{MaterialId, MeshId, ModelId}, vertex::{Index, Vertex}};
 
 pub trait AsMesh {
     fn vertices(&self) -> Vec<Vertex>;
@@ -22,6 +22,7 @@ pub struct Mesh {
     // to be used with models
     material_id: MaterialId, 
     mesh_id: MeshId,
+    model_id: Option<ModelId>,
 }
 
 impl Mesh {
@@ -30,6 +31,7 @@ impl Mesh {
         instances: &[InstanceData],
         material_id: MaterialId,
         mesh_id: MeshId,
+        model_id: Option<ModelId>,
         device: &wgpu::Device,
     ) -> Self {
         let vertex_buffer = device.compute_vertex_buffer(vertices);
@@ -47,7 +49,12 @@ impl Mesh {
             num_indices,
             material_id,
             mesh_id,
+            model_id,
         }
+    }
+
+    pub fn model_id(&self) -> &Option<ModelId> {
+        &self.model_id
     }
 
     pub fn mesh_id(&self) -> MeshId {

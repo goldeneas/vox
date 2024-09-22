@@ -8,7 +8,7 @@ use super::{material::Material, mesh::{AsMesh, Mesh}};
 
 pub type MaterialId = usize;
 pub type MeshId = usize;
-pub struct ModelId(Option<usize>);
+pub type ModelId = usize;
 
 #[derive(Resource, Default)]
 pub struct RenderServer {
@@ -16,6 +16,7 @@ pub struct RenderServer {
     materials: Vec<Material>,
     free_mesh_id: MeshId,
     free_material_id: MeshId,
+    free_model_id: ModelId,
 }
 
 impl RenderServer {
@@ -31,23 +32,13 @@ impl RenderServer {
 
         material_id
     }
-    
-    pub fn push_mesh_raw(&mut self, mesh: Mesh) -> MeshId {
-        let mesh_id = mesh.mesh_id();
-        debug_assert!(mesh_id == self.free_mesh_id,
-            "Tried pushing a mesh which has a mismatched id");
-
-        self.meshes.push(mesh);
-        self.free_mesh_id += 1;
-
-        mesh_id
-    }
 
     pub fn push_mesh(&mut self, as_mesh: &impl AsMesh, device: &wgpu::Device) -> MeshId {
         let vertices = as_mesh.vertices();
         let indices = as_mesh.indices();
         let instances = as_mesh.instances();
         let material_id = as_mesh.material_id();
+        let model_id = None;
 
         let mesh_id = self.free_mesh_id;
         let mesh = Mesh::new(&vertices,
@@ -55,14 +46,14 @@ impl RenderServer {
             &instances,
             material_id,
             mesh_id,
+            model_id,
             device
         );
 
-        self.push_mesh_raw(mesh)
-    }
+        self.meshes.push(mesh);
+        self.free_mesh_id += 1;
 
-    pub fn free_mesh_id(&self) -> MeshId {
-        self.free_mesh_id
+        mesh_id
     }
 
     pub fn get_material(&self, material_id: MaterialId) -> &Material {

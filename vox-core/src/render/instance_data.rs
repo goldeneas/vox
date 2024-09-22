@@ -1,7 +1,7 @@
 use bytemuck::{Pod, Zeroable};
 use cgmath::{Quaternion, Vector3, Zero};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct InstanceData {
     pub position: Vector3<f32>,
     pub rotation: Quaternion<f32>,

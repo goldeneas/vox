@@ -22,13 +22,13 @@ impl AsMesh for FacePrimitive {
         self.indices().to_vec()
     }
 
-    fn material_id(&self) -> MaterialId {
-        self.material_id
-    }
-
     fn instances(&self) -> Vec<InstanceData> {
         let instance_data = InstanceData::from_position(self.position);
         vec![instance_data]
+    }
+
+    fn material_id(&self) -> MaterialId {
+        self.material_id
     }
 }
 

@@ -4,13 +4,13 @@ use bevy_ecs::component::Component;
 
 use crate::{asset::Asset, resources::asset_server::AssetServer, InstanceData, Texture};
 
-use super::{material::Material, mesh::Mesh, render_server::{MaterialId, RenderServer}, vertex::Vertex};
+use super::{material::Material, mesh::Mesh, phantom_mesh::PhantomMesh, render_server::{MaterialId, ModelId, RenderServer}, vertex::Vertex};
 
-#[derive(Debug, Component)]
+#[derive(Debug, Default)]
 pub struct Model {
-    pub meshes: Vec<Mesh>,
-    pub materials: Vec<Material>,
-    pub name: String,
+    meshes: Vec<Mesh>,
+    materials: Vec<Material>,
+    name: String,
 }
 
 impl Asset for Model {
@@ -33,6 +33,8 @@ impl Model {
     ) -> anyhow::Result<Model> {
         let (models, materials_opt) = tobj::load_obj(file_name, &tobj::GPU_LOAD_OPTIONS)
             .expect("Could not load file OBJ file");
+
+        let model_id = render_server.free_model_id();
 
         let material_ids: Vec<MaterialId> = match materials_opt {
             Ok(tobj_materials) => {
@@ -90,15 +92,13 @@ impl Model {
                 // we need to convert the meshes' material idxs to our own
                 // material ids
                 let material_id = material_ids[m.mesh.material_id.unwrap_or(0)];
-                let mesh_id = render_server.free_mesh_id();
 
-                let mesh = Mesh::new(&vertices,
-                    &indices,
-                    &instances,
-                    material_id,
-                    mesh_id,
-                    device
-                );
+                PhantomMesh {
+                    vertices,
+                    indices,
+                    instances,
+                    material_id
+                }
             }).collect::<Vec<_>>();
 
         let name = file_name.to_string();
@@ -110,5 +110,12 @@ impl Model {
         };
 
         Ok(model)
+    }
+
+    // each mesh in the model must have the same model id
+    pub fn model_id(&self) -> ModelId {
+        self.meshes[0]
+            .model_id()
+            .unwrap()
     }
 }
