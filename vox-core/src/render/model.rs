@@ -4,7 +4,7 @@ use bevy_ecs::component::Component;
 
 use crate::{asset::Asset, resources::asset_server::AssetServer, InstanceData, Texture};
 
-use super::{material::Material, mesh::Mesh, render_server::RenderServer, vertex::Vertex};
+use super::{material::Material, mesh::Mesh, render_server::{MaterialId, RenderServer}, vertex::Vertex};
 
 #[derive(Debug, Component)]
 pub struct Model {
@@ -34,7 +34,7 @@ impl Model {
         let (models, materials_opt) = tobj::load_obj(file_name, &tobj::GPU_LOAD_OPTIONS)
             .expect("Could not load file OBJ file");
 
-        let materials: Vec<Material> = match materials_opt {
+        let material_ids: Vec<MaterialId> = match materials_opt {
             Ok(tobj_materials) => {
                 tobj_materials
                     .into_iter()
@@ -44,21 +44,15 @@ impl Model {
                             .get_or_load(diffuse_texture_name, device, queue)
                             .unwrap();
 
-                        Material::new(device,
-                            diffuse_texture,
-                            &format!("Material - {}", diffuse_texture_name),
-                        )
+                        render_server.push_material(diffuse_texture, device)
                     }).collect::<Vec<_>>()
             },
             Err(_) => {
                 let diffuse_texture = Texture::debug(asset_server, device, queue);
+                let material_id = render_server
+                    .push_material(diffuse_texture, device);
 
-                let material = Material::new(device,
-                    diffuse_texture,
-                    "Debug Material",
-                );
-
-                vec!(material)
+                vec![material_id]
             }
         };
 
