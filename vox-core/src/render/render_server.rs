@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use bevy_ecs::system::Resource;
 
-use crate::Texture;
+use crate::{AsModel, Texture};
 
 use super::{material::Material, mesh::{AsMesh, Mesh}};
 
@@ -33,12 +33,15 @@ impl RenderServer {
         material_id
     }
 
-    pub fn push_mesh(&mut self, as_mesh: &impl AsMesh, device: &wgpu::Device) -> MeshId {
+    pub fn push_mesh_ex(&mut self,
+        as_mesh: &impl AsMesh,
+        model_id_opt: Option<ModelId>,
+        device: &wgpu::Device
+    ) -> MeshId {
         let vertices = as_mesh.vertices();
         let indices = as_mesh.indices();
         let instances = as_mesh.instances();
         let material_id = as_mesh.material_id();
-        let model_id = None;
 
         let mesh_id = self.free_mesh_id;
         let mesh = Mesh::new(&vertices,
@@ -46,7 +49,7 @@ impl RenderServer {
             &instances,
             material_id,
             mesh_id,
-            model_id,
+            model_id_opt,
             device
         );
 
@@ -54,6 +57,28 @@ impl RenderServer {
         self.free_mesh_id += 1;
 
         mesh_id
+    }
+
+    pub fn push_mesh(&mut self,
+        as_mesh: &impl AsMesh,
+        device: &wgpu::Device
+    ) -> MeshId {
+        self.push_mesh_ex(as_mesh, None, device)
+    }
+
+    pub fn push_model(&mut self,
+        as_model: &impl AsModel,
+        device: &wgpu::Device
+    ) -> ModelId {
+        let as_meshes = as_model.meshes();
+        let model_id = self.free_model_id;
+        
+        for as_mesh in as_meshes.iter() {
+            self.push_mesh_ex(as_mesh, Some(model_id), device);
+        }
+
+        self.free_model_id += 1;
+        model_id
     }
 
     pub fn get_material(&self, material_id: MaterialId) -> &Material {

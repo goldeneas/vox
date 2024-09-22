@@ -4,12 +4,15 @@ use bevy_ecs::component::Component;
 
 use crate::{asset::Asset, resources::asset_server::AssetServer, InstanceData, Texture};
 
-use super::{material::Material, mesh::Mesh, phantom_mesh::PhantomMesh, render_server::{MaterialId, ModelId, RenderServer}, vertex::Vertex};
+use super::{material::Material, mesh::{AsMesh, Mesh}, phantom_mesh::PhantomMesh, phantom_model::PhantomModel, render_server::{MaterialId, ModelId, RenderServer}, vertex::Vertex};
+
+pub trait AsModel {
+    fn meshes(&self) -> Vec<Box<dyn AsMesh>>;
+}
 
 #[derive(Debug, Default)]
 pub struct Model {
     meshes: Vec<Mesh>,
-    materials: Vec<Material>,
     name: String,
 }
 
@@ -19,22 +22,15 @@ impl Asset for Model {
     }
 }
 
-// TODO: Maybe make a way to cache these models too?
-pub trait AsModel {
-    fn to_model(&self, materials: Vec<Material>, device: &wgpu::Device) -> Model;
-}
-
 impl Model {
     pub fn load(file_name: &str,
         asset_server: &mut AssetServer,
         render_server: &mut RenderServer,
         device: &wgpu::Device,
         queue: &wgpu::Queue
-    ) -> anyhow::Result<Model> {
+    ) -> anyhow::Result<AsModel> {
         let (models, materials_opt) = tobj::load_obj(file_name, &tobj::GPU_LOAD_OPTIONS)
             .expect("Could not load file OBJ file");
-
-        let model_id = render_server.free_model_id();
 
         let material_ids: Vec<MaterialId> = match materials_opt {
             Ok(tobj_materials) => {
@@ -93,20 +89,20 @@ impl Model {
                 // material ids
                 let material_id = material_ids[m.mesh.material_id.unwrap_or(0)];
 
-                PhantomMesh {
+                let phantom_mesh = PhantomMesh {
                     vertices,
                     indices,
                     instances,
                     material_id
-                }
+                };
+
+                Box::new(phantom_mesh)
             }).collect::<Vec<_>>();
 
         let name = file_name.to_string();
 
-        let model = Model {
+        let model = PhantomModel {
             meshes,
-            materials,
-            name,
         };
 
         Ok(model)
