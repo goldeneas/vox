@@ -5,7 +5,7 @@ use binary_greedy_meshing::CS_P;
 use cgmath::{InnerSpace, Matrix4, Quaternion, Zero};
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{bundles::object::Object, components::camerable::{CameraComponent, CameraUniform}, pass_ext::VoxDrawPassExt, render::{face_primitive::{FaceDirection, FacePrimitive}, material::Material, mesh::AsMesh, render_server::RenderServer}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::Chunk, voxel_position::VoxelPosition, voxel_registry::VoxelType}, world_ext::WorldExt, AsModel, InstanceData, Model, Texture};
+use crate::{components::camerable::{CameraComponent, CameraUniform}, pass_ext::VoxDrawPassExt, render::{face_primitive::{FaceDirection, FacePrimitive}, material::Material, mesh::AsMesh, render_server::RenderServer}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::Chunk, voxel_position::VoxelPosition, voxel_registry::VoxelType}, world_ext::WorldExt, AsModel, InstanceData, Model, Texture};
 
 use super::screen::Screen;
 
@@ -107,11 +107,11 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
     mut commands: Commands,
     render_ctx: Res<RenderContext>
 ) {
-    let mut chunk = Chunk::new();
+    let mut chunk = Chunk::default();
     for x in 0..CS_P {
         for y in 0..CS_P {
             for z in 0..CS_P {
-                if ((x*x + y*y + z*z) as f32).sqrt() > 30.0 { continue; }
+                if ((x*x + y*y + z*z) as f32).sqrt() > 60.0 { continue; }
                 let position = VoxelPosition::from((x, y, z));
                 chunk.set_voxel_type_at(position, VoxelType::DIRT);
             }
@@ -141,15 +141,17 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
     //};
     //
     //commands.spawn(object);
-    let face = FacePrimitive {
-        width: 1.0,
-        height: 1.0,
-        direction: FaceDirection::BACK,
-        position: (0.0, 0.0, 0.0),
-        material_id,
-    };
+    //let face = FacePrimitive {
+    //    width: 1.0,
+    //    height: 1.0,
+    //    direction: FaceDirection::RIGHT,
+    //    position: (0.0, 1.0, 0.0),
+    //    material_id,
+    //};
 
-    render_server.push_mesh(&face, device);
+
+    render_server.push_meshes(chunk.get_meshes(), device);
+    //render_server.push_mesh(&face2, device);
 }
 
 pub fn spawn_camera(mut commands: Commands,

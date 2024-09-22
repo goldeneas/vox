@@ -73,7 +73,7 @@ impl AssetServer {
 
         match extension {
             Some("png") | Some("jpg") => self.load_texture(file_name, device, queue),
-            Some("obj") => self.load_model(file_name, device, queue),
+            //Some("obj") => self.load_model(file_name, device, queue),
             _ => {}
         }
     }
@@ -85,10 +85,10 @@ impl AssetServer {
         self.insert(texture);
     }
 
-    fn load_model(&mut self, file_name: &str, device: &wgpu::Device, queue: &wgpu::Queue) {
-        let model = Model::load(file_name, self, device, queue)
-            .unwrap();
-
-        self.insert(model);
-    }
+    //fn load_model(&mut self, file_name: &str, device: &wgpu::Device, queue: &wgpu::Queue) {
+    //    let model = Model::load(file_name, self, device, queue)
+    //        .unwrap();
+    //
+    //    self.insert(model);
+    //}
 }

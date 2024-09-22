@@ -66,11 +66,10 @@ impl RenderServer {
         self.push_mesh_ex(as_mesh, None, device)
     }
 
-    pub fn push_model(&mut self,
-        as_model: &impl AsModel,
+    pub fn push_meshes(&mut self,
+        as_meshes: &[impl AsMesh],
         device: &wgpu::Device
     ) -> ModelId {
-        let as_meshes = as_model.meshes();
         let model_id = self.free_model_id;
         
         for as_mesh in as_meshes.iter() {

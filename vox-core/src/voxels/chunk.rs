@@ -33,15 +33,16 @@ const MASK_6: u64 = 0b111111;
 pub struct Chunk {
     voxels: [VoxelTypeIdentifier ; CS_P3],
     mesh_data: bgm::MeshData,
-    faces: HashMap<VoxelType, Vec<FacePrimitive>>,
+    //faces: HashMap<VoxelType, Vec<FacePrimitive>>,
+    faces: Vec<FacePrimitive>,
     voxel_registry: VoxelRegistry,
 }
 
-impl Chunk {
-    pub fn new() -> Chunk {
+impl Default for Chunk {
+    fn default() -> Chunk {
         let voxels = [0 ; CS_P3];
         let mesh_data = bgm::MeshData::new();
-        let faces = HashMap::new();
+        let faces = Vec::new();
         let voxel_registry = VoxelRegistry::default();
 
         Self {
@@ -51,7 +52,9 @@ impl Chunk {
             voxel_registry,
         }
     }
+}
 
+impl Chunk {
     pub fn set_voxel_type_at(&mut self,
         position: VoxelPosition,
         voxel_type: VoxelType
@@ -71,6 +74,10 @@ impl Chunk {
         let voxel_id = self.voxels[idx];
         
         voxel_registry.get_type(voxel_id)
+    }
+
+    pub fn get_meshes(&self) -> &Vec<impl AsMesh> {
+        &self.faces
     }
 
     pub fn update_faces(&mut self) {
@@ -113,14 +120,16 @@ impl Chunk {
                     material_id,
                 };
 
-                let face_vector = self.faces.get_mut(&voxel_type);
-                match face_vector {
-                    Some(vector) => vector.push(face),
-                    None => {
-                        let vector = vec![face];
-                        self.faces.insert(voxel_type, vector);
-                    }
-                }
+                self.faces.push(face);
+
+                //let face_vector = self.faces.get_mut(&voxel_type);
+                //match face_vector {
+                //    Some(vector) => vector.push(face),
+                //    None => {
+                //        let vector = vec![face];
+                //        self.faces.insert(voxel_type, vector);
+                //    }
+                //}
             }
         }
     }

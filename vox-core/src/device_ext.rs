@@ -20,7 +20,7 @@ impl VoxDeviceExt for Device {
     fn compute_index_buffer(&self, indices: &[Index]) -> Buffer {
         self.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Mesh Index Buffer"),
-            usage: wgpu::BufferUsages::VERTEX,
+            usage: wgpu::BufferUsages::INDEX,
             contents: bytemuck::cast_slice(indices),
         })
     }

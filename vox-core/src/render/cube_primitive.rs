@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{AsModel, Model, Texture};
 
-use super::{material::{Material, MaterialId}, mesh::{AsMesh, Mesh}, vertex::Vertex};
+use super::{mesh::{AsMesh, Mesh}, vertex::Vertex};
 
 pub struct CubePrimitive {
     pub scale: f32,

@@ -1,6 +1,6 @@
 use bytemuck::{Pod, Zeroable};
 
-pub type Index = usize;
+pub type Index = u32;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]

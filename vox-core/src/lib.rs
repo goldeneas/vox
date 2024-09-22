@@ -1,6 +1,5 @@
 pub mod render;
 pub mod util;
-pub mod bundles;
 pub mod components;
 pub mod resources;
 pub mod ui;

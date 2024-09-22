@@ -222,7 +222,7 @@ impl FacePrimitive {
         }
     }
 
-    pub fn indices(&self) -> [usize ; 6] {
+    pub fn indices(&self) -> [Index ; 6] {
         match self.direction {
             FaceDirection::LEFT => [0, 1, 2, 0, 2, 3],
             FaceDirection::BACK => [0, 1, 2, 0, 2, 3],

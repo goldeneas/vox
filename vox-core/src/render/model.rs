@@ -4,7 +4,7 @@ use bevy_ecs::component::Component;
 
 use crate::{asset::Asset, resources::asset_server::AssetServer, InstanceData, Texture};
 
-use super::{material::Material, mesh::{AsMesh, Mesh}, phantom_mesh::PhantomMesh, phantom_model::PhantomModel, render_server::{MaterialId, ModelId, RenderServer}, vertex::Vertex};
+use super::{material::Material, mesh::{AsMesh, Mesh}, phantom_mesh::PhantomMesh, render_server::{MaterialId, ModelId, RenderServer}, vertex::Vertex};
 
 pub trait AsModel {
     fn meshes(&self) -> Vec<Box<dyn AsMesh>>;
@@ -12,7 +12,7 @@ pub trait AsModel {
 
 #[derive(Debug, Default)]
 pub struct Model {
-    meshes: Vec<Mesh>,
+    meshes: Vec<PhantomMesh>,
     name: String,
 }
 
@@ -22,13 +22,14 @@ impl Asset for Model {
     }
 }
 
+//TODO remove anyhow
 impl Model {
     pub fn load(file_name: &str,
         asset_server: &mut AssetServer,
         render_server: &mut RenderServer,
         device: &wgpu::Device,
         queue: &wgpu::Queue
-    ) -> anyhow::Result<AsModel> {
+    ) -> Vec<PhantomMesh> {
         let (models, materials_opt) = tobj::load_obj(file_name, &tobj::GPU_LOAD_OPTIONS)
             .expect("Could not load file OBJ file");
 
@@ -78,9 +79,7 @@ impl Model {
                         }
                     }).collect::<Vec<_>>();
 
-                let indices = m.mesh.indices.iter_mut()
-                    .map(|index| *index as usize)
-                    .collect::<Vec<_>>();
+                let indices = m.mesh.indices;
 
                 // TODO: make this position customizable
                 let instance_data = InstanceData::from_position((0.0, 0.0, 0.0));
@@ -89,29 +88,14 @@ impl Model {
                 // material ids
                 let material_id = material_ids[m.mesh.material_id.unwrap_or(0)];
 
-                let phantom_mesh = PhantomMesh {
+                PhantomMesh {
                     vertices,
                     indices,
                     instances,
                     material_id
-                };
-
-                Box::new(phantom_mesh)
+                }
             }).collect::<Vec<_>>();
 
-        let name = file_name.to_string();
-
-        let model = PhantomModel {
-            meshes,
-        };
-
-        Ok(model)
-    }
-
-    // each mesh in the model must have the same model id
-    pub fn model_id(&self) -> ModelId {
-        self.meshes[0]
-            .model_id()
-            .unwrap()
+        meshes
     }
 }
