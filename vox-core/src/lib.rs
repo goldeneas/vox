@@ -18,6 +18,7 @@ use std::time::Instant;
 use bevy_ecs::world::Mut;
 use bevy_ecs::world::World;
 use render::model::*;
+use render::render_server::RenderServer;
 use resources::asset_server::AssetServer;
 use resources::game_state::GameState;
 use resources::screen_server::ScreenServer;
@@ -115,6 +116,7 @@ impl AppState {
         world.init_resource::<MouseRes>();
         world.init_resource::<GameState>();
         world.init_resource::<AssetServer>();
+        world.init_resource::<RenderServer>();
 
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
         let glyphon_renderer = GlyphonRenderer::new(&device, &queue);

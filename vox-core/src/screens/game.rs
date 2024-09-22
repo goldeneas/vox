@@ -5,7 +5,7 @@ use binary_greedy_meshing::CS_P;
 use cgmath::{InnerSpace, Matrix4, Quaternion, Zero};
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{bundles::object::Object, components::camerable::{CameraComponent, CameraUniform}, pass_ext::VoxDrawPassExt, render::{face_primitive::{FaceDirection, FacePrimitive}, material::{Material, MaterialId}, mesh::AsMesh}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::Chunk, voxel_position::VoxelPosition, voxel_registry::VoxelType}, world_ext::WorldExt, AsModel, InstanceData, Model, Texture};
+use crate::{bundles::object::Object, components::camerable::{CameraComponent, CameraUniform}, pass_ext::VoxDrawPassExt, render::{face_primitive::{FaceDirection, FacePrimitive}, material::Material, mesh::AsMesh, render_server::RenderServer}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::Chunk, voxel_position::VoxelPosition, voxel_registry::VoxelType}, world_ext::WorldExt, AsModel, InstanceData, Model, Texture};
 
 use super::screen::Screen;
 
@@ -103,6 +103,7 @@ pub fn update_camera(mut query: Query<&mut CameraComponent>,
 }
 
 pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
+    mut render_server: ResMut<RenderServer>,
     mut commands: Commands,
     render_ctx: Res<RenderContext>
 ) {
@@ -123,23 +124,32 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
     let queue = &render_ctx.queue;
 
     let texture = Texture::debug(&mut asset_server, device, queue);
-    let material = Material::new(device, texture, "HI");
-    let materials = vec![material];
-
-    let chunk_model = chunk.to_model(materials);
-
+    let material_id = render_server.push_material(texture, device);
+    //let materials = vec![material];
+    //
+    //let chunk_model = chunk.to_model(materials);
+    //
+    //let face = FacePrimitive {
+    //    width: 1.0,
+    //    height: 1.0,
+    //    direction: FaceDirection::BACK,
+    //    position: (0.0, 0.0, 0.0),
+    //};
+    //
+    //let object = Object {
+    //    model: chunk_model,
+    //};
+    //
+    //commands.spawn(object);
     let face = FacePrimitive {
         width: 1.0,
         height: 1.0,
         direction: FaceDirection::BACK,
         position: (0.0, 0.0, 0.0),
+        material_id,
     };
 
-    let object = Object {
-        model: chunk_model,
-    };
-
-    commands.spawn(object);
+    render_server.push_mesh(&face, device);
 }
 
 pub fn spawn_camera(mut commands: Commands,
@@ -148,14 +158,14 @@ pub fn spawn_camera(mut commands: Commands,
     commands.spawn(CameraComponent::debug(&render_ctx.config));
 }
 
-pub fn draw_objects(query: Query<&Model>,
-    render_ctx: Res<RenderContext>,
+pub fn draw_objects(render_ctx: Res<RenderContext>,
     mut frame_ctx: ResMut<FrameContext>,
     pipeline: Res<DefaultPipeline>,
+    render_server: Res<RenderServer>,
 ) {
     let view = &frame_ctx.view;
     let mut encoder = render_ctx.device.create_command_encoder(&CommandEncoderDescriptor {
-        label: Some("Game Object Encoder"),
+        label: Some("Object Encoder"),
     });
 
    let mut render_pass = pipeline
@@ -163,12 +173,15 @@ pub fn draw_objects(query: Query<&Model>,
            render_ctx.depth_texture.view()
        );
 
-    for model in &query {
-        render_pass.draw_model(model,
-            pipeline.camera_bind_group(),
-            &render_ctx.device,
+   for mesh in render_server.meshes() {
+       let material_id = mesh.material_id();
+       let material = render_server.get_material(material_id);
+
+       render_pass.draw_mesh(mesh,
+           material,
+           pipeline.camera_bind_group()
         );
-    }
+   }
 
     frame_ctx.add_encoder(encoder);
 }

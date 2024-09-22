@@ -1,5 +1,7 @@
 use bytemuck::{Pod, Zeroable};
 
+pub type Index = usize;
+
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 pub struct Vertex {

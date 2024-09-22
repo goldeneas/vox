@@ -6,4 +6,4 @@ pub mod material;
 pub mod mesh;
 pub mod face_primitive;
 pub mod vertex;
-pub mod render_storage;
+pub mod render_server;

@@ -1,10 +1,10 @@
 use wgpu::{util::DeviceExt, Buffer, Device};
 
-use crate::{render::vertex::Vertex, InstanceData};
+use crate::{render::vertex::{Index, Vertex}, InstanceData};
 
 pub trait VoxDeviceExt {
     fn compute_vertex_buffer(&self, vertices: &[Vertex]) -> Buffer;
-    fn compute_index_buffer(&self, indices: &[u32]) -> Buffer;
+    fn compute_index_buffer(&self, indices: &[Index]) -> Buffer;
     fn compute_instance_buffer(&self, instances: &[InstanceData]) -> Buffer;
 }
 
@@ -17,7 +17,7 @@ impl VoxDeviceExt for Device {
         })
     }
 
-    fn compute_index_buffer(&self, indices: &[u32]) -> Buffer {
+    fn compute_index_buffer(&self, indices: &[Index]) -> Buffer {
         self.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Mesh Index Buffer"),
             usage: wgpu::BufferUsages::VERTEX,

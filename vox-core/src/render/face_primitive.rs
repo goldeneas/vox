@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{voxels::voxel_registry::VoxelTypeIdentifier, AsModel, InstanceData, Model, Texture};
 
-use super::{material::{Material, MaterialId}, mesh::{AsMesh, Mesh}, vertex::Vertex};
+use super::{material::Material, mesh::{AsMesh, Mesh}, render_server::{MaterialId, MeshId}, vertex::{Index, Vertex}};
 
 #[derive(Debug)]
 pub struct FacePrimitive {
@@ -10,28 +10,25 @@ pub struct FacePrimitive {
     pub height: f32,
     pub direction: FaceDirection,
     pub position: (f32, f32, f32),
+    pub material_id: MaterialId,
 }
 
 impl AsMesh for FacePrimitive {
-    fn to_mesh(&self, material_id: MaterialId, device: &wgpu::Device) -> Mesh {
-        let vertices = &self.vertices();
-        let indices = &self.indices();
-        let instance_data = InstanceData::from_position(self.position);
-
-        Mesh::new(vertices, indices, &[instance_data], material_id, device)
+    fn vertices(&self) -> Vec<Vertex> {
+        self.vertices().to_vec()
     }
-}
 
-impl AsModel for FacePrimitive {
-    fn to_model(&self, materials: Vec<Material>, device: &wgpu::Device) -> Model {
-        let material_id = MaterialId::Index(0);
-        let mesh = self.to_mesh(material_id);
+    fn indices(&self) -> Vec<Index> {
+        self.indices().to_vec()
+    }
 
-        Model {
-            meshes: vec![mesh],
-            materials,
-            name: String::from("Face Model"),
-        }
+    fn material_id(&self) -> MaterialId {
+        self.material_id
+    }
+
+    fn instances(&self) -> Vec<InstanceData> {
+        let instance_data = InstanceData::from_position(self.position);
+        vec![instance_data]
     }
 }
 
@@ -225,7 +222,7 @@ impl FacePrimitive {
         }
     }
 
-    pub fn indices(&self) -> [u32 ; 6] {
+    pub fn indices(&self) -> [usize ; 6] {
         match self.direction {
             FaceDirection::LEFT => [0, 1, 2, 0, 2, 3],
             FaceDirection::BACK => [0, 1, 2, 0, 2, 3],

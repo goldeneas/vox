@@ -3,15 +3,21 @@ use std::sync::Arc;
 
 use crate::{voxels::voxel_registry::VoxelTypeIdentifier, Texture};
 
+use super::render_server::MaterialId;
+
 #[derive(Debug)]
 pub struct Material {
     diffuse_texture: Arc<Texture>,
     bind_group: wgpu::BindGroup,
+    material_id: MaterialId,
 }
 
 // TODO: cache this
 impl Material {
-    pub fn new(device: &wgpu::Device, diffuse_texture: Arc<Texture>, name: &str) -> Self {
+    pub fn new(diffuse_texture: Arc<Texture>,
+        material_id: MaterialId,
+        device: &wgpu::Device,
+    ) -> Self {
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: None,
             entries: &[
@@ -35,7 +41,7 @@ impl Material {
         });
         
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some(name),
+            label: Some("Material Bind Group"),
             layout: &bind_group_layout,
             entries: &[
                 wgpu::BindGroupEntry {
@@ -52,7 +58,12 @@ impl Material {
         Material {
             diffuse_texture,
             bind_group,
+            material_id,
         }
+    }
+
+    pub fn material_id(&self) -> MaterialId {
+        self.material_id
     }
 
     pub fn diffuse_texture(&self) -> Arc<Texture> {

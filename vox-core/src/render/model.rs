@@ -4,7 +4,7 @@ use bevy_ecs::component::Component;
 
 use crate::{asset::Asset, resources::asset_server::AssetServer, InstanceData, Texture};
 
-use super::{material::{Material, MaterialId}, mesh::Mesh, vertex::Vertex};
+use super::{material::Material, mesh::Mesh, render_server::RenderServer, vertex::Vertex};
 
 #[derive(Debug, Component)]
 pub struct Model {
@@ -25,7 +25,12 @@ pub trait AsModel {
 }
 
 impl Model {
-    pub fn load(file_name: &str, asset_server: &mut AssetServer, device: &wgpu::Device, queue: &wgpu::Queue) -> anyhow::Result<Model> {
+    pub fn load(file_name: &str,
+        asset_server: &mut AssetServer,
+        render_server: &mut RenderServer,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue
+    ) -> anyhow::Result<Model> {
         let (models, materials_opt) = tobj::load_obj(file_name, &tobj::GPU_LOAD_OPTIONS)
             .expect("Could not load file OBJ file");
 

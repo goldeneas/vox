@@ -2,10 +2,13 @@ use wgpu::util::DeviceExt;
 
 use crate::{device_ext::VoxDeviceExt, InstanceData, InstanceRaw};
 
-use super::{material::MaterialId, vertex::Vertex};
+use super::{render_server::{MaterialId, MeshId}, vertex::{Index, Vertex}};
 
 pub trait AsMesh {
-    fn to_mesh(&self, material_id: MaterialId, device: &wgpu::Device) -> Mesh;
+    fn vertices(&self) -> Vec<Vertex>;
+    fn indices(&self) -> Vec<Index>;
+    fn instances(&self) -> Vec<InstanceData>;
+    fn material_id(&self) -> MaterialId;
 }
 
 #[derive(Debug)]
@@ -18,21 +21,23 @@ pub struct Mesh {
     // the material assigned to this mesh from the materials
     // to be used with models
     material_id: MaterialId, 
+    mesh_id: MeshId,
 }
 
 impl Mesh {
     pub fn new(vertices: &[Vertex],
-        indices: &[u32],
-        instances_data: &[InstanceData],
+        indices: &[Index],
+        instances: &[InstanceData],
         material_id: MaterialId,
+        mesh_id: MeshId,
         device: &wgpu::Device,
     ) -> Self {
         let vertex_buffer = device.compute_vertex_buffer(vertices);
         let index_buffer = device.compute_index_buffer(indices);
-        let instance_buffer = device.compute_instance_buffer(instances_data);
+        let instance_buffer = device.compute_instance_buffer(instances);
 
         let num_indices = indices.len();
-        let num_instances = instances_data.len();
+        let num_instances = instances.len();
 
         Self {
             vertex_buffer,
@@ -41,7 +46,20 @@ impl Mesh {
             num_instances,
             num_indices,
             material_id,
+            mesh_id,
         }
+    }
+
+    pub fn vertex_buffer(&self) -> &wgpu::Buffer {
+        &self.vertex_buffer
+    }
+
+    pub fn index_buffer(&self) -> &wgpu::Buffer {
+        &self.index_buffer
+    }
+
+    pub fn instance_buffer(&self) -> &wgpu::Buffer {
+        &self.instance_buffer
     }
 
     pub fn material_id(&self) -> MaterialId {
