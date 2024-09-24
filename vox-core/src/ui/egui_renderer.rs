@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use bevy_ecs::system::Resource;
 use egui::Context;
+use egui_plot::PlotUi;
 use egui_wgpu::ScreenDescriptor;
 use egui_winit::winit::event::WindowEvent;
 use wgpu::CommandEncoderDescriptor;
@@ -87,6 +88,14 @@ impl EguiRenderer {
 
                 func(context, state);
             });
+        egui::Window::new("HI")
+            .show(context, |ui| {
+                egui_plot::Plot::new("HI2")
+                    .show(ui, |plot_ui| {
+
+                    });
+            });
+
         let output = context.end_frame();
 
         self.state.handle_platform_output(window, output.platform_output);

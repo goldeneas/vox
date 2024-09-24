@@ -3,9 +3,10 @@ use std::{sync::Arc, time::Instant};
 use bevy_ecs::{schedule::SystemConfigs, system::{Commands, Query, Res, ResMut}, world::World};
 use binary_greedy_meshing::CS_P;
 use cgmath::{InnerSpace, Matrix4, Quaternion, Zero};
+use egui_plot::PlotPoints;
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{components::camerable::{CameraComponent, CameraUniform}, pass_ext::VoxDrawPassExt, render::{face_primitive::{FaceDirection, FacePrimitive}, material::Material, mesh::AsMesh, render_server::RenderServer}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::glyphon_renderer::{LabelDescriptor, LabelId}, voxels::{chunk::Chunk, voxel_position::VoxelPosition, voxel_registry::VoxelType}, world_ext::WorldExt, AsModel, InstanceData, Model, Texture};
+use crate::{components::camerable::{CameraComponent, CameraUniform}, pass_ext::VoxDrawPassExt, render::{face_primitive::{FaceDirection, FacePrimitive}, material::Material, mesh::AsMesh, render_server::RenderServer}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::{egui_renderer::EguiRenderer, glyphon_renderer::{LabelDescriptor, LabelId}}, voxels::{chunk::Chunk, voxel_position::VoxelPosition, voxel_registry::VoxelType}, world_ext::WorldExt, AsModel, InstanceData, Model, Texture};
 
 use super::screen::Screen;
 
@@ -37,8 +38,9 @@ impl Screen for GameScreen {
 
         let mut glyphon_renderer = world.glyphon_renderer_mut();
 
-        if self.frame_counter >= 100 {
-            let string = format!("UPDATE DT: {:?}", self.elapsed.unwrap().elapsed());
+        if self.frame_counter >= 80 {
+            let fps = 1000 / self.elapsed.unwrap().elapsed().as_millis();
+            let string = format!("FPS: {:?}", fps);
             glyphon_renderer.set_text(self.label_id.unwrap(), string);
             self.frame_counter = 0;
         }
@@ -53,13 +55,13 @@ impl Screen for GameScreen {
         self.to_systems((draw_objects, draw_camera))
     }
 
-    fn update_systems(&self) -> Option<SystemConfigs> {
-        self.to_systems(update_camera)
-    }
-
     fn game_state(&self) -> GameState {
         GameState::Game
     }
+}
+
+pub fn draw_stats(egui_renderer: Res<EguiRenderer>) {
+
 }
 
 pub fn update_camera(mut query: Query<&mut CameraComponent>,
