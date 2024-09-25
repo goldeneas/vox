@@ -78,6 +78,8 @@ impl EguiRenderer {
         let input = self.state.take_egui_input(window);
         let context = self.state.egui_ctx();
 
+        // TODO: add egui_plot
+
         context.begin_frame(input);
         self.window_funcs
             .iter()
@@ -88,14 +90,6 @@ impl EguiRenderer {
 
                 func(context, state);
             });
-        egui::Window::new("HI")
-            .show(context, |ui| {
-                egui_plot::Plot::new("HI2")
-                    .show(ui, |plot_ui| {
-
-                    });
-            });
-
         let output = context.end_frame();
 
         self.state.handle_platform_output(window, output.platform_output);

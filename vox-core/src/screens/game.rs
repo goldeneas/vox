@@ -6,7 +6,7 @@ use cgmath::{InnerSpace, Matrix4, Quaternion, Zero};
 use egui_plot::PlotPoints;
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{components::camerable::{CameraComponent, CameraUniform}, pass_ext::VoxDrawPassExt, render::{face_primitive::{FaceDirection, FacePrimitive}, material::Material, mesh::AsMesh, render_server::RenderServer}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::{egui_renderer::EguiRenderer, glyphon_renderer::{LabelDescriptor, LabelId}}, voxels::{chunk::Chunk, voxel_position::VoxelPosition, voxel_registry::VoxelType}, world_ext::WorldExt, AsModel, InstanceData, Model, Texture};
+use crate::{components::camerable::{CameraComponent, CameraUniform}, pass_ext::VoxDrawPassExt, render::{face_primitive::{FaceDirection, FacePrimitive}, material::Material, mesh::AsMesh, multi_indexed_mesh::AsMultiIndexedMesh, render_server::RenderServer}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, frame_context::FrameContext, game_state::GameState, input::InputRes, mouse::MouseRes, render_context::RenderContext}, ui::{egui_renderer::EguiRenderer, glyphon_renderer::{LabelDescriptor, LabelId}}, voxels::{chunk::Chunk, voxel_position::VoxelPosition, voxel_registry::VoxelType}, world_ext::WorldExt, AsModel, InstanceData, Model, Texture};
 
 use super::screen::Screen;
 
@@ -152,8 +152,19 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
     //};
 
 
-    render_server.push_meshes(chunk.get_meshes(), device);
+    //render_server.push_meshes(chunk.get_meshes(), device);
     //render_server.push_mesh(&face2, device);
+    //render_server.push_multi_indexed_mesh(&chunk, device);
+
+
+    let face = FacePrimitive {
+        width: 1.0,
+        height: 1.0,
+        direction: FaceDirection::RIGHT,
+        position: (0.0, 1.0, 0.0),
+        material_id,
+    };
+    render_server.push_mesh(&face, device);
 }
 
 pub fn spawn_camera(mut commands: Commands,
@@ -186,6 +197,16 @@ pub fn draw_objects(render_ctx: Res<RenderContext>,
            pipeline.camera_bind_group()
         );
    }
+
+   //for multi_indexed_mesh in render_server.multi_indexed_meshes() {
+   //    let material_id = multi_indexed_mesh.material_id();
+   //    let material = render_server.get_material(material_id);
+   //
+   //    render_pass.draw_mesh_multi_indexed(multi_indexed_mesh,
+   //        material,
+   //        pipeline.camera_bind_group()
+   //     );
+   //}
 
     frame_ctx.add_encoder(encoder);
 }

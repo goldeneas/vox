@@ -32,27 +32,50 @@ const MASK_6: u64 = 0b111111;
 
 impl AsMultiIndexedMesh for Chunk {
     fn vertices(&self) -> Vec<Vertex> {
-        todo!()
+        vec![
+            FacePrimitive::vertices(FaceDirection::UP, 1.0, 1.0),
+            FacePrimitive::vertices(FaceDirection::DOWN, 1.0, 1.0),
+            FacePrimitive::vertices(FaceDirection::RIGHT, 1.0, 1.0),
+            FacePrimitive::vertices(FaceDirection::LEFT, 1.0, 1.0),
+            FacePrimitive::vertices(FaceDirection::FRONT, 1.0, 1.0),
+            FacePrimitive::vertices(FaceDirection::BACK, 1.0, 1.0),
+        ].iter().flatten().copied().collect()
     }
 
     fn indices(&self) -> Vec<u32> {
-        todo!()
+        vec![
+            FacePrimitive::indices(FaceDirection::UP),
+            FacePrimitive::indices(FaceDirection::DOWN),
+            FacePrimitive::indices(FaceDirection::RIGHT),
+            FacePrimitive::indices(FaceDirection::LEFT),
+            FacePrimitive::indices(FaceDirection::FRONT),
+            FacePrimitive::indices(FaceDirection::BACK),
+        ].iter().flatten().copied().collect()
     }
 
     fn instances(&self) -> Vec<InstanceData> {
-        todo!()
+        vec![InstanceData::from_position((0.0, 0.0, 0.0))]
     }
 
     fn indirect_indexed_args(&self) -> Vec<DrawIndexedIndirectArgs> {
-        todo!()
+        self.faces.iter()
+            .map(|face| {
+                DrawIndexedIndirectArgs {
+                    index_count: 6,
+                    instance_count: face.instances().len() as u32,
+                    first_index: 6 * FaceDirection::to_index(face.direction),
+                    base_vertex: 4 * FaceDirection::to_index(face.direction) as i32,
+                    first_instance: 0,
+                }
+            }).collect()
     }
 
     fn material_id(&self) -> usize {
-        todo!()
+        0
     }
 
     fn draw_count(&self) -> u32 {
-        todo!()
+        self.faces.len() as u32
     }
 }
 

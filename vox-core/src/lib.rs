@@ -35,6 +35,7 @@ use resources::input::KeyState;
 use resources::mouse::MouseRes;
 use ui::egui_renderer::EguiRenderer;
 use ui::glyphon_renderer::GlyphonRenderer;
+use wgpu::Features;
 use winit::application::ApplicationHandler;
 use winit::event_loop::ActiveEventLoop;
 use winit::event_loop::ControlFlow;
@@ -80,7 +81,7 @@ impl AppState {
         }).await.unwrap();
 
         let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor {
-            required_features: wgpu::Features::POLYGON_MODE_LINE,
+            required_features: Features::POLYGON_MODE_LINE | Features::MULTI_DRAW_INDIRECT,
             #[cfg(not(target_arch="wasm32"))]
             required_limits: wgpu::Limits::default(),
             #[cfg(target_arch="wasm32")]

@@ -55,4 +55,36 @@ impl MultiIndexedMesh {
             draw_count,
         }
     }
+
+    pub fn model_id(&self) -> &Option<ModelId> {
+        &self.model_id
+    }
+
+    pub fn mesh_id(&self) -> MultiIndexedMeshId {
+        self.mesh_id
+    }
+
+    pub fn vertex_buffer(&self) -> &wgpu::Buffer {
+        &self.vertex_buffer
+    }
+
+    pub fn index_buffer(&self) -> &wgpu::Buffer {
+        &self.index_buffer
+    }
+
+    pub fn instance_buffer(&self) -> &wgpu::Buffer {
+        &self.instance_buffer
+    }
+
+    pub fn indirect_buffer(&self) -> &wgpu::Buffer {
+        &self.indirect_indexed_buffer
+    }
+
+    pub fn material_id(&self) -> MaterialId {
+        self.material_id
+    }
+
+    pub fn draw_count(&self) -> u32 {
+        self.draw_count
+    }
 }

@@ -230,12 +230,12 @@ impl FacePrimitive {
 
     pub fn indices(direction: FaceDirection) -> [Index ; 6] {
         match direction {
-            FaceDirection::LEFT => [0, 1, 2, 0, 2, 3],
-            FaceDirection::BACK => [0, 1, 2, 0, 2, 3],
             FaceDirection::UP => [0, 1, 2, 0, 2, 3],
-            FaceDirection::FRONT => [0, 3, 1, 1, 3, 2],
-            FaceDirection::RIGHT => [3, 2, 1, 3, 1, 0],
             FaceDirection::DOWN => [1, 0, 3, 1, 3, 2],
+            FaceDirection::LEFT => [0, 1, 2, 0, 2, 3],
+            FaceDirection::RIGHT => [3, 2, 1, 3, 1, 0],
+            FaceDirection::FRONT => [0, 3, 1, 1, 3, 2],
+            FaceDirection::BACK => [0, 1, 2, 0, 2, 3],
         }
     }
 }
@@ -252,10 +252,21 @@ pub enum FaceDirection {
 }
 
 impl FaceDirection {
-    pub fn from_bgm(direction: usize) -> Self {
-        debug_assert!(direction < 6, "Unknown bgm direction");
-
+    pub fn to_index(direction: Self) -> u32 {
         match direction {
+            FaceDirection::UP       => 0,
+            FaceDirection::DOWN     => 1,
+            FaceDirection::RIGHT    => 2,
+            FaceDirection::LEFT     => 3,
+            FaceDirection::FRONT    => 4,
+            FaceDirection::BACK     => 5,
+        }
+    }
+
+    pub fn from_bgm(bgm_direction: usize) -> Self {
+        debug_assert!(bgm_direction < 6, "Unknown bgm direction");
+
+        match bgm_direction {
             0 => FaceDirection::UP,
             1 => FaceDirection::DOWN,
             2 => FaceDirection::RIGHT,
