@@ -51,6 +51,10 @@ impl Screen for GameScreen {
         self.to_systems((spawn_camera, spawn_chunks))
     }
 
+    fn update_systems(&self) -> Option<SystemConfigs> {
+        self.to_systems(update_camera)
+    }
+
     fn draw_systems(&self) -> Option<SystemConfigs> {
         self.to_systems((draw_objects, draw_camera))
     }
@@ -154,17 +158,7 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
 
     //render_server.push_meshes(chunk.get_meshes(), device);
     //render_server.push_mesh(&face2, device);
-    //render_server.push_multi_indexed_mesh(&chunk, device);
-
-
-    let face = FacePrimitive {
-        width: 1.0,
-        height: 1.0,
-        direction: FaceDirection::RIGHT,
-        position: (0.0, 1.0, 0.0),
-        material_id,
-    };
-    render_server.push_mesh(&face, device);
+    render_server.push_multi_indexed_mesh(&chunk, device);
 }
 
 pub fn spawn_camera(mut commands: Commands,
@@ -198,15 +192,15 @@ pub fn draw_objects(render_ctx: Res<RenderContext>,
         );
    }
 
-   //for multi_indexed_mesh in render_server.multi_indexed_meshes() {
-   //    let material_id = multi_indexed_mesh.material_id();
-   //    let material = render_server.get_material(material_id);
-   //
-   //    render_pass.draw_mesh_multi_indexed(multi_indexed_mesh,
-   //        material,
-   //        pipeline.camera_bind_group()
-   //     );
-   //}
+   for multi_indexed_mesh in render_server.multi_indexed_meshes() {
+       let material_id = multi_indexed_mesh.material_id();
+       let material = render_server.get_material(material_id);
+
+       render_pass.draw_mesh_multi_indexed(multi_indexed_mesh,
+           material,
+           pipeline.camera_bind_group()
+        );
+   }
 
     frame_ctx.add_encoder(encoder);
 }
