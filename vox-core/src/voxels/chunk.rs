@@ -4,31 +4,11 @@ use bevy_ecs::system::IntoSystem;
 use binary_greedy_meshing::{self as bgm, CS_P3};
 use wgpu::util::DrawIndexedIndirectArgs;
 
-use crate::{render::{face_primitive::{FaceDirection, FacePrimitive}, material::Material, mesh::{AsMesh, Mesh}, multi_indexed_mesh::AsMultiIndexedMesh, vertex::Vertex}, AsModel, InstanceData, Model};
+use crate::{render::{face_direction::FaceDirection, face_primitive::{FaceDirection, FacePrimitive}, material::Material, mesh::{AsMesh, Mesh}, multi_indexed_mesh::AsMultiIndexedMesh, vertex::Vertex}, AsModel, InstanceData, Model};
 
 use super::{voxel_position::VoxelPosition, voxel_registry::{VoxelRegistry, VoxelType, VoxelTypeIdentifier}};
 
 const MASK_6: u64 = 0b111111;
-
-//impl AsModel for Chunk {
-//    fn to_model(&self, materials: Vec<Material>) -> Model {
-//        //let meshes: Vec<Mesh> = self.faces
-//        //    .iter()
-//        //    .map(|(voxel_type, faces)| {
-//        //        faces.into()
-//        //    }).collect::<Vec<_>>();
-//
-//        let meshes = self.faces.values()
-//            .flatten().map(|face| { face.to_mesh(MaterialId::Index(0))})
-//            .collect::<Vec<_>>();
-//
-//        Model {
-//            meshes,
-//            materials,
-//            name: String::from("Chunk Model")
-//        }
-//    }
-//}
 
 impl AsMultiIndexedMesh for Chunk {
     fn vertices(&self) -> Vec<Vertex> {

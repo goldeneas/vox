@@ -11,12 +11,12 @@ pub struct FacePrimitive {
     pub material_id: MaterialId,
 }
 
-impl AsMesh for FacePrimitive {
-    fn vertices(&self) -> Vec<Vertex> {
-        let width = self.width;
-        let height = self.height;
-
-        match self.direction {
+impl FacePrimitive {
+    pub fn vertices(direction: FaceDirection,
+        width: f32,
+        height: f32
+    ) -> [Vertex ; 4] {
+        match direction {
             FaceDirection::FRONT => [
                 Vertex {
                     position: [0.0, 0.0, 0.0],
@@ -149,18 +149,30 @@ impl AsMesh for FacePrimitive {
                     tex_coords: [0.0, width],
                 },
             ],
-        }.to_vec()
+        }
     }
 
-    fn indices(&self) -> Vec<Index> {
-        match self.direction {
+    pub fn indices(direction: FaceDirection) -> [Index ; 6] {
+        match direction {
             FaceDirection::UP => [0, 1, 2, 0, 2, 3],
             FaceDirection::DOWN => [1, 0, 3, 1, 3, 2],
             FaceDirection::LEFT => [0, 1, 2, 0, 2, 3],
             FaceDirection::RIGHT => [3, 2, 1, 3, 1, 0],
             FaceDirection::FRONT => [0, 3, 1, 1, 3, 2],
             FaceDirection::BACK => [0, 1, 2, 0, 2, 3],
-        }.to_vec()
+        }
+    }
+}
+
+impl AsMesh for FacePrimitive {
+    fn vertices(&self) -> Vec<Vertex> {
+        Self::vertices(self.direction, self.width, self.height)
+            .to_vec()
+    }
+
+    fn indices(&self) -> Vec<Index> {
+        Self::indices(self.direction)
+            .to_vec()
     }
 
     fn instances(&self) -> Vec<InstanceData> {
