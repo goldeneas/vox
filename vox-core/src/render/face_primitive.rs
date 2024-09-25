@@ -15,11 +15,17 @@ pub struct FacePrimitive {
 
 impl AsMesh for FacePrimitive {
     fn vertices(&self) -> Vec<Vertex> {
-        self.vertices().to_vec()
+        let direction = self.direction;
+        let width = self.width;
+        let height = self.height;
+
+        Self::vertices(direction, width, height)
+            .to_vec()
     }
 
     fn indices(&self) -> Vec<Index> {
-        self.indices().to_vec()
+        Self::indices(self.direction)
+            .to_vec()
     }
 
     fn instances(&self) -> Vec<InstanceData> {
@@ -65,15 +71,15 @@ impl AsMesh for FacePrimitive {
 //}
 
 impl FacePrimitive {
-   pub fn vertices(&self) -> [Vertex ; 4] {
+   pub fn vertices(direction: FaceDirection,
+       width: f32,
+       height: f32
+    ) -> [Vertex ; 4] {
         let scale = 1.0;
 
         //let x = self.position.0;
         //let y = self.position.1;
         //let z = self.position.2;
-
-        let width = self.width;
-        let height = self.height;
 
         // TODO: this is used for testing
         let x = 0.0;
@@ -86,7 +92,7 @@ impl FacePrimitive {
         // they mean somehting else :)
         // go ask the author of the library
 
-        match self.direction {
+        match direction {
             FaceDirection::FRONT => [
                 Vertex {
                     position: [x, y, z],
@@ -222,8 +228,8 @@ impl FacePrimitive {
         }
     }
 
-    pub fn indices(&self) -> [Index ; 6] {
-        match self.direction {
+    pub fn indices(direction: FaceDirection) -> [Index ; 6] {
+        match direction {
             FaceDirection::LEFT => [0, 1, 2, 0, 2, 3],
             FaceDirection::BACK => [0, 1, 2, 0, 2, 3],
             FaceDirection::UP => [0, 1, 2, 0, 2, 3],

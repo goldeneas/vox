@@ -2,8 +2,9 @@ use std::collections::{BTreeSet, HashMap};
 
 use bevy_ecs::system::IntoSystem;
 use binary_greedy_meshing::{self as bgm, CS_P3};
+use wgpu::util::DrawIndexedIndirectArgs;
 
-use crate::{render::{face_primitive::{FaceDirection, FacePrimitive}, material::Material, mesh::{AsMesh, Mesh}}, AsModel, Model};
+use crate::{render::{face_primitive::{FaceDirection, FacePrimitive}, material::Material, mesh::{AsMesh, Mesh}, multi_indexed_mesh::AsMultiIndexedMesh, vertex::Vertex}, AsModel, InstanceData, Model};
 
 use super::{voxel_position::VoxelPosition, voxel_registry::{VoxelRegistry, VoxelType, VoxelTypeIdentifier}};
 
@@ -28,6 +29,32 @@ const MASK_6: u64 = 0b111111;
 //        }
 //    }
 //}
+
+impl AsMultiIndexedMesh for Chunk {
+    fn vertices(&self) -> Vec<Vertex> {
+        todo!()
+    }
+
+    fn indices(&self) -> Vec<u32> {
+        todo!()
+    }
+
+    fn instances(&self) -> Vec<InstanceData> {
+        todo!()
+    }
+
+    fn indirect_indexed_args(&self) -> Vec<DrawIndexedIndirectArgs> {
+        todo!()
+    }
+
+    fn material_id(&self) -> usize {
+        todo!()
+    }
+
+    fn draw_count(&self) -> u32 {
+        todo!()
+    }
+}
 
 #[derive(Debug)]
 pub struct Chunk {
