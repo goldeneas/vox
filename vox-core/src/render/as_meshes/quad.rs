@@ -75,24 +75,24 @@ impl Quad {
                     tex_coords: [0.0, 0.0],
                 },
                 Vertex {
-                    position: [0.0 - width, 0.0, 0.0],
+                    position: [-width, 0.0, 0.0],
                     normal: [0.0, 0.0, 0.0],
                     tex_coords: [width, 0.0],
                 },
                 Vertex {
-                    position: [0.0 - width, 0.0 + height, 0.0],
+                    position: [-width, height, 0.0],
                     normal: [0.0, 0.0, 0.0],
                     tex_coords: [width, height],
                 },
                 Vertex {
-                    position: [0.0, 0.0 + height, 0.0],
+                    position: [0.0, height, 0.0],
                     normal: [0.0, 0.0, 0.0],
                     tex_coords: [0.0, height],
                 },
             ],
             QuadOrientation::BACK => [
                 Vertex {
-                    position: [0.0 + width, 0.0, 0.0],
+                    position: [width, 0.0, 0.0],
                     normal: [0.0, 0.0, 0.0],
                     tex_coords: [0.0, 0.0],
                 },
@@ -102,29 +102,29 @@ impl Quad {
                     tex_coords: [width, 0.0],
                 },
                 Vertex {
-                    position: [0.0, 0.0 + height, 0.0],
+                    position: [0.0, height, 0.0],
                     normal: [0.0, 0.0, 0.0],
                     tex_coords: [width, height],
                 },
                 Vertex {
-                    position: [0.0 + width, 0.0 + height, 0.0],
+                    position: [width, height, 0.0],
                     normal: [0.0, 0.0, 0.0],
                     tex_coords: [0.0, height],
                 },
             ],
             QuadOrientation::UP => [
                 Vertex {
-                    position: [0.0, 0.0, 0.0 + height],
+                    position: [0.0, 0.0, height],
                     normal: [0.0, 0.0, 0.0],
                     tex_coords: [0.0, 0.0],
                 },
                 Vertex {
-                    position: [0.0 + width, 0.0, 0.0 + height],
+                    position: [width, 0.0, height],
                     normal: [0.0, 0.0, 0.0],
                     tex_coords: [width, 0.0],
                 },
                 Vertex {
-                    position: [0.0 + width, 0.0, 0.0],
+                    position: [width, 0.0, 0.0],
                     normal: [0.0, 0.0, 0.0],
                     tex_coords: [width, height],
                 },
@@ -141,24 +141,24 @@ impl Quad {
                     tex_coords: [width, 0.0],
                 },
                 Vertex {
-                    position: [0.0 - width, 0.0, 0.0],
+                    position: [-width, 0.0, 0.0],
                     normal: [0.0, 0.0, 0.0],
                     tex_coords: [0.0, 0.0],
                 },
                 Vertex {
-                    position: [0.0 - width, 0.0, 0.0 + height],
+                    position: [-width, 0.0, height],
                     normal: [0.0, 0.0, 0.0],
                     tex_coords: [0.0, height],
                 },
                 Vertex {
-                    position: [0.0, 0.0, 0.0 + height],
+                    position: [0.0, 0.0, height],
                     normal: [0.0, 0.0, 0.0],
                     tex_coords: [width, height],
                 },
             ],
             QuadOrientation::RIGHT => [
                 Vertex {
-                    position: [0.0, 0.0, 0.0 + height],
+                    position: [0.0, 0.0, height],
                     normal: [0.0, 0.0, 0.0],
                     tex_coords: [0.0, 0.0],
                 },
@@ -168,12 +168,12 @@ impl Quad {
                     tex_coords: [0.0, height],
                 },
                 Vertex {
-                    position: [0.0, 0.0 - width, 0.0],
+                    position: [0.0, -width, 0.0],
                     normal: [0.0, 0.0, 0.0],
                     tex_coords: [width, height],
                 },
                 Vertex {
-                    position: [0.0, 0.0 - width, 0.0 + height],
+                    position: [0.0, -width, height],
                     normal: [0.0, 0.0, 0.0],
                     tex_coords: [width, 0.0],
                 },
@@ -185,17 +185,17 @@ impl Quad {
                     tex_coords: [0.0, 0.0],
                 },
                 Vertex {
-                    position: [0.0, 0.0, 0.0 + height],
+                    position: [0.0, 0.0, height],
                     normal: [0.0, 0.0, 0.0],
                     tex_coords: [height, 0.0],
                 },
                 Vertex {
-                    position: [0.0, 0.0 + width, 0.0 + height],
+                    position: [0.0, width, height],
                     normal: [0.0, 0.0, 0.0],
                     tex_coords: [height, width],
                 },
                 Vertex {
-                    position: [0.0, 0.0 + width, 0.0],
+                    position: [0.0, width, 0.0],
                     normal: [0.0, 0.0, 0.0],
                     tex_coords: [0.0, width],
                 },
