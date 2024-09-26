@@ -5,11 +5,13 @@ use crate::{device_ext::VoxDeviceExt, InstanceData, InstanceRaw};
 use super::{render_server::{MaterialId, MeshId, ModelId}, vertex::{Index, Vertex}};
 
 pub trait AsMesh {
-    fn vertices(&self) -> Vec<Vertex>;
-    fn indices(&self) -> Vec<Index>;
-    fn instances(&self) -> Vec<InstanceData>;
+    fn vertices(&self) -> &[Vertex];
+    fn indices(&self) -> &[Index];
+    fn instances(&self) -> &[InstanceData];
     fn material_id(&self) -> MaterialId;
 }
+
+pub type MeshPosition = (f32, f32, f32);
 
 #[derive(Debug)]
 pub struct Mesh {

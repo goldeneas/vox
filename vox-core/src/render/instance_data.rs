@@ -1,6 +1,8 @@
 use bytemuck::{Pod, Zeroable};
 use cgmath::{Quaternion, Vector3, Zero};
 
+use super::mesh::MeshPosition;
+
 #[derive(Debug, Clone, Copy)]
 pub struct InstanceData {
     pub position: Vector3<f32>,
@@ -8,7 +10,7 @@ pub struct InstanceData {
 }
 
 impl InstanceData {
-    pub fn from_position(position: (f32, f32, f32)) -> Self {
+    pub fn from_position(position: MeshPosition) -> Self {
         let position: Vector3<f32> = position.into();
         let rotation = Quaternion::zero();
 

@@ -3,7 +3,7 @@ use bytemuck::{Pod, Zeroable};
 pub type Index = u32;
 
 #[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable, Default)]
 pub struct Vertex {
     pub position: [f32; 3],
     pub tex_coords: [f32; 2],

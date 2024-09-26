@@ -49,10 +49,10 @@ impl RenderServer {
         let draw_count = as_multi_indexed_mesh.draw_count();
 
         let multi_indexed_mesh_id = self.free_multi_indexed_mesh_id;
-        let multi_indexed_mesh = MultiIndexedMesh::new(&vertices,
-            &indices,
-            &instances,
-            &indirect_indexed_args,
+        let multi_indexed_mesh = MultiIndexedMesh::new(vertices,
+            indices,
+            instances,
+            indirect_indexed_args,
             draw_count,
             material_id,
             multi_indexed_mesh_id,
@@ -76,9 +76,9 @@ impl RenderServer {
         let material_id = as_mesh.material_id();
 
         let mesh_id = self.free_mesh_id;
-        let mesh = Mesh::new(&vertices,
-            &indices,
-            &instances,
+        let mesh = Mesh::new(vertices,
+            indices,
+            instances,
             material_id,
             mesh_id,
             model_id_opt,

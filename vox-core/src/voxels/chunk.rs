@@ -1,53 +1,45 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::BTreeSet;
 
-use bevy_ecs::system::IntoSystem;
 use binary_greedy_meshing::{self as bgm, CS_P3};
 use wgpu::util::DrawIndexedIndirectArgs;
 
-use crate::{render::{face_direction::FaceDirection, face_primitive::{FaceDirection, FacePrimitive}, material::Material, mesh::{AsMesh, Mesh}, multi_indexed_mesh::AsMultiIndexedMesh, vertex::Vertex}, AsModel, InstanceData, Model};
+use crate::{render::{face_direction::FaceDirection, face_primitive::FacePrimitive, mesh::AsMesh, multi_indexed_mesh::AsMultiIndexedMesh, vertex::{Index, Vertex}}, InstanceData};
 
 use super::{voxel_position::VoxelPosition, voxel_registry::{VoxelRegistry, VoxelType, VoxelTypeIdentifier}};
 
 const MASK_6: u64 = 0b111111;
 
 impl AsMultiIndexedMesh for Chunk {
-    fn vertices(&self) -> Vec<Vertex> {
-        vec![
-            FacePrimitive::vertices(FaceDirection::UP, 1.0, 1.0),
-            FacePrimitive::vertices(FaceDirection::DOWN, 1.0, 1.0),
-            FacePrimitive::vertices(FaceDirection::RIGHT, 1.0, 1.0),
-            FacePrimitive::vertices(FaceDirection::LEFT, 1.0, 1.0),
-            FacePrimitive::vertices(FaceDirection::FRONT, 1.0, 1.0),
-            FacePrimitive::vertices(FaceDirection::BACK, 1.0, 1.0),
-        ].iter().flatten().copied().collect()
+    fn vertices(&self) -> &[Vertex] {
+        &self.vertices
     }
 
-    fn indices(&self) -> Vec<u32> {
-        vec![
-            FacePrimitive::indices(FaceDirection::UP),
-            FacePrimitive::indices(FaceDirection::DOWN),
-            FacePrimitive::indices(FaceDirection::RIGHT),
-            FacePrimitive::indices(FaceDirection::LEFT),
-            FacePrimitive::indices(FaceDirection::FRONT),
-            FacePrimitive::indices(FaceDirection::BACK),
-        ].iter().flatten().copied().collect()
+    fn indices(&self) -> &[Index] {
+        &self.indices
     }
 
-    fn instances(&self) -> Vec<InstanceData> {
-        vec![InstanceData::from_position((0.0, 0.0, 0.0))]
+    fn instances(&self) -> &[InstanceData] {
+       self.faces.iter()
+           .flat_map(|face| {
+               face.instances()
+           }).collect()
     }
 
     fn indirect_indexed_args(&self) -> Vec<DrawIndexedIndirectArgs> {
-        self.faces.iter()
-            .map(|face| {
-                DrawIndexedIndirectArgs {
-                    index_count: 6,
-                    instance_count: face.instances().len() as u32,
-                    first_index: 6 * FaceDirection::to_index(face.direction),
-                    base_vertex: 4 * FaceDirection::to_index(face.direction) as i32,
-                    first_instance: 0,
-                }
-            }).collect()
+        let mut vec = Vec::with_capacity(self.faces.len());
+        for (i, face) in self.faces.iter().enumerate() {
+            let arg = DrawIndexedIndirectArgs {
+                index_count: 6,
+                instance_count: 1,
+                first_index: 6 * FaceDirection::to_index(face.direction),
+                base_vertex: 4 * FaceDirection::to_index(face.direction) as i32,
+                first_instance: i as u32,
+            };
+
+            vec.push(arg);
+        }
+
+        vec
     }
 
     fn material_id(&self) -> usize {
@@ -66,6 +58,8 @@ pub struct Chunk {
     //faces: HashMap<VoxelType, Vec<FacePrimitive>>,
     faces: Vec<FacePrimitive>,
     voxel_registry: VoxelRegistry,
+    vertices: Vec<Vertex>,
+    indices: Vec<Index>,
 }
 
 impl Default for Chunk {
@@ -75,11 +69,30 @@ impl Default for Chunk {
         let faces = Vec::new();
         let voxel_registry = VoxelRegistry::default();
 
+        // TODO: maybe make this a bit better
+        let mut vertices = Vec::with_capacity(24);
+        vertices.extend_from_slice(&FacePrimitive::vertices(FaceDirection::UP, 1.0, 1.0));
+        vertices.extend_from_slice(&FacePrimitive::vertices(FaceDirection::DOWN, 1.0, 1.0));
+        vertices.extend_from_slice(&FacePrimitive::vertices(FaceDirection::RIGHT, 1.0, 1.0));
+        vertices.extend_from_slice(&FacePrimitive::vertices(FaceDirection::LEFT, 1.0, 1.0));
+        vertices.extend_from_slice(&FacePrimitive::vertices(FaceDirection::FRONT, 1.0, 1.0));
+        vertices.extend_from_slice(&FacePrimitive::vertices(FaceDirection::BACK, 1.0, 1.0));
+
+        let mut indices = Vec::with_capacity(36);
+        indices.extend_from_slice(&FacePrimitive::indices(FaceDirection::UP));
+        indices.extend_from_slice(&FacePrimitive::indices(FaceDirection::DOWN));
+        indices.extend_from_slice(&FacePrimitive::indices(FaceDirection::RIGHT));
+        indices.extend_from_slice(&FacePrimitive::indices(FaceDirection::LEFT));
+        indices.extend_from_slice(&FacePrimitive::indices(FaceDirection::FRONT));
+        indices.extend_from_slice(&FacePrimitive::indices(FaceDirection::BACK));
+
         Self {
             voxels,
             mesh_data,
             faces,
             voxel_registry,
+            vertices,
+            indices,
         }
     }
 }

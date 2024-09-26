@@ -1,17 +1,57 @@
 use crate::InstanceData;
 
-use super::{face_direction::FaceDirection, mesh::AsMesh, render_server::MaterialId, vertex::{Index, Vertex}};
+use super::{face_direction::FaceDirection, mesh::{AsMesh, MeshPosition}, render_server::MaterialId, vertex::{Index, Vertex}};
 
 #[derive(Debug)]
 pub struct FacePrimitive {
-    pub width: f32,
-    pub height: f32,
-    pub direction: FaceDirection,
-    pub position: (f32, f32, f32),
-    pub material_id: MaterialId,
+    direction: FaceDirection,
+    vertices: [Vertex ; 4],
+    indices: [Index ; 6],
+    instances: Vec<InstanceData>,
+    material_id: MaterialId,
+}
+
+impl AsMesh for FacePrimitive {
+    fn vertices(&self) -> &[Vertex] {
+        &self.vertices
+    }
+
+    fn indices(&self) -> &[Index] {
+        &self.indices
+    }
+
+    fn instances(&self) -> &[InstanceData] {
+        &self.instances
+    }
+
+    fn material_id(&self) -> MaterialId {
+        self.material_id
+    }
 }
 
 impl FacePrimitive {
+    pub fn new(direction: FaceDirection,
+        width: f32,
+        height: f32,
+        material_id: MaterialId,
+        positions: &[MeshPosition]
+    ) -> Self {
+        let instances = positions.iter()
+            .map(|p| { InstanceData::from_position(*p) })
+            .collect::<Vec<_>>();
+
+        let vertices = Self::vertices(direction, width, height);
+        let indices = Self::indices(direction);
+
+        Self {
+            direction,
+            vertices,
+            indices,
+            material_id,
+            instances,
+        }
+    }
+
     pub fn vertices(direction: FaceDirection,
         width: f32,
         height: f32
@@ -161,26 +201,5 @@ impl FacePrimitive {
             FaceDirection::FRONT => [0, 3, 1, 1, 3, 2],
             FaceDirection::BACK => [0, 1, 2, 0, 2, 3],
         }
-    }
-}
-
-impl AsMesh for FacePrimitive {
-    fn vertices(&self) -> Vec<Vertex> {
-        Self::vertices(self.direction, self.width, self.height)
-            .to_vec()
-    }
-
-    fn indices(&self) -> Vec<Index> {
-        Self::indices(self.direction)
-            .to_vec()
-    }
-
-    fn instances(&self) -> Vec<InstanceData> {
-        let instance_data = InstanceData::from_position(self.position);
-        vec![instance_data]
-    }
-
-    fn material_id(&self) -> MaterialId {
-        self.material_id
     }
 }

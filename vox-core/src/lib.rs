@@ -81,7 +81,7 @@ impl AppState {
         }).await.unwrap();
 
         let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor {
-            required_features: Features::POLYGON_MODE_LINE | Features::MULTI_DRAW_INDIRECT,
+            required_features: Features::POLYGON_MODE_LINE | Features::MULTI_DRAW_INDIRECT | Features::INDIRECT_FIRST_INSTANCE,
             #[cfg(not(target_arch="wasm32"))]
             required_limits: wgpu::Limits::default(),
             #[cfg(target_arch="wasm32")]
