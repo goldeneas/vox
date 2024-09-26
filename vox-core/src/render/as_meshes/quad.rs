@@ -2,7 +2,7 @@ use crate::{render::{mesh::{AsMesh, MeshPosition}, quad_orientation::QuadOrienta
 
 #[derive(Debug)]
 pub struct Quad {
-    direction: QuadOrientation,
+    orientation: QuadOrientation,
     vertices: [Vertex ; 4],
     indices: [Index ; 6],
     instances: Vec<InstanceData>,
@@ -42,7 +42,7 @@ impl Quad {
         let indices = Self::indices(direction);
 
         Self {
-            direction,
+            orientation: direction,
             vertices,
             indices,
             material_id,
@@ -199,5 +199,9 @@ impl Quad {
             QuadOrientation::FRONT => [0, 3, 1, 1, 3, 2],
             QuadOrientation::BACK => [0, 1, 2, 0, 2, 3],
         }
+    }
+
+    pub fn orientation(&self) -> QuadOrientation {
+        self.orientation
     }
 }

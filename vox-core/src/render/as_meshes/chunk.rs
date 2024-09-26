@@ -1,46 +1,194 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 
 use binary_greedy_meshing::{self as bgm, CS_P3};
 use wgpu::util::DrawIndexedIndirectArgs;
 
-use crate::{render::{mesh::AsMesh, multi_indexed_mesh::AsMultiIndexedMesh, quad_orientation::QuadOrientation, vertex::{Index, Vertex}}, voxel_position::VoxelPosition, voxel_registry::{VoxelRegistry, VoxelType, VoxelTypeIdentifier}, InstanceData};
+use crate::{render::{mesh::{AsMesh, MeshPosition}, multi_indexed_mesh::AsMultiIndexedMesh, quad_orientation::QuadOrientation, vertex::{Index, Vertex}}, voxel_position::VoxelPosition, voxel_registry::{VoxelRegistry, VoxelType, VoxelTypeIdentifier}, InstanceData};
 
 use super::quad::Quad;
 
 const MASK_6: u64 = 0b111111;
 
+const VERTICES: [Vertex ; 24] = [
+    // FRONT
+    Vertex {
+        position: [0.0, 0.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [0.0, 0.0],
+    },
+    Vertex {
+        position: [-1.0, 0.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [1.0, 0.0],
+    },
+    Vertex {
+        position: [-1.0, 1.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [1.0, 1.0],
+    },
+    Vertex {
+        position: [0.0, 1.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [0.0, 1.0],
+    },
+    // BACK
+    Vertex {
+        position: [1.0, 0.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [0.0, 0.0],
+    },
+    Vertex {
+        position: [0.0, 0.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [1.0, 0.0],
+    },
+    Vertex {
+        position: [0.0, 1.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [1.0, 1.0],
+    },
+    Vertex {
+        position: [1.0, 1.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [0.0, 1.0],
+    },
+    // UP
+    Vertex {
+        position: [0.0, 0.0, 1.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [0.0, 0.0],
+    },
+    Vertex {
+        position: [1.0, 0.0, 1.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [1.0, 0.0],
+    },
+    Vertex {
+        position: [1.0, 0.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [1.0, 1.0],
+    },
+    Vertex {
+        position: [0.0, 0.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [0.0, 1.0],
+    },
+    // DOWN
+    Vertex {
+        position: [0.0, 0.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [1.0, 0.0],
+    },
+    Vertex {
+        position: [-1.0, 0.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [0.0, 0.0],
+    },
+    Vertex {
+        position: [-1.0, 0.0, 1.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [0.0, 1.0],
+    },
+    Vertex {
+        position: [0.0, 0.0, 1.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [1.0, 1.0],
+    },
+    // RIGHT
+    Vertex {
+        position: [0.0, 0.0, 1.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [0.0, 0.0],
+    },
+    Vertex {
+        position: [0.0, 0.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [0.0, 1.0],
+    },
+    Vertex {
+        position: [0.0, -1.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [1.0, 1.0],
+    },
+    Vertex {
+        position: [0.0, -1.0, 1.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [1.0, 0.0],
+    },
+    // LEFT
+    Vertex {
+        position: [0.0, 0.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [0.0, 0.0],
+    },
+    Vertex {
+        position: [0.0, 0.0, 1.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [1.0, 0.0],
+    },
+    Vertex {
+        position: [0.0, 1.0, 1.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [1.0, 1.0],
+    },
+    Vertex {
+        position: [0.0, 1.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [0.0, 1.0],
+    },
+];
+
+const INDICES: [Index ; 36] = [
+    // UP
+    0, 1, 2, 0, 2, 3,
+    // DOWN
+    1, 0, 3, 1, 3, 2,
+    // LEFT
+    0, 1, 2, 0, 2, 3,
+    // RIGHT
+    3, 2, 1, 3, 1, 0,
+    // FRONT
+    0, 3, 1, 1, 3, 2,
+    // BACk
+    0, 1, 2, 0, 2, 3,
+];
+
 impl AsMultiIndexedMesh for Chunk {
     fn vertices(&self) -> &[Vertex] {
-        &self.vertices
+        &VERTICES
     }
 
     fn indices(&self) -> &[Index] {
-        &self.indices
+        &INDICES
     }
 
-    fn instances(&self) -> &[InstanceData] {
+    fn instances(&self) -> Vec<&InstanceData> {
        self.faces.iter()
            .flat_map(|face| {
                face.instances()
            }).collect()
     }
 
-    // TODO add instancing for the same voxels
     fn indirect_indexed_args(&self) -> Vec<DrawIndexedIndirectArgs> {
-        let mut vec = Vec::with_capacity(self.faces.len());
-        for (i, face) in self.faces.iter().enumerate() {
-            let arg = DrawIndexedIndirectArgs {
-                index_count: 6,
-                instance_count: 1,
-                first_index: 6 * QuadOrientation::to_index(face.direction),
-                base_vertex: 4 * QuadOrientation::to_index(face.direction) as i32,
-                first_instance: i as u32,
-            };
+        let mut last_instance_idx = 0;
 
-            vec.push(arg);
-        }
+        self.faces.iter()
+            .map(|face| {
+                let instance_count = face.instances().len() as u32;
+                let base_vertex = 4 * face.orientation().index() as i32;
+                let first_index = 6 * face.orientation().index();
+                let first_instance = last_instance_idx;
 
-        vec
+                last_instance_idx += instance_count;
+
+                DrawIndexedIndirectArgs {
+                    index_count: 6,
+                    instance_count,
+                    first_index,
+                    base_vertex,
+                    first_instance,
+                }
+            }).collect()
     }
 
     fn material_id(&self) -> usize {
@@ -59,8 +207,6 @@ pub struct Chunk {
     //faces: HashMap<VoxelType, Vec<FacePrimitive>>,
     faces: Vec<Quad>,
     voxel_registry: VoxelRegistry,
-    vertices: Vec<Vertex>,
-    indices: Vec<Index>,
 }
 
 impl Default for Chunk {
@@ -70,30 +216,11 @@ impl Default for Chunk {
         let faces = Vec::new();
         let voxel_registry = VoxelRegistry::default();
 
-        // TODO: maybe make this a bit better
-        let mut vertices = Vec::with_capacity(24);
-        vertices.extend_from_slice(&Quad::vertices(QuadOrientation::UP, 1.0, 1.0));
-        vertices.extend_from_slice(&Quad::vertices(QuadOrientation::DOWN, 1.0, 1.0));
-        vertices.extend_from_slice(&Quad::vertices(QuadOrientation::RIGHT, 1.0, 1.0));
-        vertices.extend_from_slice(&Quad::vertices(QuadOrientation::LEFT, 1.0, 1.0));
-        vertices.extend_from_slice(&Quad::vertices(QuadOrientation::FRONT, 1.0, 1.0));
-        vertices.extend_from_slice(&Quad::vertices(QuadOrientation::BACK, 1.0, 1.0));
-
-        let mut indices = Vec::with_capacity(36);
-        indices.extend_from_slice(&Quad::indices(QuadOrientation::UP));
-        indices.extend_from_slice(&Quad::indices(QuadOrientation::DOWN));
-        indices.extend_from_slice(&Quad::indices(QuadOrientation::RIGHT));
-        indices.extend_from_slice(&Quad::indices(QuadOrientation::LEFT));
-        indices.extend_from_slice(&Quad::indices(QuadOrientation::FRONT));
-        indices.extend_from_slice(&Quad::indices(QuadOrientation::BACK));
-
         Self {
             voxels,
             mesh_data,
             faces,
             voxel_registry,
-            vertices,
-            indices,
         }
     }
 }
@@ -129,6 +256,8 @@ impl Chunk {
         self.faces.clear();
         bgm::mesh(&self.voxels, &mut self.mesh_data, BTreeSet::default());
 
+        let mut quad_map: HashMap<(u64, u64), Vec<MeshPosition>> = HashMap::new();
+
         for (bgm_direction, bgm_faces) in self.mesh_data.quads.iter().enumerate() {
             let direction = QuadOrientation::from_bgm(bgm_direction);
             for bgm_face in bgm_faces.iter() {
@@ -147,20 +276,13 @@ impl Chunk {
                 let y = y as f32;
                 let z = z as f32;
 
-                let width = width as f32;
-                let height = height as f32;
-
                 let material_id = 0;
 
-                let face = Quad {
-                    direction,
-                    position: (x, y, z),
-                    width,
-                    height,
-                    material_id,
-                };
+                quad_map.insert((width, height), (x, y, z));
 
-                self.faces.push(face);
+                //let face = Quad::new(direction, width, height, material_id, positions);
+                //
+                //self.faces.push(face);
             }
         }
     }

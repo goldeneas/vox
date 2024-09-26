@@ -7,8 +7,8 @@ use super::{vertex::{Index, Vertex}};
 pub trait AsMultiIndexedMesh {
     fn vertices(&self) -> &[Vertex];
     fn indices(&self) -> &[Index];
-    fn instances(&self) -> &[InstanceData];
-    fn indirect_indexed_args(&self) -> &[DrawIndexedIndirectArgs];
+    fn instances(&self) -> Vec<&InstanceData>;
+    fn indirect_indexed_args(&self) -> Vec<DrawIndexedIndirectArgs>;
     fn material_id(&self) -> MaterialId;
     fn draw_count(&self) -> u32;
 }

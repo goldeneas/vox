@@ -9,8 +9,8 @@ pub enum QuadOrientation {
 }
 
 impl QuadOrientation {
-    pub fn to_index(direction: Self) -> u32 {
-        match direction {
+    pub fn index(&self) -> u32 {
+        match *self {
             QuadOrientation::UP    => 0,
             QuadOrientation::DOWN  => 1,
             QuadOrientation::RIGHT => 2,
