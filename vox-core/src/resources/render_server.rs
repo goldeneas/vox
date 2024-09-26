@@ -50,7 +50,7 @@ impl RenderServer {
         let multi_indexed_mesh = MultiIndexedMesh::new(vertices,
             indices,
             instances,
-            indirect_indexed_args,
+            &indirect_indexed_args,
             draw_count,
             material_id,
             multi_indexed_mesh_id,

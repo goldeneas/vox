@@ -7,7 +7,7 @@ use super::{vertex::{Index, Vertex}};
 pub trait AsMultiIndexedMesh {
     fn vertices(&self) -> &[Vertex];
     fn indices(&self) -> &[Index];
-    fn instances(&self) -> Vec<&InstanceData>;
+    fn instances(&self) -> Vec<InstanceData>;
     fn indirect_indexed_args(&self) -> Vec<DrawIndexedIndirectArgs>;
     fn material_id(&self) -> MaterialId;
     fn draw_count(&self) -> u32;
@@ -30,7 +30,7 @@ pub struct MultiIndexedMesh {
 impl MultiIndexedMesh {
     pub fn new(vertices: &[Vertex],
         indices: &[Index],
-        instances: &[InstanceData],
+        instances: Vec<InstanceData>,
         indirect_indexed_args: &[DrawIndexedIndirectArgs],
         draw_count: u32,
         material_id: MaterialId,
@@ -40,7 +40,7 @@ impl MultiIndexedMesh {
     ) -> Self {
         let vertex_buffer = device.compute_vertex_buffer(vertices);
         let index_buffer = device.compute_index_buffer(indices);
-        let instance_buffer = device.compute_instance_buffer(instances);
+        let instance_buffer = device.compute_instance_buffer(&instances);
         let indirect_indexed_buffer = device
             .compute_indirect_indexed_buffer(indirect_indexed_args);
 

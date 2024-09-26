@@ -5,7 +5,7 @@ use wgpu::util::DrawIndexedIndirectArgs;
 
 use crate::{render::{mesh::{AsMesh, MeshPosition}, multi_indexed_mesh::AsMultiIndexedMesh, quad_orientation::QuadOrientation, vertex::{Index, Vertex}}, voxel_position::VoxelPosition, voxel_registry::{VoxelRegistry, VoxelType, VoxelTypeIdentifier}, InstanceData};
 
-use super::quad::Quad;
+use super::quad::{Quad, QuadDescriptor};
 
 const MASK_6: u64 = 0b111111;
 
@@ -162,11 +162,11 @@ impl AsMultiIndexedMesh for Chunk {
         &INDICES
     }
 
-    fn instances(&self) -> Vec<&InstanceData> {
+    fn instances(&self) -> Vec<InstanceData> {
        self.faces.iter()
            .flat_map(|face| {
                face.instances()
-           }).collect()
+           }).copied().collect()
     }
 
     fn indirect_indexed_args(&self) -> Vec<DrawIndexedIndirectArgs> {
@@ -256,10 +256,10 @@ impl Chunk {
         self.faces.clear();
         bgm::mesh(&self.voxels, &mut self.mesh_data, BTreeSet::default());
 
-        let mut quad_map: HashMap<(u64, u64), Vec<MeshPosition>> = HashMap::new();
+        let mut quad_map: HashMap<QuadDescriptor, Vec<MeshPosition>> = HashMap::new();
 
-        for (bgm_direction, bgm_faces) in self.mesh_data.quads.iter().enumerate() {
-            let direction = QuadOrientation::from_bgm(bgm_direction);
+        for (bgm_orientation, bgm_faces) in self.mesh_data.quads.iter().enumerate() {
+            let orientation = QuadOrientation::from_bgm(bgm_orientation);
             for bgm_face in bgm_faces.iter() {
                 let x = bgm_face & MASK_6;
                 let y = (bgm_face >> 6) & MASK_6;
@@ -276,14 +276,31 @@ impl Chunk {
                 let y = y as f32;
                 let z = z as f32;
 
+                let width = width as u32;
+                let height = height as u32;
+
                 let material_id = 0;
+                let descriptor = QuadDescriptor {
+                    orientation,
+                    width,
+                    height,
+                    material_id,
+                };
 
-                quad_map.insert((width, height), (x, y, z));
-
-                //let face = Quad::new(direction, width, height, material_id, positions);
-                //
-                //self.faces.push(face);
+                match quad_map.get_mut(&descriptor) {
+                    Some(vec) => vec.push((x, y, z)),
+                    None => {
+                        let vec = vec![(x, y, z)];
+                        quad_map.insert(descriptor, vec);
+                    }
+                }
             }
         }
+
+        quad_map.into_iter()
+            .for_each(|(descriptor, vec)| {
+                let face = Quad::new(descriptor, &vec);
+                self.faces.push(face);
+            })
     }
 }

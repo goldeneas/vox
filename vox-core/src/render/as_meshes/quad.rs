@@ -9,6 +9,14 @@ pub struct Quad {
     material_id: MaterialId,
 }
 
+#[derive(Hash, PartialEq, Eq)]
+pub struct QuadDescriptor {
+    pub orientation: QuadOrientation,
+    pub width: u32,
+    pub height: u32,
+    pub material_id: MaterialId,
+}
+
 impl AsMesh for Quad {
     fn vertices(&self) -> &[Vertex] {
         &self.vertices
@@ -28,21 +36,23 @@ impl AsMesh for Quad {
 }
 
 impl Quad {
-    pub fn new(direction: QuadOrientation,
-        width: f32,
-        height: f32,
-        material_id: MaterialId,
+    pub fn new(descriptor: QuadDescriptor,
         positions: &[MeshPosition]
     ) -> Self {
+        let orientation = descriptor.orientation;
+        let width = descriptor.width;
+        let height = descriptor.height;
+        let material_id = descriptor.material_id;
+
         let instances = positions.iter()
             .map(|p| { InstanceData::from_position(*p) })
             .collect::<Vec<_>>();
 
-        let vertices = Self::vertices(direction, width, height);
-        let indices = Self::indices(direction);
+        let vertices = Self::vertices(orientation, width, height);
+        let indices = Self::indices(orientation);
 
         Self {
-            orientation: direction,
+            orientation,
             vertices,
             indices,
             material_id,
@@ -51,9 +61,12 @@ impl Quad {
     }
 
     pub fn vertices(direction: QuadOrientation,
-        width: f32,
-        height: f32
+        width: u32,
+        height: u32
     ) -> [Vertex ; 4] {
+        let width = width as f32;
+        let height = height as f32;
+
         match direction {
             QuadOrientation::FRONT => [
                 Vertex {
