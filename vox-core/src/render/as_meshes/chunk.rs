@@ -10,48 +10,6 @@ use super::quad::{Quad, QuadDescriptor};
 const MASK_6: u64 = 0b111111;
 
 const VERTICES: [Vertex ; 24] = [
-    // FRONT
-    Vertex {
-        position: [0.0, 0.0, 0.0],
-        normal: [0.0, 0.0, 0.0],
-        tex_coords: [0.0, 0.0],
-    },
-    Vertex {
-        position: [-1.0, 0.0, 0.0],
-        normal: [0.0, 0.0, 0.0],
-        tex_coords: [1.0, 0.0],
-    },
-    Vertex {
-        position: [-1.0, 1.0, 0.0],
-        normal: [0.0, 0.0, 0.0],
-        tex_coords: [1.0, 1.0],
-    },
-    Vertex {
-        position: [0.0, 1.0, 0.0],
-        normal: [0.0, 0.0, 0.0],
-        tex_coords: [0.0, 1.0],
-    },
-    // BACK
-    Vertex {
-        position: [1.0, 0.0, 0.0],
-        normal: [0.0, 0.0, 0.0],
-        tex_coords: [0.0, 0.0],
-    },
-    Vertex {
-        position: [0.0, 0.0, 0.0],
-        normal: [0.0, 0.0, 0.0],
-        tex_coords: [1.0, 0.0],
-    },
-    Vertex {
-        position: [0.0, 1.0, 0.0],
-        normal: [0.0, 0.0, 0.0],
-        tex_coords: [1.0, 1.0],
-    },
-    Vertex {
-        position: [1.0, 1.0, 0.0],
-        normal: [0.0, 0.0, 0.0],
-        tex_coords: [0.0, 1.0],
-    },
     // UP
     Vertex {
         position: [0.0, 0.0, 1.0],
@@ -94,27 +52,6 @@ const VERTICES: [Vertex ; 24] = [
         normal: [0.0, 0.0, 0.0],
         tex_coords: [1.0, 1.0],
     },
-    // RIGHT
-    Vertex {
-        position: [0.0, 0.0, 1.0],
-        normal: [0.0, 0.0, 0.0],
-        tex_coords: [0.0, 0.0],
-    },
-    Vertex {
-        position: [0.0, 0.0, 0.0],
-        normal: [0.0, 0.0, 0.0],
-        tex_coords: [0.0, 1.0],
-    },
-    Vertex {
-        position: [0.0, -1.0, 0.0],
-        normal: [0.0, 0.0, 0.0],
-        tex_coords: [1.0, 1.0],
-    },
-    Vertex {
-        position: [0.0, -1.0, 1.0],
-        normal: [0.0, 0.0, 0.0],
-        tex_coords: [1.0, 0.0],
-    },
     // LEFT
     Vertex {
         position: [0.0, 0.0, 0.0],
@@ -136,6 +73,69 @@ const VERTICES: [Vertex ; 24] = [
         normal: [0.0, 0.0, 0.0],
         tex_coords: [0.0, 1.0],
     },
+    // RIGHT
+    Vertex {
+        position: [0.0, 0.0, 1.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [0.0, 0.0],
+    },
+    Vertex {
+        position: [0.0, 0.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [0.0, 1.0],
+    },
+    Vertex {
+        position: [0.0, -1.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [1.0, 1.0],
+    },
+    Vertex {
+        position: [0.0, -1.0, 1.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [1.0, 0.0],
+    },
+    // FRONT
+    Vertex {
+        position: [0.0, 0.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [0.0, 0.0],
+    },
+    Vertex {
+        position: [-1.0, 0.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [1.0, 0.0],
+    },
+    Vertex {
+        position: [-1.0, 1.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [1.0, 1.0],
+    },
+    Vertex {
+        position: [0.0, 1.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [0.0, 1.0],
+    },
+    // BACK
+    Vertex {
+        position: [1.0, 0.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [0.0, 0.0],
+    },
+    Vertex {
+        position: [0.0, 0.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [1.0, 0.0],
+    },
+    Vertex {
+        position: [0.0, 1.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [1.0, 1.0],
+    },
+    Vertex {
+        position: [1.0, 1.0, 0.0],
+        normal: [0.0, 0.0, 0.0],
+        tex_coords: [0.0, 1.0],
+    },
 ];
 
 const INDICES: [Index ; 36] = [
@@ -143,10 +143,10 @@ const INDICES: [Index ; 36] = [
     0, 1, 2, 0, 2, 3,
     // DOWN
     1, 0, 3, 1, 3, 2,
-    // LEFT
-    0, 1, 2, 0, 2, 3,
     // RIGHT
     3, 2, 1, 3, 1, 0,
+    // LEFT
+    0, 1, 2, 0, 2, 3,
     // FRONT
     0, 3, 1, 1, 3, 2,
     // BACk
