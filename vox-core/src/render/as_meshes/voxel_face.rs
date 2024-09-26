@@ -1,7 +1,7 @@
 use crate::{render::{mesh::{AsMesh, MeshPosition}, quad_orientation::QuadOrientation, vertex::{Index, Vertex}}, resources::render_server::MaterialId, InstanceData};
 
 #[derive(Debug)]
-pub struct QuadPrimitive {
+pub struct VoxelFace {
     direction: QuadOrientation,
     vertices: [Vertex ; 4],
     indices: [Index ; 6],
@@ -9,7 +9,7 @@ pub struct QuadPrimitive {
     material_id: MaterialId,
 }
 
-impl AsMesh for QuadPrimitive {
+impl AsMesh for VoxelFace {
     fn vertices(&self) -> &[Vertex] {
         &self.vertices
     }
@@ -27,12 +27,12 @@ impl AsMesh for QuadPrimitive {
     }
 }
 
-impl QuadPrimitive {
+impl VoxelFace {
     pub fn new(direction: QuadOrientation,
         width: f32,
         height: f32,
         material_id: MaterialId,
-        positions: &[MeshPosition]
+        positions: MeshPosition
     ) -> Self {
         let instances = positions.iter()
             .map(|p| { InstanceData::from_position(*p) })

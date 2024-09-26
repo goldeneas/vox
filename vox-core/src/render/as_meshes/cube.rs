@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{render::vertex::Vertex, AsModel, Model, Texture};
 
-pub struct CubePrimitive {
+pub struct Cube {
     pub scale: f32,
 }
 

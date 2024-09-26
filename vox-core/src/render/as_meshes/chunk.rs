@@ -5,7 +5,7 @@ use wgpu::util::DrawIndexedIndirectArgs;
 
 use crate::{render::{mesh::AsMesh, multi_indexed_mesh::AsMultiIndexedMesh, quad_orientation::QuadOrientation, vertex::{Index, Vertex}}, voxel_position::VoxelPosition, voxel_registry::{VoxelRegistry, VoxelType, VoxelTypeIdentifier}, InstanceData};
 
-use super::quad_primitive::QuadPrimitive;
+use super::quad::Quad;
 
 const MASK_6: u64 = 0b111111;
 
@@ -25,6 +25,7 @@ impl AsMultiIndexedMesh for Chunk {
            }).collect()
     }
 
+    // TODO add instancing for the same voxels
     fn indirect_indexed_args(&self) -> Vec<DrawIndexedIndirectArgs> {
         let mut vec = Vec::with_capacity(self.faces.len());
         for (i, face) in self.faces.iter().enumerate() {
@@ -56,7 +57,7 @@ pub struct Chunk {
     voxels: [VoxelTypeIdentifier ; CS_P3],
     mesh_data: bgm::MeshData,
     //faces: HashMap<VoxelType, Vec<FacePrimitive>>,
-    faces: Vec<QuadPrimitive>,
+    faces: Vec<Quad>,
     voxel_registry: VoxelRegistry,
     vertices: Vec<Vertex>,
     indices: Vec<Index>,
@@ -71,20 +72,20 @@ impl Default for Chunk {
 
         // TODO: maybe make this a bit better
         let mut vertices = Vec::with_capacity(24);
-        vertices.extend_from_slice(&QuadPrimitive::vertices(QuadOrientation::UP, 1.0, 1.0));
-        vertices.extend_from_slice(&QuadPrimitive::vertices(QuadOrientation::DOWN, 1.0, 1.0));
-        vertices.extend_from_slice(&QuadPrimitive::vertices(QuadOrientation::RIGHT, 1.0, 1.0));
-        vertices.extend_from_slice(&QuadPrimitive::vertices(QuadOrientation::LEFT, 1.0, 1.0));
-        vertices.extend_from_slice(&QuadPrimitive::vertices(QuadOrientation::FRONT, 1.0, 1.0));
-        vertices.extend_from_slice(&QuadPrimitive::vertices(QuadOrientation::BACK, 1.0, 1.0));
+        vertices.extend_from_slice(&Quad::vertices(QuadOrientation::UP, 1.0, 1.0));
+        vertices.extend_from_slice(&Quad::vertices(QuadOrientation::DOWN, 1.0, 1.0));
+        vertices.extend_from_slice(&Quad::vertices(QuadOrientation::RIGHT, 1.0, 1.0));
+        vertices.extend_from_slice(&Quad::vertices(QuadOrientation::LEFT, 1.0, 1.0));
+        vertices.extend_from_slice(&Quad::vertices(QuadOrientation::FRONT, 1.0, 1.0));
+        vertices.extend_from_slice(&Quad::vertices(QuadOrientation::BACK, 1.0, 1.0));
 
         let mut indices = Vec::with_capacity(36);
-        indices.extend_from_slice(&QuadPrimitive::indices(QuadOrientation::UP));
-        indices.extend_from_slice(&QuadPrimitive::indices(QuadOrientation::DOWN));
-        indices.extend_from_slice(&QuadPrimitive::indices(QuadOrientation::RIGHT));
-        indices.extend_from_slice(&QuadPrimitive::indices(QuadOrientation::LEFT));
-        indices.extend_from_slice(&QuadPrimitive::indices(QuadOrientation::FRONT));
-        indices.extend_from_slice(&QuadPrimitive::indices(QuadOrientation::BACK));
+        indices.extend_from_slice(&Quad::indices(QuadOrientation::UP));
+        indices.extend_from_slice(&Quad::indices(QuadOrientation::DOWN));
+        indices.extend_from_slice(&Quad::indices(QuadOrientation::RIGHT));
+        indices.extend_from_slice(&Quad::indices(QuadOrientation::LEFT));
+        indices.extend_from_slice(&Quad::indices(QuadOrientation::FRONT));
+        indices.extend_from_slice(&Quad::indices(QuadOrientation::BACK));
 
         Self {
             voxels,
@@ -136,10 +137,6 @@ impl Chunk {
                 let z = (bgm_face >> 12) & MASK_6;
                 let width = (bgm_face >> 18) & MASK_6;
                 let height = (bgm_face >> 24) & MASK_6;
-
-                // INVARIANT: we can cast to 16 bits because
-                // we can only set a voxel's id with a number using 16 bits.
-                // the topmost 16 bits are not used (probably)
                 let voxel_id = (bgm_face >> 32) as u16;
 
                 let voxel_type = self.voxel_registry
@@ -155,7 +152,7 @@ impl Chunk {
 
                 let material_id = 0;
 
-                let face = QuadPrimitive {
+                let face = Quad {
                     direction,
                     position: (x, y, z),
                     width,
