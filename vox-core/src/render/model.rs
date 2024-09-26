@@ -2,9 +2,9 @@ use std::{ops::Range, sync::Arc};
 
 use bevy_ecs::component::Component;
 
-use crate::{asset::Asset, resources::asset_server::AssetServer, InstanceData, Texture};
+use crate::{asset::Asset, resources::{asset_server::AssetServer, render_server::{MaterialId, RenderServer}}, InstanceData, Texture};
 
-use super::{material::Material, mesh::{AsMesh, Mesh}, phantom_mesh::PhantomMesh, render_server::{MaterialId, ModelId, RenderServer}, vertex::Vertex};
+use super::{material::Material, mesh::{AsMesh, Mesh}, phantom_mesh::PhantomMesh, vertex::Vertex};
 
 pub trait AsModel {
     fn meshes(&self) -> Vec<Box<dyn AsMesh>>;

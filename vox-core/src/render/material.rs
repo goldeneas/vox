@@ -1,9 +1,7 @@
 use core::panic;
 use std::sync::Arc;
 
-use crate::{voxels::voxel_registry::VoxelTypeIdentifier, Texture};
-
-use super::render_server::MaterialId;
+use crate::{resources::render_server::MaterialId, Texture};
 
 #[derive(Debug)]
 pub struct Material {

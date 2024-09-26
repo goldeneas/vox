@@ -1,8 +1,8 @@
 use wgpu::util::DrawIndexedIndirectArgs;
 
-use crate::{device_ext::VoxDeviceExt, InstanceData};
+use crate::{device_ext::VoxDeviceExt, resources::render_server::{MaterialId, ModelId, MultiIndexedMeshId}, InstanceData};
 
-use super::{render_server::{MaterialId, ModelId, MultiIndexedMeshId}, vertex::{Index, Vertex}};
+use super::{vertex::{Index, Vertex}};
 
 pub trait AsMultiIndexedMesh {
     fn vertices(&self) -> &[Vertex];

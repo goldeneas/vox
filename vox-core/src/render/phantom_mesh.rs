@@ -1,6 +1,6 @@
-use crate::InstanceData;
+use crate::{resources::render_server::MaterialId, InstanceData};
 
-use super::{mesh::AsMesh, render_server::MaterialId, vertex::{Index, Vertex}};
+use super::{mesh::AsMesh, vertex::{Index, Vertex}};
 
 // TODO rename this to mesh 
 // and mesh to meshraw
@@ -13,16 +13,16 @@ pub struct PhantomMesh {
 }
 
 impl AsMesh for PhantomMesh {
-    fn vertices(&self) -> Vec<Vertex> {
-        self.vertices.clone()
+    fn vertices(&self) -> &[Vertex] {
+        &self.vertices
     }
 
-    fn indices(&self) -> Vec<Index> {
-        self.indices.clone()
+    fn indices(&self) -> &[Index] {
+        &self.indices
     }
 
-    fn instances(&self) -> Vec<InstanceData> {
-        self.instances.clone()
+    fn instances(&self) -> &[InstanceData] {
+        &self.instances
     }
 
     fn material_id(&self) -> MaterialId {

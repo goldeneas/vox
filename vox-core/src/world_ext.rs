@@ -1,6 +1,6 @@
 use bevy_ecs::world::{Mut, World};
 
-use crate::{resources::{game_state::GameState, render_context::RenderContext}, ui::{egui_renderer::EguiRenderer, glyphon_renderer::GlyphonRenderer}};
+use crate::resources::{egui_renderer::EguiRenderer, game_state::GameState, glyphon_renderer::GlyphonRenderer, render_context::RenderContext};
 
 pub trait WorldExt {
     fn render_context(&self) -> &RenderContext;

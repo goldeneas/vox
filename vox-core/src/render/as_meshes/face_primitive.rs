@@ -1,17 +1,15 @@
-use crate::InstanceData;
-
-use super::{face_direction::FaceDirection, mesh::{AsMesh, MeshPosition}, render_server::MaterialId, vertex::{Index, Vertex}};
+use crate::{render::{mesh::{AsMesh, MeshPosition}, quad_orientation::QuadOrientation, vertex::{Index, Vertex}}, resources::render_server::MaterialId, InstanceData};
 
 #[derive(Debug)]
-pub struct FacePrimitive {
-    direction: FaceDirection,
+pub struct VoxelFace {
+    direction: QuadOrientation,
     vertices: [Vertex ; 4],
     indices: [Index ; 6],
     instances: Vec<InstanceData>,
     material_id: MaterialId,
 }
 
-impl AsMesh for FacePrimitive {
+impl AsMesh for VoxelFace {
     fn vertices(&self) -> &[Vertex] {
         &self.vertices
     }
@@ -29,8 +27,8 @@ impl AsMesh for FacePrimitive {
     }
 }
 
-impl FacePrimitive {
-    pub fn new(direction: FaceDirection,
+impl VoxelFace {
+    pub fn new(direction: QuadOrientation,
         width: f32,
         height: f32,
         material_id: MaterialId,
@@ -52,12 +50,12 @@ impl FacePrimitive {
         }
     }
 
-    pub fn vertices(direction: FaceDirection,
+    pub fn vertices(direction: QuadOrientation,
         width: f32,
         height: f32
     ) -> [Vertex ; 4] {
         match direction {
-            FaceDirection::FRONT => [
+            QuadOrientation::FRONT => [
                 Vertex {
                     position: [0.0, 0.0, 0.0],
                     normal: [0.0, 0.0, 0.0],
@@ -79,7 +77,7 @@ impl FacePrimitive {
                     tex_coords: [0.0, height],
                 },
             ],
-            FaceDirection::BACK => [
+            QuadOrientation::BACK => [
                 Vertex {
                     position: [0.0 + width, 0.0, 0.0],
                     normal: [0.0, 0.0, 0.0],
@@ -101,7 +99,7 @@ impl FacePrimitive {
                     tex_coords: [0.0, height],
                 },
             ],
-            FaceDirection::UP => [
+            QuadOrientation::UP => [
                 Vertex {
                     position: [0.0, 0.0, 0.0 + height],
                     normal: [0.0, 0.0, 0.0],
@@ -123,7 +121,7 @@ impl FacePrimitive {
                     tex_coords: [0.0, height],
                 },
             ],
-            FaceDirection::DOWN => [
+            QuadOrientation::DOWN => [
                 Vertex {
                     position: [0.0, 0.0, 0.0],
                     normal: [0.0, 0.0, 0.0],
@@ -145,7 +143,7 @@ impl FacePrimitive {
                     tex_coords: [width, height],
                 },
             ],
-            FaceDirection::RIGHT => [
+            QuadOrientation::RIGHT => [
                 Vertex {
                     position: [0.0, 0.0, 0.0 + height],
                     normal: [0.0, 0.0, 0.0],
@@ -167,7 +165,7 @@ impl FacePrimitive {
                     tex_coords: [width, 0.0],
                 },
             ],
-            FaceDirection::LEFT => [
+            QuadOrientation::LEFT => [
                 Vertex {
                     position: [0.0, 0.0, 0.0],
                     normal: [0.0, 0.0, 0.0],
@@ -192,14 +190,14 @@ impl FacePrimitive {
         }
     }
 
-    pub fn indices(direction: FaceDirection) -> [Index ; 6] {
+    pub fn indices(direction: QuadOrientation) -> [Index ; 6] {
         match direction {
-            FaceDirection::UP => [0, 1, 2, 0, 2, 3],
-            FaceDirection::DOWN => [1, 0, 3, 1, 3, 2],
-            FaceDirection::LEFT => [0, 1, 2, 0, 2, 3],
-            FaceDirection::RIGHT => [3, 2, 1, 3, 1, 0],
-            FaceDirection::FRONT => [0, 3, 1, 1, 3, 2],
-            FaceDirection::BACK => [0, 1, 2, 0, 2, 3],
+            QuadOrientation::UP => [0, 1, 2, 0, 2, 3],
+            QuadOrientation::DOWN => [1, 0, 3, 1, 3, 2],
+            QuadOrientation::LEFT => [0, 1, 2, 0, 2, 3],
+            QuadOrientation::RIGHT => [3, 2, 1, 3, 1, 0],
+            QuadOrientation::FRONT => [0, 3, 1, 1, 3, 2],
+            QuadOrientation::BACK => [0, 1, 2, 0, 2, 3],
         }
     }
 }

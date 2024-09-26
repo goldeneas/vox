@@ -3,9 +3,9 @@ use std::collections::BTreeSet;
 use binary_greedy_meshing::{self as bgm, CS_P3};
 use wgpu::util::DrawIndexedIndirectArgs;
 
-use crate::{render::{face_direction::FaceDirection, face_primitive::FacePrimitive, mesh::AsMesh, multi_indexed_mesh::AsMultiIndexedMesh, vertex::{Index, Vertex}}, InstanceData};
+use crate::{render::{mesh::AsMesh, multi_indexed_mesh::AsMultiIndexedMesh, quad_orientation::QuadOrientation, vertex::{Index, Vertex}}, voxel_position::VoxelPosition, voxel_registry::{VoxelRegistry, VoxelType, VoxelTypeIdentifier}, InstanceData};
 
-use super::{voxel_position::VoxelPosition, voxel_registry::{VoxelRegistry, VoxelType, VoxelTypeIdentifier}};
+use super::quad_primitive::QuadPrimitive;
 
 const MASK_6: u64 = 0b111111;
 
@@ -31,8 +31,8 @@ impl AsMultiIndexedMesh for Chunk {
             let arg = DrawIndexedIndirectArgs {
                 index_count: 6,
                 instance_count: 1,
-                first_index: 6 * FaceDirection::to_index(face.direction),
-                base_vertex: 4 * FaceDirection::to_index(face.direction) as i32,
+                first_index: 6 * QuadOrientation::to_index(face.direction),
+                base_vertex: 4 * QuadOrientation::to_index(face.direction) as i32,
                 first_instance: i as u32,
             };
 
@@ -56,7 +56,7 @@ pub struct Chunk {
     voxels: [VoxelTypeIdentifier ; CS_P3],
     mesh_data: bgm::MeshData,
     //faces: HashMap<VoxelType, Vec<FacePrimitive>>,
-    faces: Vec<FacePrimitive>,
+    faces: Vec<QuadPrimitive>,
     voxel_registry: VoxelRegistry,
     vertices: Vec<Vertex>,
     indices: Vec<Index>,
@@ -71,20 +71,20 @@ impl Default for Chunk {
 
         // TODO: maybe make this a bit better
         let mut vertices = Vec::with_capacity(24);
-        vertices.extend_from_slice(&FacePrimitive::vertices(FaceDirection::UP, 1.0, 1.0));
-        vertices.extend_from_slice(&FacePrimitive::vertices(FaceDirection::DOWN, 1.0, 1.0));
-        vertices.extend_from_slice(&FacePrimitive::vertices(FaceDirection::RIGHT, 1.0, 1.0));
-        vertices.extend_from_slice(&FacePrimitive::vertices(FaceDirection::LEFT, 1.0, 1.0));
-        vertices.extend_from_slice(&FacePrimitive::vertices(FaceDirection::FRONT, 1.0, 1.0));
-        vertices.extend_from_slice(&FacePrimitive::vertices(FaceDirection::BACK, 1.0, 1.0));
+        vertices.extend_from_slice(&QuadPrimitive::vertices(QuadOrientation::UP, 1.0, 1.0));
+        vertices.extend_from_slice(&QuadPrimitive::vertices(QuadOrientation::DOWN, 1.0, 1.0));
+        vertices.extend_from_slice(&QuadPrimitive::vertices(QuadOrientation::RIGHT, 1.0, 1.0));
+        vertices.extend_from_slice(&QuadPrimitive::vertices(QuadOrientation::LEFT, 1.0, 1.0));
+        vertices.extend_from_slice(&QuadPrimitive::vertices(QuadOrientation::FRONT, 1.0, 1.0));
+        vertices.extend_from_slice(&QuadPrimitive::vertices(QuadOrientation::BACK, 1.0, 1.0));
 
         let mut indices = Vec::with_capacity(36);
-        indices.extend_from_slice(&FacePrimitive::indices(FaceDirection::UP));
-        indices.extend_from_slice(&FacePrimitive::indices(FaceDirection::DOWN));
-        indices.extend_from_slice(&FacePrimitive::indices(FaceDirection::RIGHT));
-        indices.extend_from_slice(&FacePrimitive::indices(FaceDirection::LEFT));
-        indices.extend_from_slice(&FacePrimitive::indices(FaceDirection::FRONT));
-        indices.extend_from_slice(&FacePrimitive::indices(FaceDirection::BACK));
+        indices.extend_from_slice(&QuadPrimitive::indices(QuadOrientation::UP));
+        indices.extend_from_slice(&QuadPrimitive::indices(QuadOrientation::DOWN));
+        indices.extend_from_slice(&QuadPrimitive::indices(QuadOrientation::RIGHT));
+        indices.extend_from_slice(&QuadPrimitive::indices(QuadOrientation::LEFT));
+        indices.extend_from_slice(&QuadPrimitive::indices(QuadOrientation::FRONT));
+        indices.extend_from_slice(&QuadPrimitive::indices(QuadOrientation::BACK));
 
         Self {
             voxels,
@@ -129,7 +129,7 @@ impl Chunk {
         bgm::mesh(&self.voxels, &mut self.mesh_data, BTreeSet::default());
 
         for (bgm_direction, bgm_faces) in self.mesh_data.quads.iter().enumerate() {
-            let direction = FaceDirection::from_bgm(bgm_direction);
+            let direction = QuadOrientation::from_bgm(bgm_direction);
             for bgm_face in bgm_faces.iter() {
                 let x = bgm_face & MASK_6;
                 let y = (bgm_face >> 6) & MASK_6;
@@ -155,7 +155,7 @@ impl Chunk {
 
                 let material_id = 0;
 
-                let face = FacePrimitive {
+                let face = QuadPrimitive {
                     direction,
                     position: (x, y, z),
                     width,
@@ -164,15 +164,6 @@ impl Chunk {
                 };
 
                 self.faces.push(face);
-
-                //let face_vector = self.faces.get_mut(&voxel_type);
-                //match face_vector {
-                //    Some(vector) => vector.push(face),
-                //    None => {
-                //        let vector = vec![face];
-                //        self.faces.insert(voxel_type, vector);
-                //    }
-                //}
             }
         }
     }

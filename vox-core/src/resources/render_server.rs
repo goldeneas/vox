@@ -2,9 +2,7 @@ use std::sync::Arc;
 
 use bevy_ecs::system::Resource;
 
-use crate::{AsModel, Texture};
-
-use super::{material::Material, mesh::{AsMesh, Mesh}, multi_indexed_mesh::{self, AsMultiIndexedMesh, MultiIndexedMesh}};
+use crate::{render::{material::Material, mesh::{AsMesh, Mesh}, multi_indexed_mesh::{AsMultiIndexedMesh, MultiIndexedMesh}}, AsModel, Texture};
 
 pub type MaterialId = usize;
 pub type ModelId = usize;

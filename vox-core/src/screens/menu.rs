@@ -3,7 +3,7 @@ use std::process::exit;
 use bevy_ecs::world::World;
 use egui::{Align2, Button};
 
-use crate::{resources::game_state::GameState, voxels::chunk::Chunk, world_ext::WorldExt};
+use crate::{resources::game_state::GameState, world_ext::WorldExt};
 
 use super::screen::Screen;
 

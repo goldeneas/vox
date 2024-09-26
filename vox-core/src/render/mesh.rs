@@ -1,8 +1,8 @@
 use wgpu::util::DeviceExt;
 
-use crate::{device_ext::VoxDeviceExt, InstanceData, InstanceRaw};
+use crate::{device_ext::VoxDeviceExt, resources::render_server::{MaterialId, MeshId, ModelId}, InstanceData, InstanceRaw};
 
-use super::{render_server::{MaterialId, MeshId, ModelId}, vertex::{Index, Vertex}};
+use super::{vertex::{Index, Vertex}};
 
 pub trait AsMesh {
     fn vertices(&self) -> &[Vertex];

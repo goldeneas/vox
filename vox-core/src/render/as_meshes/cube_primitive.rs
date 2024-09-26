@@ -1,8 +1,6 @@
 use std::sync::Arc;
 
-use crate::{AsModel, Model, Texture};
-
-use super::{mesh::{AsMesh, Mesh}, vertex::Vertex};
+use crate::{render::vertex::Vertex, AsModel, Model, Texture};
 
 pub struct CubePrimitive {
     pub scale: f32,

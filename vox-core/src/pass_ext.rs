@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use wgpu::{util::RenderEncoder, Buffer, BufferAddress};
 
-use crate::{render::{material::Material, mesh::Mesh, multi_indexed_mesh::MultiIndexedMesh, render_server::MultiIndexedMeshId}, Model};
+use crate::{render::{material::Material, mesh::Mesh, multi_indexed_mesh::MultiIndexedMesh}, Model};
 
 pub trait VoxDrawPassExt {
     fn draw_mesh(&mut self,
