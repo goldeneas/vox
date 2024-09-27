@@ -6,7 +6,7 @@ use cgmath::{InnerSpace, Matrix4, Quaternion, Rotation3, Zero};
 use egui_plot::PlotPoints;
 use wgpu::CommandEncoderDescriptor;
 
-use crate::{components::camerable::{CameraComponent, CameraUniform}, pass_ext::VoxDrawPassExt, render::{as_meshes::{chunk::Chunk, quad::{VoxelFace, FaceDescriptor}}, material::Material, mesh::AsMesh, multi_indexed_mesh::AsMultiIndexedMesh, quad_orientation::FaceOrientation}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, egui_renderer::EguiRenderer, frame_context::FrameContext, game_state::GameState, glyphon_renderer::{LabelDescriptor, LabelId}, input::InputRes, mouse::MouseRes, render_context::RenderContext, render_server::RenderServer}, voxel_position::VoxelPosition, voxel_registry::VoxelType, world_ext::WorldExt, AsModel, InstanceData, Model, Texture};
+use crate::{components::camerable::{CameraComponent, CameraUniform}, pass_ext::VoxDrawPassExt, render::{as_meshes::{chunk::Chunk, face::{FaceDescriptor}}, material::Material, mesh::AsMesh, multi_indexed_mesh::AsMultiIndexedMesh}, resources::{asset_server::AssetServer, default_pipeline::DefaultPipeline, egui_renderer::EguiRenderer, frame_context::FrameContext, game_state::GameState, glyphon_renderer::{LabelDescriptor, LabelId}, input::InputRes, mouse::MouseRes, render_context::RenderContext, render_server::RenderServer}, voxel_position::VoxelPosition, voxel_registry::VoxelType, world_ext::WorldExt, AsModel, InstanceData, Model, Texture};
 
 use super::screen::Screen;
 
@@ -114,18 +114,16 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
     render_ctx: Res<RenderContext>
 ) {
     let mut chunk = Chunk::default();
-    //for x in 0..CS_P {
-    //    for y in 0..CS_P {
-    //        for z in 0..CS_P {
-    //            if ((x*x + y*y + z*z) as f32).sqrt() > 60.0 { continue; }
-    //            let position = VoxelPosition::from((x, y, z));
-    //            chunk.set_voxel_type_at(position, VoxelType::DIRT);
-    //        }
-    //    }
-    //}
+    for x in 0..CS_P {
+        for y in 0..CS_P {
+            for z in 0..CS_P {
+                if ((x*x + y*y + z*z) as f32).sqrt() > 60.0 { continue; }
+                let position = VoxelPosition::from((x, y, z));
+                chunk.set_voxel_type_at(position, VoxelType::DIRT);
+            }
+        }
+    }
 
-    let pos = VoxelPosition::from((0, 0, 0));
-    chunk.set_voxel_type_at(pos, VoxelType::DIRT);
     chunk.update_faces();
 
     let device = &render_ctx.device;
@@ -164,34 +162,6 @@ pub fn spawn_chunks(mut asset_server: ResMut<AssetServer>,
     //render_server.push_meshes(chunk.get_meshes(), device);
     //render_server.push_mesh(&face2, device);
     // render_server.push_multi_indexed_mesh(&chunk, device);
-
-    let quad_descriptor = FaceDescriptor {
-        material_id: 0,
-        width: 1,
-        height: 1,
-        orientation: FaceOrientation::FRONT,
-    };
-
-    let quad = VoxelFace::new2(&quad_descriptor, vec![
-        InstanceData {
-            position: (0.0, 0.0, 0.0).into(),
-            rotation: Quaternion::from_angle_y(cgmath::Deg(90.0)),
-        },
-    ]);
-
-    let quad_descriptor2 = FaceDescriptor {
-        material_id: 1,
-        width: 1,
-        height: 1,
-        orientation: FaceOrientation::RIGHT,
-    };
-    let quad2 = VoxelFace::new(&quad_descriptor2,
-        &[(0.0, 0.0, 0.0)],
-    );
-
-    //render_server.push_mesh(&quad, device);
-    render_server.push_mesh(&quad2, device);
-    //render_server.push_mesh(&quad, device);
     render_server.push_multi_indexed_mesh(&chunk, device);
 }
 

@@ -6,5 +6,5 @@ pub mod mesh;
 pub mod vertex;
 pub mod phantom_mesh;
 pub mod multi_indexed_mesh;
-pub mod quad_orientation;
+pub mod face_orientation;
 pub mod as_meshes;

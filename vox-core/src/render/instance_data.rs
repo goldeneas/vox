@@ -1,7 +1,7 @@
 use bytemuck::{Pod, Zeroable};
-use cgmath::{Quaternion, Vector3, Zero};
+use cgmath::{num_traits::zero, Quaternion, Vector3, Zero};
 
-use super::mesh::MeshPosition;
+use super::{mesh::MeshPosition, face_orientation::FaceOrientation};
 
 #[derive(Debug, Clone, Copy)]
 pub struct InstanceData {

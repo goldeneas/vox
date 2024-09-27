@@ -2,8 +2,8 @@
 pub enum FaceOrientation {
     UP,
     DOWN,
-    LEFT,
     RIGHT,
+    LEFT,
     FRONT,
     BACK,
 }
