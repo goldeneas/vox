@@ -1,8 +1,8 @@
-use crate::{render::{mesh::{AsMesh, MeshPosition}, quad_orientation::QuadOrientation, vertex::{Index, Vertex}}, resources::render_server::MaterialId, InstanceData};
+use crate::{render::{mesh::{AsMesh, MeshPosition}, quad_orientation::FaceOrientation, vertex::{Index, Vertex}}, resources::render_server::MaterialId, InstanceData};
 
 #[derive(Debug)]
-pub struct Quad {
-    orientation: QuadOrientation,
+pub struct VoxelFace {
+    orientation: FaceOrientation,
     vertices: [Vertex ; 4],
     indices: [Index ; 6],
     instances: Vec<InstanceData>,
@@ -10,33 +10,15 @@ pub struct Quad {
 }
 
 #[derive(Hash, PartialEq, Eq)]
-pub struct QuadDescriptor {
-    pub orientation: QuadOrientation,
+pub struct FaceDescriptor {
+    pub orientation: FaceOrientation,
     pub width: u32,
     pub height: u32,
     pub material_id: MaterialId,
 }
 
-impl AsMesh for Quad {
-    fn vertices(&self) -> &[Vertex] {
-        &self.vertices
-    }
-
-    fn indices(&self) -> &[Index] {
-        &self.indices
-    }
-
-    fn instances(&self) -> &[InstanceData] {
-        &self.instances
-    }
-
-    fn material_id(&self) -> MaterialId {
-        self.material_id
-    }
-}
-
-impl Quad {
-    pub fn new(descriptor: QuadDescriptor,
+impl VoxelFace {
+    pub fn new(descriptor: &FaceDescriptor,
         positions: &[MeshPosition]
     ) -> Self {
         let orientation = descriptor.orientation;
@@ -60,7 +42,27 @@ impl Quad {
         }
     }
 
-    pub fn vertices(direction: QuadOrientation,
+    pub fn new2(descriptor: &FaceDescriptor,
+        instances: Vec<InstanceData>
+    ) -> Self {
+        let orientation = descriptor.orientation;
+        let width = descriptor.width;
+        let height = descriptor.height;
+        let material_id = descriptor.material_id;
+
+        let vertices = Self::vertices(orientation, width, height);
+        let indices = Self::indices(orientation);
+
+        Self {
+            orientation,
+            vertices,
+            indices,
+            material_id,
+            instances,
+        }
+    }
+
+    pub fn vertices(direction: FaceOrientation,
         width: u32,
         height: u32
     ) -> [Vertex ; 4] {
@@ -68,7 +70,7 @@ impl Quad {
         let height = height as f32;
 
         match direction {
-            QuadOrientation::FRONT => [
+            FaceOrientation::FRONT => [
                 Vertex {
                     position: [0.0, 0.0, 0.0],
                     normal: [0.0, 0.0, 0.0],
@@ -90,7 +92,7 @@ impl Quad {
                     tex_coords: [0.0, height],
                 },
             ],
-            QuadOrientation::BACK => [
+            FaceOrientation::BACK => [
                 Vertex {
                     position: [width, 0.0, 0.0],
                     normal: [0.0, 0.0, 0.0],
@@ -112,7 +114,7 @@ impl Quad {
                     tex_coords: [0.0, height],
                 },
             ],
-            QuadOrientation::UP => [
+            FaceOrientation::UP => [
                 Vertex {
                     position: [0.0, 0.0, height],
                     normal: [0.0, 0.0, 0.0],
@@ -134,7 +136,7 @@ impl Quad {
                     tex_coords: [0.0, height],
                 },
             ],
-            QuadOrientation::DOWN => [
+            FaceOrientation::DOWN => [
                 Vertex {
                     position: [0.0, 0.0, 0.0],
                     normal: [0.0, 0.0, 0.0],
@@ -156,7 +158,7 @@ impl Quad {
                     tex_coords: [width, height],
                 },
             ],
-            QuadOrientation::RIGHT => [
+            FaceOrientation::RIGHT => [
                 Vertex {
                     position: [0.0, 0.0, height],
                     normal: [0.0, 0.0, 0.0],
@@ -178,7 +180,7 @@ impl Quad {
                     tex_coords: [width, 0.0],
                 },
             ],
-            QuadOrientation::LEFT => [
+            FaceOrientation::LEFT => [
                 Vertex {
                     position: [0.0, 0.0, 0.0],
                     normal: [0.0, 0.0, 0.0],
@@ -203,18 +205,18 @@ impl Quad {
         }
     }
 
-    pub fn indices(direction: QuadOrientation) -> [Index ; 6] {
+    pub fn indices(direction: FaceOrientation) -> [Index ; 6] {
         match direction {
-            QuadOrientation::UP => [0, 1, 2, 0, 2, 3],
-            QuadOrientation::DOWN => [1, 0, 3, 1, 3, 2],
-            QuadOrientation::LEFT => [0, 1, 2, 0, 2, 3],
-            QuadOrientation::RIGHT => [3, 2, 1, 3, 1, 0],
-            QuadOrientation::FRONT => [0, 3, 1, 1, 3, 2],
-            QuadOrientation::BACK => [0, 1, 2, 0, 2, 3],
+            FaceOrientation::UP => [0, 1, 2, 0, 2, 3],
+            FaceOrientation::DOWN => [1, 0, 3, 1, 3, 2],
+            FaceOrientation::LEFT => [0, 1, 2, 0, 2, 3],
+            FaceOrientation::RIGHT => [3, 2, 1, 3, 1, 0],
+            FaceOrientation::FRONT => [0, 3, 1, 1, 3, 2],
+            FaceOrientation::BACK => [0, 1, 2, 0, 2, 3],
         }
     }
 
-    pub fn orientation(&self) -> QuadOrientation {
+    pub fn orientation(&self) -> FaceOrientation {
         self.orientation
     }
 }

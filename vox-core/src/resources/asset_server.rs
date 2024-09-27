@@ -47,6 +47,8 @@ impl AssetServer {
             })
     }
 
+    // TODO: handles are now useless probably as we only need to return a texture id from the
+    // render server
     pub fn get_or_load<T>(&mut self, file_name: &str, device: &wgpu::Device, queue: &wgpu::Queue)
         -> Option<Arc<T>>
     where

@@ -1,5 +1,5 @@
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
-pub enum QuadOrientation {
+pub enum FaceOrientation {
     UP,
     DOWN,
     LEFT,
@@ -8,15 +8,15 @@ pub enum QuadOrientation {
     BACK,
 }
 
-impl QuadOrientation {
+impl FaceOrientation {
     pub fn index(&self) -> u32 {
         match *self {
-            QuadOrientation::UP    => 0,
-            QuadOrientation::DOWN  => 1,
-            QuadOrientation::RIGHT => 2,
-            QuadOrientation::LEFT  => 3,
-            QuadOrientation::FRONT => 4,
-            QuadOrientation::BACK  => 5,
+            FaceOrientation::UP    => 0,
+            FaceOrientation::DOWN  => 1,
+            FaceOrientation::RIGHT => 2,
+            FaceOrientation::LEFT  => 3,
+            FaceOrientation::FRONT => 4,
+            FaceOrientation::BACK  => 5,
         }
     }
 
@@ -24,12 +24,12 @@ impl QuadOrientation {
         debug_assert!(bgm_direction < 6, "Unknown bgm direction");
 
         match bgm_direction {
-            0 => QuadOrientation::UP,
-            1 => QuadOrientation::DOWN,
-            2 => QuadOrientation::RIGHT,
-            3 => QuadOrientation::LEFT,
-            4 => QuadOrientation::FRONT,
-            5 => QuadOrientation::BACK,
+            0 => FaceOrientation::UP,
+            1 => FaceOrientation::DOWN,
+            2 => FaceOrientation::RIGHT,
+            3 => FaceOrientation::LEFT,
+            4 => FaceOrientation::FRONT,
+            5 => FaceOrientation::BACK,
             _ => unreachable!(),
         }
     }

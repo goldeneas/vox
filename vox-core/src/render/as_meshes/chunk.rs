@@ -3,9 +3,9 @@ use std::collections::{BTreeSet, HashMap};
 use binary_greedy_meshing::{self as bgm, CS_P3};
 use wgpu::util::DrawIndexedIndirectArgs;
 
-use crate::{render::{mesh::{AsMesh, MeshPosition}, multi_indexed_mesh::AsMultiIndexedMesh, quad_orientation::QuadOrientation, vertex::{Index, Vertex}}, voxel_position::VoxelPosition, voxel_registry::{VoxelRegistry, VoxelType, VoxelTypeIdentifier}, InstanceData};
+use crate::{render::{mesh::{AsMesh, MeshPosition}, multi_indexed_mesh::AsMultiIndexedMesh, quad_orientation::FaceOrientation, vertex::{Index, Vertex}}, voxel_position::VoxelPosition, voxel_registry::{VoxelRegistry, VoxelType, VoxelTypeIdentifier}, InstanceData};
 
-use super::quad::{Quad, QuadDescriptor};
+use super::quad::{VoxelFace, FaceDescriptor};
 
 const MASK_6: u64 = 0b111111;
 
@@ -205,7 +205,7 @@ pub struct Chunk {
     voxels: [VoxelTypeIdentifier ; CS_P3],
     mesh_data: bgm::MeshData,
     //faces: HashMap<VoxelType, Vec<FacePrimitive>>,
-    faces: Vec<Quad>,
+    faces: Vec<VoxelFace>,
     voxel_registry: VoxelRegistry,
 }
 
@@ -256,10 +256,10 @@ impl Chunk {
         self.faces.clear();
         bgm::mesh(&self.voxels, &mut self.mesh_data, BTreeSet::default());
 
-        let mut quad_map: HashMap<QuadDescriptor, Vec<MeshPosition>> = HashMap::new();
+        let mut quad_map: HashMap<FaceDescriptor, Vec<MeshPosition>> = HashMap::new();
 
         for (bgm_orientation, bgm_faces) in self.mesh_data.quads.iter().enumerate() {
-            let orientation = QuadOrientation::from_bgm(bgm_orientation);
+            let orientation = FaceOrientation::from_bgm(bgm_orientation);
             for bgm_face in bgm_faces.iter() {
                 let x = bgm_face & MASK_6;
                 let y = (bgm_face >> 6) & MASK_6;
@@ -278,9 +278,21 @@ impl Chunk {
 
                 let width = width as u32;
                 let height = height as u32;
+                println!("VOXEL: {:?}", orientation);
+                println!("width: {}, height: {}", width, height);
+                println!("pos: {} {} {}", x, y, z);
 
-                let material_id = 0;
-                let descriptor = QuadDescriptor {
+                // TODO: this material id will not be used
+                // we are rendering this chunk indirectly
+                // so materials cannot be changed during rendering
+                // we need to store different arrays for each voxel type
+                // MAYBE MAKE THIS AN OPTION FOR THE MESH TO HAVE
+                let mut material_id = 0;
+                if orientation == FaceOrientation::RIGHT {
+                    continue;
+                }
+
+                let descriptor = FaceDescriptor {
                     orientation,
                     width,
                     height,
@@ -299,7 +311,8 @@ impl Chunk {
 
         quad_map.into_iter()
             .for_each(|(descriptor, vec)| {
-                let face = Quad::new(descriptor, &vec);
+        // TODO: we dont need a full quad here
+                let face = VoxelFace::new(&descriptor, &vec);
                 self.faces.push(face);
             })
     }
