@@ -163,6 +163,7 @@ impl AsMultiIndexedMesh for Chunk {
         &INDICES
     }
 
+    //
     fn instances(&self) -> Vec<InstanceData> {
         let mut vec = Vec::with_capacity(self.face_map.values().len());
         for (face, positions) in self.face_map.iter() {
